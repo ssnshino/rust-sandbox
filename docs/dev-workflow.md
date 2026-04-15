@@ -30,11 +30,14 @@ cd ~/work/upstream/rust-sandbox
 git checkout dev
 ```
 
-コードを編集したら、コンテナをリビルドして反映：
+コードを編集したら、dev コンテナを起動し直して反映：
 
 ```bash
-docker compose -f compose.dev.yaml up --build -d
+docker compose -f compose.dev.yaml up -d
 ```
+
+`app/` は bind mount されていて、コンテナ内の `cargo run` が自動で再コンパイルする。
+タイトル画面右下の build 短縮ハッシュが更新されたかを見ると、ブラウザが古い配信物を見ていないか切り分けしやすい。
 
 ### 2. 動作確認
 

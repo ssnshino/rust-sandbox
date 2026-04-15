@@ -6,7 +6,7 @@ mod dungeon;
 
 use axum::{
     extract::{ws::WebSocketUpgrade, State},
-    response::IntoResponse,
+    response::{Html, IntoResponse},
     routing::get,
     Json, Router,
 };
@@ -47,7 +47,10 @@ async fn main() {
 async fn index()        -> axum::response::Html<&'static str> { axum::response::Html(include_str!("index.html")) }
 async fn pong()         -> axum::response::Html<&'static str> { axum::response::Html(include_str!("pong.html")) }
 async fn breakout_page()-> axum::response::Html<&'static str> { axum::response::Html(include_str!("breakout.html")) }
-async fn dungeon_page() -> axum::response::Html<&'static str> { axum::response::Html(include_str!("dungeon.html")) }
+async fn dungeon_page() -> Html<String> {
+    let build_hash = std::env::var("GIT_HASH").unwrap_or_else(|_| "2c2a0cb".to_string());
+    Html(include_str!("dungeon.html").replace("__BUILD_HASH__", &build_hash))
+}
 
 async fn ws_1p(ws: WebSocketUpgrade) -> impl IntoResponse {
     ws.on_upgrade(game::run_1p)

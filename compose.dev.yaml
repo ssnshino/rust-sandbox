@@ -13,6 +13,7 @@ services:
     environment:
       - VIRTUAL_HOST=rust-sandbox.wos.ktsys.jp
       - VIRTUAL_PORT=3000
+      - CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
     networks:
       - default
       - wos-proxy-network
