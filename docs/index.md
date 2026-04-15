@@ -2,6 +2,10 @@
 
 `ssnshino/rust-sandbox` で動く Rust 製 Web ゲーム実験の仕様まとめ。
 
+## ドキュメント
+
+- [dev-workflow.md](./dev-workflow.md) — 開発・デプロイ手順
+
 ## ゲーム一覧
 
 | ゲーム | 仕様書 | エンドポイント |
