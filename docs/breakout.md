@@ -1,6 +1,6 @@
 # Breakout 仕様書
 
-`ayano-lab/docker/rust-sandbox` で動く Rust 製 Breakout ゲームの仕様まとめ。
+`ssnshino/rust-sandbox` で動く Rust 製 Breakout ゲームの仕様まとめ。
 
 作成: 2026-04-15
 
@@ -20,18 +20,11 @@
 ### ファイル構成
 
 ```
-rust-sandbox/
-├── compose.yaml
-├── SPEC_BREAKOUT.md        # この文書
-├── SPEC_PONG.md            # Pong 仕様書
-└── app/
-    ├── Cargo.toml
-    ├── breakout_scores.json  # ハイスコア永続ファイル（起動時に読み込み）
-    └── src/
-        ├── main.rs           # ルーティング（全ゲーム共通）
-        ├── breakout.rs       # ゲームロジック・WebSocket ハンドラ
-        ├── scores.rs         # ハイスコア管理
-        └── breakout.html     # ゲームページ（描画・入力・UI）
+app/src/
+├── main.rs           # ルーティング（全ゲーム共通）
+├── breakout.rs       # ゲームロジック・WebSocket ハンドラ
+├── scores.rs         # ハイスコア管理
+└── breakout.html     # ゲームページ（描画・入力・UI）
 ```
 
 ### ルーティング
@@ -259,7 +252,7 @@ SCORE [現在スコア]   HIGH [1位スコア]   LIVES [❤️❤️❤️]
 | キーボード ←→ | `dir` で速度移動（8 px/tick） |
 | マウス移動 | `paddle_x` をマウス X に追従 |
 | マウスクリック | 発射 / リスタート |
-| タッチ スライド | pong 方式のアンカー-デルタ。指を置いた位置を基点に相対移動 |
+| タッチ スライド | アンカー-デルタ方式。指を置いた位置を基点に相対移動 |
 | タップ（移動 < 10px） | 発射 / リスタート |
 | Space | 発射 / リスタート（オーバーレイ表示中ならリスタート兼クローズ） |
 
@@ -286,23 +279,10 @@ canvas { touch-action: none; }
 
 ---
 
-## モバイル操作の遅延対策（ノウハウ）
+## モバイル操作の遅延対策
 
 WebSocket 経由でサーバーサイドがゲームステートを管理する構成では、
 タッチ入力からパドル描画までに **ネットワーク RTT 分の遅延** が乗る。
-iPhone 等の実機では数十 ms になり、操作感が著しく悪化する。
-
-### 問題の構造
-
-```
-指が動く
-  → fingerGameX 更新
-  → 次の rAF (最大 16ms 待ち)
-  → WS 送信
-  → サーバー処理 (最大 16ms 待ち)
-  → state 返信
-  → 描画                ← 指の動きから 数十 ms〜 のズレ
-```
 
 ### 対策: 即送信 ＋ クライアント予測描画
 
@@ -310,7 +290,6 @@ iPhone 等の実機では数十 ms になり、操作感が著しく悪化する
 
 ```js
 document.addEventListener('pointermove', e => {
-  // ...
   fingerGameX = /* 計算 */;
   if (ws.readyState === 1) {
     ws.send(JSON.stringify({ dir: 0, launch: false, paddle_x: fingerGameX }));
@@ -321,36 +300,14 @@ document.addEventListener('pointermove', e => {
 **② パドルをローカル値で描画**（サーバー返信を待たない）
 
 ```js
-// state.paddle_x ではなく fingerGameX を優先して描く
 drawPaddle(fingerGameX !== null ? fingerGameX : state.paddle_x);
 ```
 
-### 改善後の流れ
-
-```
-指が動く
-  → fingerGameX 更新
-  → 即 WS 送信           ← rAF 待ちゼロ
-  → ローカルで即描画      ← RTT 待ちゼロ
-```
-
-パドルの描画は完全にクライアント完結。RTT がいくら高くてもヌルヌル動く。
-ボールの当たり判定はサーバーサイドのままで、物理的な整合性は保たれる。
-
-### 適用判断
-
 | 要素 | 予測描画すべきか |
 |------|----------------|
-| パドル（プレイヤー操作） | **Yes** — 入力と描画を直結する。ズレはほぼ知覚されない |
-| ボール | No — サーバー物理に従う。予測するとブロック衝突がズレる |
+| パドル（プレイヤー操作） | **Yes** — 入力と描画を直結する |
+| ボール | No — サーバー物理に従う |
 | スコア・ライフ | No — サーバー確定値を使う |
-
-### 将来ゲームへの転用
-
-- 軸が違っても同じ。Pong なら `fingerGameY → player_y` を予測描画
-- 移動系の入力はすべて「即送信 ＋ ローカル描画」が基本方針
-- 送信頻度が心配なら `pointermove` に throttle（16ms 間隔）を入れてもよいが、
-  実測では WebSocket は十分さばける
 
 ---
 
@@ -358,6 +315,5 @@ drawPaddle(fingerGameX !== null ? fingerGameX : state.paddle_x);
 
 - [ ] ボールスピードを進行とともに加速
 - [ ] 複数ボール・ボールパワーアップ
-- [ ] ボールの軌跡エフェクト
 - [ ] スコアに日時を記録
 - [ ] 難易度選択（ブロック数・速度）

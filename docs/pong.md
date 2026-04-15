@@ -1,8 +1,8 @@
 # Pong 仕様書
 
-`ayano-lab/docker/rust-sandbox` で動く Rust 製 Pong ゲームの仕様まとめ。
+`ssnshino/rust-sandbox` で動く Rust 製 Pong ゲームの仕様まとめ。
 
-作成: 2026-04-15（元 SPEC.md より分離）
+作成: 2026-04-15
 
 ---
 
@@ -17,27 +17,13 @@
 
 ## アーキテクチャ
 
-### プロキシチェーン
-
-```
-ブラウザ (HTTPS)
-  → apache2 (wos.ktsys.jp, :443)
-  → wos-proxy (nginx-proxy コンテナ, :9080)  ※ WebSocket: mod_proxy_wstunnel 使用
-  → rust-sandbox コンテナ (axum, :3000)
-```
-
 ### ファイル構成
 
 ```
-rust-sandbox/
-├── compose.yaml
-├── SPEC_PONG.md         # この文書
-├── SPEC_BREAKOUT.md     # Breakout 仕様書
-└── app/
-    └── src/
-        ├── main.rs      # ルーティング（全ゲーム共通）
-        ├── game.rs      # ゲームロジック・WebSocket ハンドラ（1P / 2P）
-        └── pong.html    # ゲームページ（描画・入力・UI）
+app/src/
+├── main.rs      # ルーティング（全ゲーム共通）
+├── game.rs      # ゲームロジック・WebSocket ハンドラ（1P / 2P）
+└── pong.html    # ゲームページ（描画・入力・UI）
 ```
 
 ### ルーティング
