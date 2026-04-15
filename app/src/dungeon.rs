@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 use tokio::time::{interval, Duration};
 
-use crate::dungeon_gen::{generate, COLS, ROWS};
+use crate::dungeon_gen::{generate_for_floor, COLS, ROWS};
 use crate::scores::ScoreBoard;
 
 const MAX_HP: u8 = 5;
@@ -108,11 +108,11 @@ fn now_ns() -> u64 {
 // ── Game ──────────────────────────────────────────────────────────────────────
 impl Game {
     fn new(seed: u64) -> Self {
-        let grid = generate(seed);
+        let grid = generate_for_floor(seed, 1);
         let start = pick_start(&grid, seed);
         let goal  = bfs_farthest(&grid, start.0, start.1);
         let player = Player { x:start.0,y:start.1,hp:MAX_HP,score:0,dir:Dir::Down,invincible:0 };
-        let aliens = make_aliens(&grid, 0);
+        let aliens = make_aliens(&grid, 1, start);
         Game { grid,player,aliens,holes:Vec::new(),tick:0,next_hole_id:0,
                phase:Phase::Playing,event:None,kills:0,
                floor:1,goal,start,new_grid_ready:false,floor_bonus:0,cleared_floor:0 }
@@ -123,15 +123,15 @@ impl Game {
         self.floor_bonus = 100 * self.cleared_floor; // bonus based on cleared floor
         self.player.score += self.floor_bonus;
         self.floor += 1;                           // then advance
-        let seed = now_ns() ^ (self.floor as u64 * 6364136223846793005);
-        self.grid = generate(seed);
+        let seed = now_ns() ^ (self.floor as u64).wrapping_mul(6364136223846793005);
+        self.grid = generate_for_floor(seed, self.floor);
         self.start = pick_start(&self.grid, seed.wrapping_add(1));
         self.goal  = bfs_farthest(&self.grid, self.start.0, self.start.1);
         self.player.x = self.start.0;
         self.player.y = self.start.1;
         self.player.dir = Dir::Down;
         self.holes.clear();
-        self.aliens = make_aliens(&self.grid, self.floor);
+        self.aliens = make_aliens(&self.grid, self.floor, self.start);
         self.new_grid_ready = true;
     }
 
@@ -349,14 +349,38 @@ impl Game {
     }
 }
 
-fn make_aliens(grid: &Vec<Vec<u8>>, floor: u32) -> Vec<Alien> {
-    let starts = [(COLS-2,ROWS-2),(COLS-2,3),(3,ROWS-2),(COLS-4,ROWS-4)];
+fn make_aliens(grid: &Vec<Vec<u8>>, floor: u32, start: (usize, usize)) -> Vec<Alien> {
     let extra = (floor / 3) as usize; // add 1 alien every 3 floors, up to 8
     let count = (INITIAL_ALIENS + extra).min(8);
-    (0..count).map(|i| {
-        let &(ax,ay) = &starts[i % starts.len()];
-        let (ax,ay) = if grid[ay][ax]==1{(ax,ay)}else{(COLS-2,ROWS-2)};
-        Alien { x:ax,y:ay,state:AlienState::Active,move_timer:BASE_SPEED+i as u32*3,id:i }
+    let mut cells: Vec<(usize, usize, usize)> = (1..ROWS-1)
+        .flat_map(|y| (1..COLS-1).filter_map(move |x| {
+            if grid[y][x] != 1 || (x, y) == start {
+                return None;
+            }
+            let dist = x.abs_diff(start.0) + y.abs_diff(start.1);
+            Some((x, y, dist))
+        }))
+        .collect();
+    cells.sort_by(|a, b| b.2.cmp(&a.2));
+
+    let mut picked: Vec<(usize, usize)> = Vec::new();
+    for (x, y, _) in cells {
+        if picked.iter().all(|&(px, py)| px.abs_diff(x) + py.abs_diff(y) >= 6) {
+            picked.push((x, y));
+            if picked.len() >= count {
+                break;
+            }
+        }
+    }
+    if picked.is_empty() {
+        picked.push(start);
+    }
+    while picked.len() < count {
+        picked.push(*picked.last().unwrap());
+    }
+
+    picked.into_iter().enumerate().map(|(i, (ax, ay))| {
+        Alien { x:ax, y:ay, state:AlienState::Active, move_timer:BASE_SPEED+i as u32*3, id:i }
     }).collect()
 }
 
@@ -365,6 +389,8 @@ fn make_aliens(grid: &Vec<Vec<u8>>, floor: u32) -> Vec<Alien> {
 enum ClientMsg { Start, Move{dir:String}, Act, Submit{name:String,score:u32}, Restart }
 
 pub async fn run(mut socket: WebSocket, scores: Arc<Mutex<ScoreBoard>>) {
+    let session_id = now_ns();
+    eprintln!("[dungeon] session_open id={}", session_id);
     send_title(&mut socket, &scores).await;
     let mut gs: Option<Game> = None;
     let mut ticker = interval(Duration::from_millis(TICK_MS));
@@ -397,7 +423,33 @@ pub async fn run(mut socket: WebSocket, scores: Arc<Mutex<ScoreBoard>>) {
                 }
             }
             msg = socket.recv() => {
-                let Some(Ok(Message::Text(txt))) = msg else { break; };
+                let Some(Ok(message)) = msg else {
+                    eprintln!("[dungeon] session_recv_end id={}", session_id);
+                    break;
+                };
+                let txt = match message {
+                    Message::Text(txt) => txt,
+                    Message::Ping(payload) => {
+                        eprintln!("[dungeon] session_ping id={} bytes={}", session_id, payload.len());
+                        if socket.send(Message::Pong(payload)).await.is_err() {
+                            eprintln!("[dungeon] session_pong_send_error id={}", session_id);
+                            break;
+                        }
+                        continue;
+                    }
+                    Message::Pong(_) => {
+                        eprintln!("[dungeon] session_pong id={}", session_id);
+                        continue;
+                    }
+                    Message::Binary(payload) => {
+                        eprintln!("[dungeon] session_binary id={} bytes={}", session_id, payload.len());
+                        continue;
+                    }
+                    Message::Close(frame) => {
+                        eprintln!("[dungeon] session_close id={} frame={:?}", session_id, frame);
+                        break;
+                    }
+                };
                 let Ok(cm) = serde_json::from_str::<ClientMsg>(&txt) else { continue; };
                 match cm {
                     ClientMsg::Start => {
