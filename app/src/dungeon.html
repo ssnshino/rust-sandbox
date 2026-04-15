@@ -35,7 +35,8 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
 #gm-face{color:#ffd700;margin-right:6px}
 
 /* ── CONTROLS ── */
-#controls{display:flex;align-items:center;justify-content:space-around;width:100%;max-width:630px;padding:8px 20px;flex-shrink:0}
+#controls{display:flex;align-items:flex-end;justify-content:space-between;width:100%;max-width:630px;padding:8px 20px 16px;gap:16px;flex-shrink:0}
+#move-pad{position:relative;display:flex;align-items:flex-end;justify-content:flex-start;min-width:176px;min-height:136px;flex:1}
 #dpad{display:grid;grid-template-rows:44px 44px 44px;grid-template-columns:44px 44px 44px;gap:4px}
 .dpad-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e2e8f0;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .dpad-btn:active{background:rgba(255,255,255,.25)}
@@ -43,9 +44,20 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
 #dpad-left{grid-column:1;grid-row:2}
 #dpad-down{grid-column:2;grid-row:2}
 #dpad-right{grid-column:3;grid-row:2}
-#act-btn{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;color:#fff;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+#punicon{display:none;position:relative;width:132px;height:132px;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.16),rgba(255,255,255,.05) 55%,rgba(0,0,0,.28));border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 8px 18px rgba(255,255,255,.08),0 10px 30px rgba(0,0,0,.28);touch-action:none;overflow:hidden}
+#punicon.active{box-shadow:inset 0 8px 18px rgba(255,255,255,.12),0 0 0 2px rgba(124,58,237,.28),0 10px 30px rgba(0,0,0,.32)}
+#punicon-base{position:absolute;inset:14px;border-radius:50%;border:1px solid rgba(255,255,255,.08);background:radial-gradient(circle,rgba(255,255,255,.05),rgba(255,255,255,.015));pointer-events:none}
+#punicon-stick{position:absolute;left:50%;top:50%;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,rgba(124,58,237,.88),rgba(79,70,229,.94));box-shadow:0 8px 18px rgba(0,0,0,.28);transform:translate(-50%,-50%);pointer-events:none}
+#punicon-hint{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:.66rem;letter-spacing:.08em;color:#94a3b8;pointer-events:none}
+#act-btn{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;color:#fff;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex-shrink:0}
 #act-btn:active{opacity:.7}
 #act-btn .act-label{font-size:1rem}
+@media (pointer:coarse), (max-width:800px){
+  #controls{padding:8px 18px 18px}
+  #dpad{display:none}
+  #punicon{display:block}
+  #act-btn{width:96px;height:96px}
+}
 
 /* ── DAMAGE FLASH ── */
 #dmg-flash{display:none;position:fixed;inset:0;z-index:50;pointer-events:none;align-items:center;justify-content:center}
@@ -86,15 +98,18 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
 #go-scores .my-rank{background:rgba(124,58,237,.2)}
 #retry-btn{padding:10px 28px;border-radius:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;font-size:.9rem;cursor:pointer}
 #retry-btn:hover{background:rgba(255,255,255,.18)}
+.back{position:fixed;top:12px;left:16px;font-size:13px;color:#475569;text-decoration:none;z-index:10;}
+.back:hover{color:#94a3b8}
 </style>
 </head>
 <body>
+<a class="back" href="/">← メニュー</a>
 
 <!-- TITLE SCREEN -->
 <div id="title">
   <h1>あやかダンジョン</h1>
   <p class="sub">× 平安京エイリアン</p>
-  <p class="build">build deaf60f</p>
+  <p class="build">build __BUILD_HASH__</p>
   <div id="title-scores">
     <table><thead><tr><th>#</th><th>名前</th><th>スコア</th></tr></thead><tbody id="title-tbody"></tbody></table>
   </div>
@@ -113,11 +128,18 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
   </div>
   <div id="gm-box"><span id="gm-face">あやかGM▶</span><span id="gm-text"></span></div>
   <div id="controls">
-    <div id="dpad">
-      <button class="dpad-btn" id="dpad-up" data-dir="up">▲</button>
-      <button class="dpad-btn" id="dpad-left" data-dir="left">◀</button>
-      <button class="dpad-btn" id="dpad-down" data-dir="down">▼</button>
-      <button class="dpad-btn" id="dpad-right" data-dir="right">▶</button>
+    <div id="move-pad">
+      <div id="dpad">
+        <button class="dpad-btn" id="dpad-up" data-dir="up">▲</button>
+        <button class="dpad-btn" id="dpad-left" data-dir="left">◀</button>
+        <button class="dpad-btn" id="dpad-down" data-dir="down">▼</button>
+        <button class="dpad-btn" id="dpad-right" data-dir="right">▶</button>
+      </div>
+      <div id="punicon" aria-label="移動スティック">
+        <div id="punicon-base"></div>
+        <div id="punicon-stick"></div>
+        <div id="punicon-hint">MOVE</div>
+      </div>
     </div>
     <button id="act-btn" onclick="sendAct()"><span class="act-label">ACT</span><small>掘る/埋める</small></button>
   </div>
@@ -168,8 +190,14 @@ function connect() {
       goalPos={x:msg.goal_x,y:msg.goal_y};
       currentFloor=msg.floor||1;
       if(msg.cleared_floor>0){
+        // フロアクリア遷移: 描画停止→黒塗り→CLEAR→START→描画再開
+        gameActive=false;
+        ctx.fillStyle='#0f0f1a'; ctx.fillRect(0,0,canvas.width,canvas.height);
         showFloorFlash(msg.cleared_floor,msg.bonus);
-        setTimeout(()=>showFloorStart(msg.floor),1400);
+        setTimeout(()=>{
+          showFloorStart(msg.floor);
+          setTimeout(()=>{ gameActive=true; },1200);
+        },1400);
       }
     }
     else if(msg.type==='state')  { handleState(msg); }
@@ -461,23 +489,57 @@ function escHtml(s){
   return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-// ── Keyboard input ────────────────────────────────────────────────────────────
+// ── Keyboard / touch input ─────────────────────────────────────────────────────
 const KEY_MAP={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',
                ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
-const heldKeys=new Set();
 let repeatTimer=null;
+let activeRepeatDir=null;
+let puniconPointerId=null;
+const PUNICON_DEADZONE=18;
+const PUNICON_RADIUS=44;
+const punicon=document.getElementById('punicon');
+const puniconStick=document.getElementById('punicon-stick');
 
 function sendDir(dir){ SFX.step(); send({type:'move',dir}); }
 function sendAct(){ SFX.act(); send({type:'act'}); }
 
 function startRepeat(dir){
+  if(!dir) return;
+  if(activeRepeatDir===dir && repeatTimer) return;
+  activeRepeatDir=dir;
   sendDir(dir);
   clearInterval(repeatTimer);
-  repeatTimer=setInterval(()=>sendDir(dir),140);
+  repeatTimer=setInterval(()=>sendDir(activeRepeatDir),140);
 }
 function stopRepeat(){
   clearInterval(repeatTimer);
   repeatTimer=null;
+  activeRepeatDir=null;
+}
+function directionFromVector(dx,dy){
+  if(Math.hypot(dx,dy)<PUNICON_DEADZONE) return null;
+  return Math.abs(dx)>Math.abs(dy) ? (dx>0?'right':'left') : (dy>0?'down':'up');
+}
+function resetPunicon(){
+  punicon.classList.remove('active');
+  puniconStick.style.transform='translate(-50%,-50%)';
+  stopRepeat();
+}
+function updatePunicon(clientX,clientY){
+  const rect=punicon.getBoundingClientRect();
+  const cx=rect.left+rect.width/2;
+  const cy=rect.top+rect.height/2;
+  const dx=clientX-cx;
+  const dy=clientY-cy;
+  const dist=Math.hypot(dx,dy);
+  const limited=Math.min(PUNICON_RADIUS,dist||0);
+  const rate=dist ? limited/dist : 0;
+  const stickX=dx*rate;
+  const stickY=dy*rate;
+  puniconStick.style.transform=`translate(calc(-50% + ${stickX}px), calc(-50% + ${stickY}px))`;
+  const dir=directionFromVector(dx,dy);
+  if(dir) startRepeat(dir);
+  else stopRepeat();
 }
 
 document.addEventListener('keydown',e=>{
@@ -492,10 +554,9 @@ document.addEventListener('keydown',e=>{
   }
 });
 document.addEventListener('keyup',e=>{
-  if(KEY_MAP[e.code]) stopRepeat();
+  if(KEY_MAP[e.code] && activeRepeatDir===KEY_MAP[e.code]) stopRepeat();
 });
 
-// ── D-pad touch ───────────────────────────────────────────────────────────────
 document.querySelectorAll('.dpad-btn').forEach(btn=>{
   const dir=btn.dataset.dir;
   btn.addEventListener('pointerdown',e=>{
@@ -506,6 +567,27 @@ document.querySelectorAll('.dpad-btn').forEach(btn=>{
   btn.addEventListener('pointerup',e=>{ e.preventDefault(); stopRepeat(); });
   btn.addEventListener('pointercancel',e=>{ e.preventDefault(); stopRepeat(); });
 });
+
+punicon.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  puniconPointerId=e.pointerId;
+  punicon.setPointerCapture(e.pointerId);
+  punicon.classList.add('active');
+  updatePunicon(e.clientX,e.clientY);
+});
+punicon.addEventListener('pointermove',e=>{
+  if(e.pointerId!==puniconPointerId) return;
+  e.preventDefault();
+  updatePunicon(e.clientX,e.clientY);
+});
+function releasePunicon(e){
+  if(e.pointerId!==puniconPointerId) return;
+  e.preventDefault();
+  puniconPointerId=null;
+  resetPunicon();
+}
+punicon.addEventListener('pointerup',releasePunicon);
+punicon.addEventListener('pointercancel',releasePunicon);
 
 // ── Canvas scale ──────────────────────────────────────────────────────────────
 function scaleCanvas(){
