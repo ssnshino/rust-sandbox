@@ -67,6 +67,7 @@ struct Game {
     start: (usize, usize),
     new_grid_ready: bool,
     floor_bonus: u32,
+    cleared_floor: u32,
 }
 
 // ── Maze helpers ──────────────────────────────────────────────────────────────
@@ -114,13 +115,14 @@ impl Game {
         let aliens = make_aliens(&grid, 0);
         Game { grid,player,aliens,holes:Vec::new(),tick:0,next_hole_id:0,
                phase:Phase::Playing,event:None,kills:0,
-               floor:1,goal,start,new_grid_ready:false,floor_bonus:0 }
+               floor:1,goal,start,new_grid_ready:false,floor_bonus:0,cleared_floor:0 }
     }
 
     fn advance_floor(&mut self) {
-        self.floor += 1;
-        self.floor_bonus = 100 * self.floor;
+        self.cleared_floor = self.floor;           // save the floor that was just cleared
+        self.floor_bonus = 100 * self.cleared_floor; // bonus based on cleared floor
         self.player.score += self.floor_bonus;
+        self.floor += 1;                           // then advance
         let seed = now_ns() ^ (self.floor as u64 * 6364136223846793005);
         self.grid = generate(seed);
         self.start = pick_start(&self.grid, seed.wrapping_add(1));
@@ -317,7 +319,8 @@ impl Game {
     fn grid_json(&self) -> String {
         serde_json::json!({
             "type":"grid","grid":self.grid,"floor":self.floor,
-            "goal_x":self.goal.0,"goal_y":self.goal.1,"bonus":self.floor_bonus
+            "goal_x":self.goal.0,"goal_y":self.goal.1,"bonus":self.floor_bonus,
+            "cleared_floor":self.cleared_floor
         }).to_string()
     }
 

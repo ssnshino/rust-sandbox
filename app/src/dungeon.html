@@ -165,7 +165,10 @@ function connect() {
       grid=msg.grid; visited=new Set();
       goalPos={x:msg.goal_x,y:msg.goal_y};
       currentFloor=msg.floor||1;
-      if(msg.bonus&&msg.bonus>0) showFloorFlash(msg.floor,msg.bonus);
+      if(msg.cleared_floor>0){
+        showFloorFlash(msg.cleared_floor,msg.bonus);
+        setTimeout(()=>showFloorStart(msg.floor),1400);
+      }
     }
     else if(msg.type==='state')  { handleState(msg); }
     else if(msg.type==='gameover') { showGameover(msg); }
@@ -389,6 +392,19 @@ function showFloorFlash(floor,bonus){
   el.classList.add('show');
   clearTimeout(floorFlashTimer);
   floorFlashTimer=setTimeout(()=>el.classList.remove('show'),1200);
+  setGm('FLOOR '+floor+' クリア！やるじゃん！');
+}
+
+function showFloorStart(floor){
+  const el=document.getElementById('floor-flash');
+  document.getElementById('floor-label').textContent='FLOOR '+floor+' START!';
+  document.getElementById('floor-bonus').textContent='';
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  clearTimeout(floorFlashTimer);
+  floorFlashTimer=setTimeout(()=>el.classList.remove('show'),1200);
+  setGm('FLOOR '+floor+'、いくよっ！気合い入れて！');
 }
 
 // ── Gameover ──────────────────────────────────────────────────────────────────
