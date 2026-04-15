@@ -1,0 +1,22 @@
+services:
+  rust-sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: games-rust-sandbox
+    working_dir: /workspace/app
+    command: ["cargo", "run"]
+    volumes:
+      - ./app:/workspace/app
+    environment:
+      - VIRTUAL_HOST=games.lab.ktsys.jp
+      - VIRTUAL_PORT=3000
+      - LETSENCRYPT_HOST=games.lab.ktsys.jp
+      - LETSENCRYPT_EMAIL=ken-tozawa@ktsys.jp
+    restart: unless-stopped
+    networks:
+      - container_network
+
+networks:
+  container_network:
+    external: true

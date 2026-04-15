@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Pong — Rust Sandbox</title>
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      height: 100%; background: #080810;
+      font-family: 'Courier New', monospace; color: #e2e8f0;
+      touch-action: none; user-select: none;
+      -webkit-user-select: none; -webkit-touch-callout: none;
+      overflow: hidden;
+    }
+    body { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+    .canvas-wrap {
+      position: relative; width: min(800px, 100vw); flex-shrink: 1;
+    }
+    canvas {
+      display: block; width: 100%; height: auto;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
+      /* タッチ操作はJS側で管理 */
+      touch-action: none;
+    }
+    @media (pointer: coarse) { canvas { border-radius: 4px 4px 0 0; } }
+
+    .overlay {
+      display: none; position: absolute; inset: 0;
+      background: rgba(8,8,16,0.85); border-radius: 4px;
+      flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+      /* overlayはタッチ操作を奪わない → ボタンだけ反応 */
+    }
+    .overlay.show { display: flex; }
+    .overlay h2   { font-size: clamp(1.4rem, 5vw, 2.2rem); letter-spacing: 0.05em; }
+    .overlay .sub { color: #94a3b8; font-size: clamp(0.85rem, 3vw, 1rem); }
+    .overlay .hint { color: #475569; font-size: 0.8rem; }
+
+    /* ======= スライドヒント (モバイルのみ canvas 上に表示) ======= */
+    .slide-hint {
+      display: none;
+      position: absolute; bottom: 10px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem; color: rgba(255,255,255,0.2);
+      pointer-events: none; white-space: nowrap;
+    }
+    @media (pointer: coarse) { .slide-hint { display: block; } }
+
+    /* ======= モバイルコントローラー ======= */
+    .controller {
+      display: none;
+      width: min(800px, 100vw);
+      background: #12121e;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-top: none; border-radius: 0 0 4px 4px;
+      padding: 10px 16px 14px;
+      align-items: center; justify-content: center; gap: 14px;
+      flex-shrink: 0;
+    }
+    @media (pointer: coarse) { .controller { display: flex; } }
+
+    .meta-btn {
+      padding: 8px 18px;
+      font-size: 0.62rem; font-family: 'Courier New', monospace;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      background: #1e1e30; color: rgba(255,255,255,0.5);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 20px;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+      transition: background 0.07s, color 0.07s;
+      min-width: 72px; text-align: center;
+    }
+    .meta-btn:active, .meta-btn.active { background: #2e2e50; color: #fff; }
+
+    .pause-btn {
+      width: 44px; height: 44px; border-radius: 50%;
+      font-size: 1.1rem; background: #1e1e30;
+      color: rgba(255,255,255,0.5);
+      border: 1px solid rgba(255,255,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+      transition: background 0.07s, color 0.07s;
+    }
+    .pause-btn:active, .pause-btn.active { background: #3a3a60; color: #fff; }
+
+    .controls { font-size: 12px; color: #475569; padding: 8px 0; }
+    @media (pointer: coarse) { .controls { display: none; } }
+    .back {
+      position: fixed; top: 12px; left: 16px;
+      font-size: 13px; color: #475569; text-decoration: none; z-index: 10;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .back:hover { color: #94a3b8; }
+    kbd { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 1px 6px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="/">← メニュー</a>
+
+  <div class="canvas-wrap">
+    <canvas id="c" width="800" height="600"></canvas>
+    <div class="slide-hint">↕ スライドでパドル操作</div>
+
+    <div class="overlay" id="ov-gameover">
+      <h2 id="ov-title"></h2>
+      <div class="sub" id="ov-sub"></div>
+      <div class="hint" id="ov-hint">START で次のゲームへ</div>
+    </div>
+    <div class="overlay" id="ov-pause">
+      <h2>⏸ PAUSE</h2>
+      <div class="hint">PAUSE で再開</div>
+    </div>
+    <div class="overlay" id="ov-waiting">
+      <h2>⏳ Waiting...</h2>
+      <div class="sub">対戦相手を待っています</div>
+    </div>
+    <div class="overlay" id="ov-disconnected">
+      <h2>⚡ Disconnected</h2>
+      <div class="sub">対戦相手が切断しました</div>
+      <div class="hint">ページをリロードして再挑戦</div>
+    </div>
+  </div>
+
+  <!-- モバイル: PAUSE + START のみ -->
+  <div class="controller">
+    <button class="meta-btn" id="btn-select">SELECT</button>
+    <button class="pause-btn" id="btn-pause">⏸</button>
+    <button class="meta-btn" id="btn-start">START</button>
+  </div>
+
+  <div class="controls">
+    <kbd>↑</kbd><kbd>↓</kbd> 移動 &nbsp;|&nbsp; <kbd>P</kbd> ポーズ &nbsp;|&nbsp; <kbd>Space</kbd> リスタート
+  </div>
+
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    const ovGameover     = document.getElementById('ov-gameover');
+    const ovPause        = document.getElementById('ov-pause');
+    const ovWaiting      = document.getElementById('ov-waiting');
+    const ovDisconnected = document.getElementById('ov-disconnected');
+    const W = 800, H = 600, PADDLE_W = 12, PADDLE_H = 80, BALL_R = 8;
+    const PLAYER_X = 20, CPU_X = W - 20 - PADDLE_W;
+
+    // モード判定
+    const is2P = new URLSearchParams(location.search).get('mode') === '2p';
+    let myRole = null; // 'p1' or 'p2'
+
+    let state = {
+      ball_x: W/2, ball_y: H/2, player_y: H/2, cpu_y: H/2,
+      point_player: 'Love', point_cpu: 'Love',
+      games_player: 0, games_cpu: 0, phase: 'playing',
+    };
+
+    // ── Audio ──────────────────────────────────────────
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const resumeAudio = () => { if (audioCtx.state === 'suspended') audioCtx.resume(); };
+    document.addEventListener('pointerdown', resumeAudio, { once: true });
+    document.addEventListener('keydown',     resumeAudio, { once: true });
+    function playHit() {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination); o.type = 'square';
+      o.frequency.setValueAtTime(480, audioCtx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(320, audioCtx.currentTime + 0.06);
+      g.gain.setValueAtTime(0.25, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+      o.start(); o.stop(audioCtx.currentTime + 0.08);
+    }
+    function playScore() {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination); o.type = 'sawtooth';
+      o.frequency.setValueAtTime(180, audioCtx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.4);
+      g.gain.setValueAtTime(0.35, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+      o.start(); o.stop(audioCtx.currentTime + 0.45);
+    }
+
+    // ── WebSocket ──────────────────────────────────────
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsPath = is2P ? '/ws2p' : '/ws';
+    const ws = new WebSocket(`${proto}//${location.host}${wsPath}`);
+
+    ws.onmessage = e => {
+      const next = JSON.parse(e.data);
+      if (next.role) myRole = next.role;
+
+      if (next.phase === 'waiting') { ovWaiting.classList.add('show'); return; }
+      if (next.phase === 'opponent_left') {
+        ovWaiting.classList.remove('show');
+        ovDisconnected.classList.add('show');
+        return;
+      }
+      ovWaiting.classList.remove('show');
+
+      if (next.event === 'hit')   playHit();
+      if (next.event === 'score') playScore();
+
+      if (next.phase === 'game_over' && state.phase !== 'game_over') {
+        if (is2P) {
+          const iWon = next.winner === myRole;
+          document.getElementById('ov-title').textContent = iWon ? '🎾 You Win!' : '💀 You Lose...';
+          document.getElementById('ov-sub').textContent   = next.winner === 'p1' ? 'P1 の勝ち！' : 'P2 の勝ち！';
+          document.getElementById('ov-hint').textContent  = 'どちらかが START で次のゲームへ';
+        } else {
+          const won = next.winner === 'player';
+          document.getElementById('ov-title').textContent = won ? '🎾 Game!' : '💀 Game...';
+          document.getElementById('ov-sub').textContent   = won ? 'あなたの勝ち！' : 'CPU の勝ち';
+          document.getElementById('ov-hint').textContent  = 'START で次のゲームへ';
+        }
+      }
+
+      ovGameover.classList.toggle('show', next.phase === 'game_over');
+      ovPause.classList.toggle('show',    next.phase === 'paused');
+      document.getElementById('btn-pause').classList.toggle('active', next.phase === 'paused');
+      state = next;
+    };
+
+    // ── キーボード入力 ──────────────────────────────────
+    const keys = {};
+    function send(extra = {}) {
+      let dir = 0;
+      if (keys['ArrowUp']   || keys['KeyW']) dir = -1;
+      if (keys['ArrowDown'] || keys['KeyS']) dir =  1;
+
+      const payload = { dir, ...extra };
+      // タッチ: 指のゲーム座標をそのまま送る → サーバーが直接セット
+      if (fingerGameY !== null) payload.target_y = fingerGameY;
+
+      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+    }
+
+    document.addEventListener('keydown', e => {
+      if (['ArrowUp','ArrowDown','KeyW','KeyS'].includes(e.code)) e.preventDefault();
+      if (e.code === 'Space') { e.preventDefault(); send({ restart: true }); return; }
+      if (e.code === 'KeyP')  { send({ pause: true }); return; }
+      if (!keys[e.code]) { keys[e.code] = true; send(); }
+    });
+    document.addEventListener('keyup', e => { keys[e.code] = false; send(); });
+
+    // ── タッチ操作 (ページ全体) ─────────────────────────
+    // デルタ方式: 指を置いた瞬間のパドル位置を基準に、
+    //             指の移動量をそのままパドルの移動量にする。
+    //             指を置いても飛ばない。スクロールと同じ感覚。
+
+    let anchorClientY = null;  // タッチ開始時の clientY
+    let anchorPaddleY = null;  // タッチ開始時のパドルY (ゲーム座標)
+    let fingerGameY   = null;  // 現在の目標パドルY
+
+    function getMyPaddleY() {
+      return (is2P && myRole === 'p2') ? state.cpu_y : state.player_y;
+    }
+
+    function overlayShown() {
+      return ovGameover.classList.contains('show') ||
+             ovPause.classList.contains('show')    ||
+             ovWaiting.classList.contains('show')  ||
+             ovDisconnected.classList.contains('show');
+    }
+
+    document.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse') return;
+      if (overlayShown()) return;
+      if (e.target.closest('button, a')) return;
+      e.preventDefault();
+      anchorClientY = e.clientY;
+      anchorPaddleY = getMyPaddleY();  // 今のパドル位置を記憶
+      fingerGameY   = anchorPaddleY;   // まだ動かない
+    }, { passive: false });
+
+    document.addEventListener('pointermove', e => {
+      if (anchorClientY === null) return;
+      e.preventDefault();
+      // 指の移動量 (スクリーンpx) → ゲーム座標に変換してパドルに加算
+      const rect  = canvas.getBoundingClientRect();
+      const scale = H / rect.height;
+      const delta = (e.clientY - anchorClientY) * scale;
+      fingerGameY = Math.max(PADDLE_H / 2,
+                    Math.min(H - PADDLE_H / 2, anchorPaddleY + delta));
+      send(); // 動いた瞬間に即送信 → タイマー不要
+    }, { passive: false });
+
+    function touchEnd() {
+      if (anchorClientY === null) return;
+      anchorClientY = anchorPaddleY = fingerGameY = null;
+      send(); // target_y なし → サーバーが保持位置をキープ
+    }
+    document.addEventListener('pointerup',     touchEnd);
+    document.addEventListener('pointercancel', touchEnd);
+
+    // ── コントローラーボタン ────────────────────────────
+    function tapOnly(id, fn) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('pointerdown', e => { e.preventDefault(); el.classList.add('active'); fn(); });
+      el.addEventListener('pointerup',   e => { e.preventDefault(); el.classList.remove('active'); });
+      el.addEventListener('pointercancel', e => { el.classList.remove('active'); });
+    }
+
+    tapOnly('btn-pause',  () => send({ pause: true }));
+    tapOnly('btn-start',  () => send({ restart: true }));
+    tapOnly('btn-select', () => {});
+
+    // ── 描画 ───────────────────────────────────────────
+    function render() {
+      ctx.fillStyle = '#080810'; ctx.fillRect(0, 0, W, H);
+
+      // センターライン
+      ctx.save(); ctx.setLineDash([8,8]); ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke(); ctx.restore();
+
+      // スコア
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.font = 'bold 18px Courier New'; ctx.textAlign = 'center';
+      if (is2P) {
+        const leftLabel  = myRole === 'p1' ? 'YOU (P1)' : 'P1';
+        const rightLabel = myRole === 'p2' ? 'YOU (P2)' : 'P2';
+        ctx.fillText(`${leftLabel}: ${state.games_player}`,  W/2-160, 28);
+        ctx.fillText(`${rightLabel}: ${state.games_cpu}`,    W/2+160, 28);
+      } else {
+        ctx.fillText(`Games: ${state.games_player}`, W/2-160, 28);
+        ctx.fillText(`Games: ${state.games_cpu}`,    W/2+160, 28);
+      }
+
+      // ポイント
+      ctx.font = 'bold 52px Courier New';
+      if (state.point_player === 'Deuce') {
+        ctx.fillStyle = 'rgba(255,220,100,0.9)'; ctx.fillText('Deuce', W/2, 88);
+      } else {
+        ctx.fillStyle = state.point_player === 'Adv' ? 'rgba(100,255,180,0.9)' : 'rgba(255,255,255,0.85)';
+        ctx.fillText(state.point_player, W/2-130, 88);
+        ctx.fillStyle = state.point_cpu === 'Adv' ? 'rgba(100,255,180,0.9)' : 'rgba(255,255,255,0.85)';
+        ctx.fillText(state.point_cpu,    W/2+130, 88);
+      }
+
+      // パドル (自分は水色ハイライト)
+      const leftIsMe  = !is2P || myRole === 'p1';
+      const rightIsMe = is2P && myRole === 'p2';
+      ctx.fillStyle = leftIsMe  ? '#7cf' : '#fff';
+      roundRect(PLAYER_X, state.player_y - PADDLE_H/2, PADDLE_W, PADDLE_H, 4);
+      ctx.fillStyle = rightIsMe ? '#7cf' : '#fff';
+      roundRect(CPU_X,    state.cpu_y    - PADDLE_H/2, PADDLE_W, PADDLE_H, 4);
+
+      // ボール
+      const grd = ctx.createRadialGradient(state.ball_x,state.ball_y,0,state.ball_x,state.ball_y,BALL_R*3);
+      grd.addColorStop(0,'rgba(255,255,255,0.4)'); grd.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(state.ball_x,state.ball_y,BALL_R*3,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(state.ball_x,state.ball_y,BALL_R,0,Math.PI*2); ctx.fill();
+
+      // Starting カウントダウン演出
+      if (state.phase === 'starting' && state.countdown !== undefined) {
+        const t = state.countdown; // 90→0
+        const isReady = t > 30;
+        const label = isReady ? 'READY' : 'GO!';
+        // フェードイン/アウト
+        const alpha = isReady
+          ? Math.min(1, (90 - t) / 15)          // READYはすっと出る
+          : Math.min(1, (30 - t) / 8);           // GOはパッと出る
+        const scale = isReady ? 1 : (1 + (30 - t) / 30 * 0.3); // GOはちょっと拡大
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(W / 2, H / 2);
+        ctx.scale(scale, scale);
+        ctx.font = `bold ${isReady ? 64 : 80}px 'Courier New', monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // 光彩
+        ctx.shadowColor = isReady ? 'rgba(100,200,255,0.8)' : 'rgba(255,220,80,0.9)';
+        ctx.shadowBlur  = 32;
+        ctx.fillStyle   = isReady ? '#7df' : '#ffe566';
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
+      }
+
+      requestAnimationFrame(render);
+    }
+    function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.fill(); }
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Breakout — Rust Sandbox</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    html, body { overflow: hidden; height: 100%; }
+    body {
+      background: #0a0a14;
+      color: #e2e8f0;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 16px 8px;
+      touch-action: none;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    header {
+      width: 100%;
+      max-width: 820px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    header a {
+      color: #64748b;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+    header a:hover { color: #94a3b8; }
+    h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #f8f8f8;
+    }
+    #hud {
+      width: 100%;
+      max-width: 820px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      padding: 0 4px;
+    }
+    #score-val, #hi-val, #lives-val { color: #f8f8f8; font-weight: 700; font-size: 1.05rem; }
+    #hi-disp { text-align: center; }
+    canvas {
+      width: 100%;
+      max-width: 820px;
+      height: auto;
+      display: block;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #msg {
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: #64748b;
+      min-height: 1.4em;
+      text-align: center;
+    }
+
+    /* ── モバイル: スライドゾーン ── */
+    #ctrl {
+      display: none;
+      margin-top: 12px;
+      width: 100%;
+      max-width: 820px;
+      user-select: none;
+      touch-action: none;
+    }
+    @media (pointer: coarse) { #ctrl { display: block; } }
+    .slide-hint {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #475569;
+      padding: 10px 0 4px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* ── ゲーム終了オーバーレイ ── */
+    #hs-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5,5,18,0.92);
+      z-index: 20;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+      touch-action: manipulation;
+    }
+    #hs-overlay.show { display: flex; }
+    #hs-box {
+      background: #13132a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 28px 22px 22px;
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    #hs-phase {
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      color: #f8f8f8;
+    }
+    #hs-score-disp {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 1rem;
+    }
+    #hs-badge {
+      text-align: center;
+      color: #fbbf24;
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: none;
+    }
+    #hs-badge.show { display: block; }
+
+    /* 名前入力エリア */
+    #hs-input-area {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #hs-input-area.show { display: flex; }
+    #hs-name {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 8px;
+      color: #f8f8f8;
+      font-size: 1rem;
+      padding: 10px 14px;
+      outline: none;
+      width: 100%;
+      touch-action: auto;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    #hs-name:focus { border-color: #6366f1; }
+    #hs-submit {
+      background: #6366f1;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 11px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    #hs-submit:active { background: #4f46e5; }
+    #hs-rank-msg {
+      text-align: center;
+      color: #fbbf24;
+      font-size: 0.9rem;
+      min-height: 1.2em;
+    }
+
+    /* ランキング表 */
+    .hs-section-label {
+      color: #475569;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .hs-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 2px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.9rem;
+    }
+    .hs-row:last-child { border-bottom: none; }
+    .hs-row.highlight { background: rgba(99,102,241,0.12); border-radius: 6px; padding: 6px 8px; }
+    .hs-rank { color: #64748b; width: 22px; text-align: right; flex-shrink: 0; font-size: 0.8rem; }
+    .hs-rank.gold   { color: #fbbf24; }
+    .hs-rank.silver { color: #94a3b8; }
+    .hs-rank.bronze { color: #c2855a; }
+    .hs-name-cell { flex: 1; color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hs-score-cell { color: #f8f8f8; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .hs-empty { color: #475569; font-size: 0.85rem; text-align: center; padding: 14px 0; }
+
+    /* もう一度ボタン */
+    #hs-again {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #64748b;
+      font-size: 0.9rem;
+      padding: 11px;
+      cursor: pointer;
+      text-align: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #hs-again:active { background: rgba(255,255,255,0.1); color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/">← Back</a>
+    <h1>Breakout</h1>
+  </header>
+
+  <div id="hud">
+    <div>SCORE <span id="score-val">0</span></div>
+    <div id="hi-disp">HIGH <span id="hi-val">—</span></div>
+    <div>LIVES <span id="lives-val">❤️❤️❤️</span></div>
+  </div>
+
+  <canvas id="c" width="800" height="600"></canvas>
+  <div id="msg">Space / Tap to launch</div>
+
+  <div id="ctrl">
+    <div class="slide-hint">← スライドでパドル操作 / タップで発射 →</div>
+  </div>
+
+  <!-- ゲーム終了オーバーレイ -->
+  <div id="hs-overlay">
+    <div id="hs-box">
+      <div id="hs-phase">GAME OVER</div>
+      <div id="hs-score-disp">SCORE: 0</div>
+      <div id="hs-badge">🏆 ハイスコア！</div>
+
+      <div id="hs-input-area">
+        <input id="hs-name" type="text" maxlength="20" placeholder="なまえを入れてね（20文字まで）">
+        <button id="hs-submit">登録する</button>
+      </div>
+      <div id="hs-rank-msg"></div>
+
+      <div class="hs-section-label">RANKING</div>
+      <div id="hs-table"></div>
+
+      <div id="hs-again">Space / タップでもう一度</div>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    const W = 800, H = 600;
+
+    // ── ブロック定数（サーバーと同期）──
+    const BRICK_COLS = 10, BRICK_ROWS = 6;
+    const BRICK_W = 72, BRICK_H = 22;
+    const BRICK_GAP_X = 8, BRICK_GAP_Y = 8;
+    const BRICK_START_X = 4, BRICK_START_Y = 50;
+    const PADDLE_W = 100, PADDLE_H = 12;
+    const PADDLE_Y = H - 40;
+    const BALL_R = 8;
+
+    // 行ごとのブロック色
+    const BRICK_COLORS = [
+      '#ef4444', '#f97316', '#eab308',
+      '#22c55e', '#3b82f6', '#8b5cf6',
+    ];
+
+    // ── WebSocket ──
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${location.host}/ws/breakout`);
+
+    let state = null;
+    let dir = 0;
+    let launched = false;
+
+    ws.onmessage = e => { state = JSON.parse(e.data); };
+    ws.onclose   = () => { document.getElementById('msg').textContent = '接続が切れました。再読込してください。'; };
+
+    // ── 入力送信 ──
+    const sendInput = () => {
+      if (ws.readyState !== 1) return;
+      const msg = { dir, launch: launched };
+      if (fingerGameX !== null) msg.paddle_x = fingerGameX;
+      if (launched) launched = false;
+      ws.send(JSON.stringify(msg));
+    };
+
+    // ── キーボード ──
+    const keys = {};
+    document.addEventListener('keydown', e => {
+      keys[e.code] = true;
+      if (e.code === 'Space') {
+        if (document.activeElement === document.getElementById('hs-name')) return;
+        e.preventDefault();
+        if (overlayVisible()) { playAgain(); return; }
+        launched = true;
+      }
+      if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') e.preventDefault();
+    });
+    document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+    // ── マウス操作（パドル直接移動）──
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = W / rect.width;
+      const px = (e.clientX - rect.left) * scaleX;
+      if (ws.readyState !== 1) return;
+      ws.send(JSON.stringify({ dir: 0, launch: false, paddle_x: px }));
+    });
+    canvas.addEventListener('click', () => {
+      if (!overlayVisible()) launched = true;
+    });
+
+    // ── タッチ: pong スタイル スライド ──
+    let anchorClientX = null;
+    let anchorPaddleX = null;
+    let fingerGameX   = null;
+
+    document.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse') return;
+      if (e.target.closest('a')) return;
+      if (overlayVisible()) return;
+      e.preventDefault();
+      anchorClientX = e.clientX;
+      anchorPaddleX = state ? state.paddle_x : W / 2;
+      fingerGameX   = anchorPaddleX;
+    }, { passive: false });
+
+    document.addEventListener('pointermove', e => {
+      if (anchorClientX === null) return;
+      e.preventDefault();
+      const rect  = canvas.getBoundingClientRect();
+      const scale = W / rect.width;
+      const delta = (e.clientX - anchorClientX) * scale;
+      fingerGameX = Math.max(PADDLE_W / 2,
+                    Math.min(W - PADDLE_W / 2, anchorPaddleX + delta));
+      // 動いた瞬間に即送信（rAF を待たない）
+      if (ws.readyState === 1) {
+        ws.send(JSON.stringify({ dir: 0, launch: false, paddle_x: fingerGameX }));
+      }
+    }, { passive: false });
+
+    const touchEnd = e => {
+      if (overlayVisible()) return;
+      if (anchorClientX === null) return;
+      const dist = Math.abs((e ? e.clientX : anchorClientX) - anchorClientX);
+      if (dist < 10) launched = true; // タップ = 発射
+      anchorClientX = anchorPaddleX = fingerGameX = null;
+    };
+    document.addEventListener('pointerup',     touchEnd);
+    document.addEventListener('pointercancel', touchEnd);
+
+    // ── 音 ──
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const beep = (type, freq1, freq2, dur, vol = 0.15) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq1, ac.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(freq2, ac.currentTime + dur);
+      gain.gain.setValueAtTime(vol, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
+      osc.start(); osc.stop(ac.currentTime + dur);
+    };
+
+    let lastEvent = null;
+    const handleEvent = ev => {
+      if (!ev || ev === lastEvent) return;
+      lastEvent = ev;
+      if (ev === 'hit_brick')   beep('square',   800, 400, 0.06);
+      if (ev === 'hit_wall')    beep('square',   440, 300, 0.05, 0.08);
+      if (ev === 'hit_paddle')  beep('square',   520, 380, 0.07);
+      if (ev === 'miss')        beep('sawtooth', 200,  60, 0.4,  0.2);
+    };
+
+    // ── ハイスコア ──
+    let minScore = 0;
+    let scoreSubmitted = false;
+    let prevPhase = null;
+
+    function overlayVisible() {
+      return document.getElementById('hs-overlay').classList.contains('show');
+    }
+
+    function escHtml(str) {
+      return String(str).replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function rankClass(i) {
+      return i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+    }
+
+    function renderTable(scores, highlightScore) {
+      const el = document.getElementById('hs-table');
+      if (!scores || scores.length === 0) {
+        el.innerHTML = '<div class="hs-empty">まだ記録なし</div>';
+        return;
+      }
+      el.innerHTML = scores.map((s, i) => {
+        const hi = highlightScore !== undefined && s.score === highlightScore && s === scores.find(x => x.score === highlightScore);
+        return `<div class="hs-row${hi ? ' highlight' : ''}">
+          <div class="hs-rank ${rankClass(i)}">${i + 1}</div>
+          <div class="hs-name-cell">${escHtml(s.name)}</div>
+          <div class="hs-score-cell">${s.score}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function updateHiVal(scores) {
+      const v = scores && scores.length > 0 ? scores[0].score : '—';
+      document.getElementById('hi-val').textContent = v;
+    }
+
+    function showStartOverlay() {
+      document.getElementById('hs-phase').textContent = 'BREAKOUT';
+      document.getElementById('hs-score-disp').style.display = 'none';
+      document.getElementById('hs-badge').classList.remove('show');
+      document.getElementById('hs-input-area').classList.remove('show');
+      document.getElementById('hs-rank-msg').textContent = '';
+      document.getElementById('hs-again').textContent = 'ゲームを始める';
+      document.getElementById('hs-table').innerHTML = '<div class="hs-empty">読み込み中...</div>';
+      document.getElementById('hs-overlay').classList.add('show');
+    }
+
+        async function fetchScores() {
+      try {
+        const res = await fetch('/api/breakout/scores');
+        const data = await res.json();
+        minScore = data.min_score;
+        return data;
+      } catch (e) { return null; }
+    }
+
+    async function showEndOverlay(phase, score) {
+      scoreSubmitted = false;
+      document.getElementById('hs-score-disp').style.display = '';
+      document.getElementById('hs-again').textContent = 'Space / タップでもう一度';
+      const data = await fetchScores();
+      const scores = data ? data.scores : [];
+      updateHiVal(scores);
+
+      document.getElementById('hs-phase').textContent =
+        phase === 'clear' ? 'CLEAR! 🎉' : 'GAME OVER';
+      document.getElementById('hs-score-disp').textContent = `SCORE: ${score}`;
+
+      const isHs = score > minScore;
+      document.getElementById('hs-badge').classList.toggle('show', isHs);
+      document.getElementById('hs-input-area').classList.toggle('show', isHs);
+      document.getElementById('hs-rank-msg').textContent = '';
+      renderTable(scores);
+
+      document.getElementById('hs-overlay').classList.add('show');
+      if (isHs) {
+        document.getElementById('hs-name').value = '';
+        setTimeout(() => document.getElementById('hs-name').focus(), 100);
+      }
+    }
+
+    function playAgain() {
+      document.getElementById('hs-name').blur();
+      document.getElementById('hs-overlay').classList.remove('show');
+      window.scrollTo(0, 0);
+      launched = true;
+    }
+
+    // 名前登録
+    document.getElementById('hs-submit').addEventListener('click', async () => {
+      const name = document.getElementById('hs-name').value.trim();
+      if (!name) return;
+      const score = state ? state.score : 0;
+      try {
+        const res = await fetch('/api/breakout/scores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, score }),
+        });
+        const data = await res.json();
+        scoreSubmitted = true;
+        minScore = data.min_score;
+        updateHiVal(data.scores);
+        document.getElementById('hs-input-area').classList.remove('show');
+        if (data.rank !== null) {
+          document.getElementById('hs-rank-msg').textContent =
+            `${data.rank}位 で登録したよ！`;
+        }
+        renderTable(data.scores, score);
+      } catch (e) {
+        document.getElementById('hs-rank-msg').textContent = '登録に失敗した…';
+      }
+    });
+
+    document.getElementById('hs-name').addEventListener('keydown', e => {
+      if (e.code === 'Enter') document.getElementById('hs-submit').click();
+    });
+
+    document.getElementById('hs-again').addEventListener('click', playAgain);
+    document.getElementById('hs-again').addEventListener('pointerdown', e => e.stopPropagation());
+
+    // ── 描画 ──
+    const drawBricks = bricks => {
+      for (let i = 0; i < bricks.length; i++) {
+        if (!bricks[i]) continue;
+        const col = i % BRICK_COLS;
+        const row = Math.floor(i / BRICK_COLS);
+        const x = BRICK_START_X + col * (BRICK_W + BRICK_GAP_X);
+        const y = BRICK_START_Y + row * (BRICK_H + BRICK_GAP_Y);
+        ctx.fillStyle = BRICK_COLORS[row];
+        ctx.beginPath();
+        ctx.roundRect(x, y, BRICK_W, BRICK_H, 3);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.beginPath();
+        ctx.roundRect(x + 2, y + 2, BRICK_W - 4, 5, 2);
+        ctx.fill();
+      }
+    };
+
+    const drawPaddle = px => {
+      const x = px - PADDLE_W / 2;
+      const y = PADDLE_Y - PADDLE_H / 2;
+      const grad = ctx.createLinearGradient(x, y, x, y + PADDLE_H);
+      grad.addColorStop(0, '#a5b4fc');
+      grad.addColorStop(1, '#6366f1');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(x, y, PADDLE_W, PADDLE_H, 6);
+      ctx.fill();
+    };
+
+    const drawBall = (bx, by) => {
+      const grad = ctx.createRadialGradient(bx - 2, by - 2, 1, bx, by, BALL_R);
+      grad.addColorStop(0, '#fff');
+      grad.addColorStop(1, '#a5b4fc');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(bx, by, BALL_R, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = '#818cf8';
+      ctx.beginPath();
+      ctx.arc(bx, by, BALL_R + 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    };
+
+    const drawOverlay = (lines, sub) => {
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#f8f8f8';
+      ctx.font = 'bold 48px sans-serif';
+      ctx.fillText(lines[0], W / 2, H / 2 - 20);
+      if (lines[1]) {
+        ctx.font = '28px sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(lines[1], W / 2, H / 2 + 28);
+      }
+      if (sub) {
+        ctx.font = '18px sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(sub, W / 2, H / 2 + 65);
+      }
+      ctx.textAlign = 'left';
+    };
+
+    const livesHtml = n => '❤️'.repeat(n) + '🖤'.repeat(Math.max(0, 3 - n));
+
+    const loop = () => {
+      requestAnimationFrame(loop);
+
+      // キーボード dir（タッチ中は fingerGameX 優先なので dir=0 でも問題なし）
+      if (keys['ArrowLeft'])  dir = -1;
+      else if (keys['ArrowRight']) dir =  1;
+      else dir = 0;
+
+      sendInput();
+
+      if (!state) {
+        ctx.fillStyle = '#0a0a14';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#475569';
+        ctx.font = '18px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('接続中...', W / 2, H / 2);
+        ctx.textAlign = 'left';
+        return;
+      }
+
+      handleEvent(state.event);
+
+      // HUD 更新
+      document.getElementById('score-val').textContent = state.score;
+      document.getElementById('lives-val').innerHTML   = livesHtml(state.lives);
+
+      // フェーズ変化検知 → オーバーレイ表示
+      if (state.phase !== prevPhase) {
+        if (state.phase === 'game_over' || state.phase === 'clear') {
+          showEndOverlay(state.phase, state.score);
+        }
+        prevPhase = state.phase;
+      }
+
+      // 背景
+      ctx.fillStyle = '#0a0a14';
+      ctx.fillRect(0, 0, W, H);
+
+      // 天井ライン
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, BRICK_START_Y - 10);
+      ctx.lineTo(W, BRICK_START_Y - 10);
+      ctx.stroke();
+
+      drawBricks(state.bricks);
+      drawPaddle(fingerGameX !== null ? fingerGameX : state.paddle_x);
+      drawBall(state.ball_x, state.ball_y);
+
+      // キャンバス上のフェーズ表示（オーバーレイ非表示時のみ）
+      const msg = document.getElementById('msg');
+      if (!overlayVisible()) {
+        if (state.phase === 'ready') {
+          msg.textContent = 'Space / クリック / タップで発射';
+        } else if (state.phase === 'playing') {
+          msg.textContent = '';
+        } else if (state.phase === 'game_over') {
+          drawOverlay(['GAME OVER', `SCORE: ${state.score}`], '');
+          msg.textContent = '';
+        } else if (state.phase === 'clear') {
+          drawOverlay(['CLEAR! 🎉', `SCORE: ${state.score}`], '');
+          msg.textContent = '';
+        }
+      }
+    };
+
+    // 起動時: スタート画面 → スコア取得 → テーブルと HI 更新
+    showStartOverlay();
+    fetchScores().then(data => {
+      if (data) {
+        renderTable(data.scores);
+        updateHiVal(data.scores);
+      }
+    });
+    loop();
+  })();
+  </script>
+</body>
+</html>

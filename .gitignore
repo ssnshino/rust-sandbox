@@ -1,0 +1,3 @@
+app/target/
+*_scores.json
+.env
