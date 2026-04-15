@@ -376,19 +376,22 @@ pub async fn run(mut socket: WebSocket, scores: Arc<Mutex<ScoreBoard>>) {
                 if let Some(ref mut g) = gs {
                     if g.phase == Phase::Playing {
                         g.tick();
-                        if socket.send(Message::Text(g.to_json())).await.is_err() { break; }
                         if g.phase == Phase::GameOver && !gameover_sent {
+                            // Send a single combined message so the client never misses gameover
                             gameover_sent = true;
                             let msg_str = {
                                 let sb=scores.lock().unwrap();
                                 let score=g.player.score;
                                 serde_json::json!({
                                     "type":"gameover","score":score,
+                                    "event":g.event,
                                     "qualifies":sb.qualifies(score),
                                     "scores":sb.list(),"min_score":sb.min_score()
                                 }).to_string()
                             };
                             let _ = socket.send(Message::Text(msg_str)).await;
+                        } else {
+                            if socket.send(Message::Text(g.to_json())).await.is_err() { break; }
                         }
                     }
                 }

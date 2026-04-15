@@ -171,7 +171,7 @@ function connect() {
       }
     }
     else if(msg.type==='state')  { handleState(msg); }
-    else if(msg.type==='gameover') { showGameover(msg); }
+    else if(msg.type==='gameover') { if(msg.event) handleEvent(msg.event); showGameover(msg); }
     else if(msg.type==='submitted') { myRank=msg.rank; renderScoresTable('go-tbody',msg.scores,myRank); }
   };
   ws.onclose=()=>{ setTimeout(connect,2000); };
