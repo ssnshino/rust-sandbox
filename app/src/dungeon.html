@@ -492,8 +492,10 @@ function escHtml(s){
 // ── Keyboard / touch input ─────────────────────────────────────────────────────
 const KEY_MAP={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',
                ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+const DIR_DELTA={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
 let repeatTimer=null;
-let activeRepeatDir=null;
+let requestedDir=null; // スティック/キーが示す希望方向
+let currentDir=null;   // 実際に進んでいる方向（慣性）
 let puniconPointerId=null;
 const PUNICON_DEADZONE=18;
 const PUNICON_RADIUS=44;
@@ -503,18 +505,47 @@ const puniconStick=document.getElementById('punicon-stick');
 function sendDir(dir){ SFX.step(); send({type:'move',dir}); }
 function sendAct(){ SFX.act(); send({type:'act'}); }
 
+// クライアント側の通行可能チェック（サーバー確定前の予測用）
+function isPassable(x,y){
+  if(!grid||x<0||y<0||x>=COLS||y>=ROWS) return false;
+  if(grid[y][x]!==1) return false;
+  if(state&&state.holes&&state.holes.some(h=>h.x===x&&h.y===y)) return false;
+  return true;
+}
+
+// ターンバッファリング付き移動: requestedDir を優先し、無理なら currentDir を維持
+function doMove(){
+  if(!gameActive||!state) return;
+  const px=state.player.x, py=state.player.y;
+  if(requestedDir){
+    const [dx,dy]=DIR_DELTA[requestedDir];
+    if(isPassable(px+dx,py+dy)){
+      currentDir=requestedDir;
+      sendDir(requestedDir);
+      return;
+    }
+  }
+  if(currentDir){
+    const [dx,dy]=DIR_DELTA[currentDir];
+    if(isPassable(px+dx,py+dy)){
+      sendDir(currentDir);
+      return;
+    }
+    currentDir=null; // 壁に当たったら慣性リセット
+  }
+}
+
 function startRepeat(dir){
-  if(!dir) return;
-  if(activeRepeatDir===dir && repeatTimer) return;
-  activeRepeatDir=dir;
-  sendDir(dir);
-  clearInterval(repeatTimer);
-  repeatTimer=setInterval(()=>sendDir(activeRepeatDir),140);
+  requestedDir=dir;
+  if(repeatTimer) return; // タイマー継続中は方向更新のみ（リセットしない）
+  doMove();
+  repeatTimer=setInterval(doMove,165);
 }
 function stopRepeat(){
+  requestedDir=null;
+  currentDir=null;
   clearInterval(repeatTimer);
   repeatTimer=null;
-  activeRepeatDir=null;
 }
 function directionFromVector(dx,dy){
   if(Math.hypot(dx,dy)<PUNICON_DEADZONE) return null;
