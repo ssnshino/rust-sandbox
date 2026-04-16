@@ -23,18 +23,21 @@ struct AppState {
     pong_2p_players:     Arc<AtomicUsize>,
     breakout_players:    Arc<AtomicUsize>,
     dungeon_players:     Arc<AtomicUsize>,
+    dungeon_room:        dungeon::SharedRoom,
 }
 
 #[tokio::main]
 async fn main() {
+    let dungeon_scores = Arc::new(Mutex::new(scores::ScoreBoard::load("dungeon_scores.json")));
     let state = AppState {
         pong:                Arc::new(game::AppState::new()),
         scores:              Arc::new(Mutex::new(scores::ScoreBoard::load("breakout_scores.json"))),
-        dungeon_scores:      Arc::new(Mutex::new(scores::ScoreBoard::load("dungeon_scores.json"))),
+        dungeon_scores:      Arc::clone(&dungeon_scores),
         pong_single_players: Arc::new(AtomicUsize::new(0)),
         pong_2p_players:     Arc::new(AtomicUsize::new(0)),
         breakout_players:    Arc::new(AtomicUsize::new(0)),
         dungeon_players:     Arc::new(AtomicUsize::new(0)),
+        dungeon_room:        Arc::new(Mutex::new(dungeon::Room::new(dungeon_scores))),
     };
     let app = Router::new()
         .route("/",                    get(index))
@@ -72,7 +75,7 @@ async fn ws_breakout(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl In
     ws.on_upgrade(move |socket| breakout::run(socket, s.breakout_players))
 }
 async fn ws_dungeon(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| dungeon::run(socket, s.dungeon_scores, s.dungeon_players))
+    ws.on_upgrade(move |socket| dungeon::run(socket, s.dungeon_scores, s.dungeon_players, s.dungeon_room))
 }
 
 async fn get_status(State(s): State<AppState>) -> impl IntoResponse {
