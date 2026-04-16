@@ -1,7 +1,7 @@
 use axum::extract::ws::{Message, WebSocket};
 use serde::{Deserialize, Serialize};
 use std::sync::{
-    atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering},
+    atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicUsize, Ordering},
     Arc,
 };
 use tokio::sync::{mpsc, watch, Mutex, Notify};
@@ -23,6 +23,19 @@ const SERVE_NORMAL: f64 = BALL_SPEED;
 const SERVE_FAST: f64 = BALL_SPEED * 1.4;
 
 const NO_TARGET: u64 = u64::MAX;
+
+struct PlayerCountGuard(Arc<AtomicUsize>);
+impl PlayerCountGuard {
+    fn new(counter: Arc<AtomicUsize>) -> Self {
+        counter.fetch_add(1, Ordering::Relaxed);
+        Self(counter)
+    }
+}
+impl Drop for PlayerCountGuard {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::Relaxed);
+    }
+}
 
 fn pack_target(v: Option<f64>) -> u64 {
     v.map(|f| f.to_bits()).unwrap_or(NO_TARGET)
@@ -71,6 +84,10 @@ struct WaitingPlayer {
 
 impl AppState {
     pub fn new() -> Self { Self { waiting: Mutex::new(None) } }
+    pub async fn waiting_count(&self) -> usize {
+        let waiting = self.waiting.lock().await;
+        usize::from(waiting.is_some())
+    }
 }
 
 // ── ゲームロジック ─────────────────────────────────────
@@ -323,7 +340,8 @@ impl Game {
 //
 // → socket.send() の遅延がゲームループを止めない。プチフリーズ解消。
 
-pub async fn run_1p(mut socket: WebSocket) {
+pub async fn run_1p(mut socket: WebSocket, player_count: Arc<AtomicUsize>) {
+    let _player_count_guard = PlayerCountGuard::new(player_count);
     let dir_a      = Arc::new(AtomicI32::new(0));
     let restart_a  = Arc::new(AtomicBool::new(false));
     let pause_a    = Arc::new(AtomicBool::new(false));
@@ -383,7 +401,8 @@ pub async fn run_1p(mut socket: WebSocket) {
 
 // ── 2P マッチメイキング ────────────────────────────────
 
-pub async fn handle_2p(socket: WebSocket, state: Arc<AppState>) {
+pub async fn handle_2p(socket: WebSocket, state: Arc<AppState>, player_count: Arc<AtomicUsize>) {
+    let _player_count_guard = PlayerCountGuard::new(player_count);
     let my_dir      = Arc::new(AtomicI32::new(0));
     let my_restart  = Arc::new(AtomicBool::new(false));
     let my_pause    = Arc::new(AtomicBool::new(false));

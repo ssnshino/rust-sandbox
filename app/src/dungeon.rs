@@ -3,12 +3,14 @@ use axum::extract::ws::{Message, WebSocket};
 use serde::Deserialize;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use tokio::time::{interval, Duration};
 
 use crate::dungeon_gen::{generate_for_floor, COLS, ROWS};
 use crate::scores::ScoreBoard;
 
 const MAX_HP: u8 = 5;
+const BASE_EXP_NEXT: u32 = 30;
 const DIG_TICKS: u32 = 5;
 const FILL_TICKS: u32 = 5;
 const HOLE_LIFE: u32 = 60;
@@ -20,6 +22,19 @@ const ANGRY_DIST: i32 = 6;
 const TICK_MS: u64 = 150;
 const INITIAL_ALIENS: usize = 4;
 const RESPAWN_TICKS: u32 = 40;
+
+struct PlayerCountGuard(Arc<AtomicUsize>);
+impl PlayerCountGuard {
+    fn new(counter: Arc<AtomicUsize>) -> Self {
+        counter.fetch_add(1, Ordering::Relaxed);
+        Self(counter)
+    }
+}
+impl Drop for PlayerCountGuard {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::Relaxed);
+    }
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Dir { Up, Down, Left, Right }
@@ -35,7 +50,9 @@ impl Dir {
     }
 }
 
-struct Player { x:usize, y:usize, hp:u8, score:u32, dir:Dir, invincible:u32 }
+struct Player { x:usize, y:usize, hp:u8, max_hp:u8, score:u32, level:u32, exp:u32, exp_next:u32, dir:Dir, invincible:u32 }
+
+struct PlayerProfile { user_id: Option<String>, name: String }
 
 #[derive(Clone, PartialEq)]
 enum HoleState {
@@ -55,6 +72,7 @@ enum Phase { Playing, GameOver }
 struct Game {
     grid: Vec<Vec<u8>>,
     player: Player,
+    profile: PlayerProfile,
     aliens: Vec<Alien>,
     holes: Vec<Hole>,
     tick: u64,
@@ -107,13 +125,13 @@ fn now_ns() -> u64 {
 
 // ── Game ──────────────────────────────────────────────────────────────────────
 impl Game {
-    fn new(seed: u64) -> Self {
+    fn new(seed: u64, profile: PlayerProfile) -> Self {
         let grid = generate_for_floor(seed, 1);
         let start = pick_start(&grid, seed);
         let goal  = bfs_farthest(&grid, start.0, start.1);
-        let player = Player { x:start.0,y:start.1,hp:MAX_HP,score:0,dir:Dir::Down,invincible:0 };
+        let player = Player { x:start.0,y:start.1,hp:MAX_HP,max_hp:MAX_HP,score:0,level:1,exp:0,exp_next:BASE_EXP_NEXT,dir:Dir::Down,invincible:0 };
         let aliens = make_aliens(&grid, 1, start);
-        Game { grid,player,aliens,holes:Vec::new(),tick:0,next_hole_id:0,
+        Game { grid,player,profile,aliens,holes:Vec::new(),tick:0,next_hole_id:0,
                phase:Phase::Playing,event:None,kills:0,
                floor:1,goal,start,new_grid_ready:false,floor_bonus:0,cleared_floor:0 }
     }
@@ -130,6 +148,7 @@ impl Game {
         self.player.x = self.start.0;
         self.player.y = self.start.1;
         self.player.dir = Dir::Down;
+        self.player.hp = self.player.hp.min(self.player.max_hp);
         self.holes.clear();
         self.aliens = make_aliens(&self.grid, self.floor, self.start);
         self.new_grid_ready = true;
@@ -140,6 +159,19 @@ impl Game {
     }
     fn hole_at(&self, x:usize, y:usize) -> Option<usize> {
         self.holes.iter().position(|h| h.x==x&&h.y==y)
+    }
+
+
+    fn gain_exp(&mut self, amount: u32) {
+        self.player.exp += amount;
+        while self.player.exp >= self.player.exp_next {
+            self.player.exp -= self.player.exp_next;
+            self.player.level += 1;
+            self.player.max_hp = self.player.max_hp.saturating_add(1).min(9);
+            self.player.hp = self.player.max_hp;
+            self.player.exp_next += 15;
+            self.event = Some("levelup");
+        }
     }
 
     fn bfs_next(&self, fx:usize, fy:usize, tx:usize, ty:usize) -> Option<(usize,usize)> {
@@ -243,7 +275,10 @@ impl Game {
                                 a.state=AlienState::Dead(RESPAWN_TICKS);
                                 self.kills+=1;
                                 self.player.score+=10+self.kills*5;
-                                self.event=Some("kill");
+                                self.gain_exp(8);
+                                if self.event != Some("levelup") {
+                                    self.event=Some("kill");
+                                }
                             }
                         }
                         true
@@ -342,7 +377,8 @@ impl Game {
         serde_json::json!({
             "type":"state",
             "phase":if self.phase==Phase::Playing{"playing"}else{"gameover"},
-            "player":{"x":p.x,"y":p.y,"hp":p.hp,"score":p.score,"dir":p.dir.name(),"inv":p.invincible>0},
+            "profile":{"name":self.profile.name,"player_id":self.profile.user_id},
+            "player":{"x":p.x,"y":p.y,"hp":p.hp,"max_hp":p.max_hp,"score":p.score,"level":p.level,"exp":p.exp,"exp_next":p.exp_next,"dir":p.dir.name(),"inv":p.invincible>0},
             "aliens":aliens,"holes":holes,"event":self.event,"tick":self.tick,
             "floor":self.floor,"goal":{"x":self.goal.0,"y":self.goal.1}
         }).to_string()
@@ -385,10 +421,18 @@ fn make_aliens(grid: &Vec<Vec<u8>>, floor: u32, start: (usize, usize)) -> Vec<Al
 }
 
 #[derive(Deserialize)]
-#[serde(tag="type",rename_all="lowercase")]
-enum ClientMsg { Start, Move{dir:String}, Act, Submit{name:String,score:u32}, Restart }
+struct StartProfile {
+    #[serde(default)]
+    player_id: Option<String>,
+    name: String,
+}
 
-pub async fn run(mut socket: WebSocket, scores: Arc<Mutex<ScoreBoard>>) {
+#[derive(Deserialize)]
+#[serde(tag="type",rename_all="lowercase")]
+enum ClientMsg { Start { profile: StartProfile }, Move{dir:String}, Act, Submit{name:String,score:u32}, Restart }
+
+pub async fn run(mut socket: WebSocket, scores: Arc<Mutex<ScoreBoard>>, player_count: Arc<AtomicUsize>) {
+    let _player_count_guard = PlayerCountGuard::new(player_count);
     let session_id = now_ns();
     eprintln!("[dungeon] session_open id={}", session_id);
     send_title(&mut socket, &scores).await;
@@ -452,10 +496,17 @@ pub async fn run(mut socket: WebSocket, scores: Arc<Mutex<ScoreBoard>>) {
                 };
                 let Ok(cm) = serde_json::from_str::<ClientMsg>(&txt) else { continue; };
                 match cm {
-                    ClientMsg::Start => {
+                    ClientMsg::Start { profile } => {
+                        let name = profile.name.trim();
+                        if name.is_empty() {
+                            continue;
+                        }
                         gameover_sent = false;
                         let seed = now_ns();
-                        let g = Game::new(seed);
+                        let g = Game::new(seed, PlayerProfile {
+                            user_id: profile.player_id,
+                            name: name.to_string(),
+                        });
                         if socket.send(Message::Text(g.grid_json())).await.is_err() { break; }
                         if socket.send(Message::Text(g.to_json())).await.is_err() { break; }
                         gs = Some(g);
