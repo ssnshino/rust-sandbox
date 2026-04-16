@@ -10,11 +10,12 @@ use crate::dungeon_gen::{generate_for_floor, COLS, ROWS};
 use crate::scores::ScoreBoard;
 
 pub const MAX_PLAYERS: usize = 4;
-const MAX_HP: u8 = 5;
+const HP_UNIT: u16 = 20;
+const MAX_HP: u16 = 5 * HP_UNIT;
 const BASE_EXP_NEXT: u32 = 30;
 const POISON_TICKS: u32 = 180;
 const POISON_DAMAGE_INTERVAL: u32 = 90;
-const HEAL_AMOUNT: u8 = 1;
+const HEAL_AMOUNT: u16 = HP_UNIT;
 const DIG_TICKS: u32 = 5;
 const FILL_TICKS: u32 = 5;
 const HOLE_LIFE: u32 = 60;
@@ -42,6 +43,21 @@ fn now_ns() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default().as_nanos() as u64
+}
+
+fn hp_to_display(hp: u16) -> f32 {
+    (hp as f32) / (HP_UNIT as f32)
+}
+
+fn level_damage_units(level: u32, base: u16) -> u16 {
+    let steps = level.saturating_sub(1).min(10);
+    let percent = 100u32.saturating_sub(steps * 5);
+    ((base as u32 * percent) as f32 / 100.0).ceil() as u16
+}
+
+fn dig_ticks_for_level(level: u32) -> u32 {
+    let reduction = ((level.saturating_sub(1)) / 2).min(3);
+    DIG_TICKS.saturating_sub(reduction).max(2)
 }
 
 // ── Direction ─────────────────────────────────────────────────────────────────
@@ -80,7 +96,7 @@ impl Dir {
 // ── Player (individual stats) ─────────────────────────────────────────────────
 struct Player {
     x: usize, y: usize,
-    hp: u8, max_hp: u8,
+    hp: u16, max_hp: u16,
     score: u32, level: u32, exp: u32, exp_next: u32,
     poison_ticks: u32, poison_tick_timer: u32,
     dir: Dir, invincible: u32,
@@ -124,7 +140,7 @@ enum HoleState {
     Trapped { alien_id: usize, escape: u32 },
     Filling { ticks: u32, alien_id: Option<usize>, filler_id: Option<u64> },
 }
-struct Hole { x: usize, y: usize, state: HoleState, id: usize, digger_id: Option<u64> }
+struct Hole { x: usize, y: usize, state: HoleState, id: usize, digger_id: Option<u64>, dig_total: u32 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum ItemKind { Green, Red, Blue }
@@ -138,10 +154,16 @@ struct Chest { x: usize, y: usize, id: usize }
 struct HolyTile { x: usize, y: usize, id: usize, owner_session_id: u64, owner_name: String }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum AlienKind { Damage, Poison, Heal }
+enum AlienKind { Damage, Poison, Heal, Fast, Heavy }
 impl AlienKind {
     fn as_str(self) -> &'static str {
-        match self { Self::Damage=>"damage", Self::Poison=>"poison", Self::Heal=>"heal" }
+        match self {
+            Self::Damage=>"damage",
+            Self::Poison=>"poison",
+            Self::Heal=>"heal",
+            Self::Fast=>"fast",
+            Self::Heavy=>"heavy",
+        }
     }
 }
 #[derive(Clone, PartialEq)]
@@ -395,7 +417,14 @@ impl FloorInstance {
             }
         } else {
             let id = self.next_hole_id; self.next_hole_id += 1;
-            self.holes.push(Hole { x: tx, y: ty, state: HoleState::Digging(DIG_TICKS), id, digger_id: Some(session_id) });
+            let dig_total = dig_ticks_for_level(self.players[pi].player.level);
+            self.holes.push(Hole {
+                x: tx, y: ty,
+                state: HoleState::Digging(dig_total),
+                id,
+                digger_id: Some(session_id),
+                dig_total,
+            });
         }
     }
 
@@ -501,7 +530,7 @@ impl FloorInstance {
         while self.players[pi].player.exp >= self.players[pi].player.exp_next {
             self.players[pi].player.exp -= self.players[pi].player.exp_next;
             self.players[pi].player.level += 1;
-            self.players[pi].player.max_hp = self.players[pi].player.max_hp.saturating_add(1).min(9);
+            self.players[pi].player.max_hp = self.players[pi].player.max_hp.saturating_add(HP_UNIT).min(9 * HP_UNIT);
             self.players[pi].player.hp = self.players[pi].player.max_hp;
             self.players[pi].player.exp_next += 15;
             self.players[pi].event = Some("levelup");
@@ -511,7 +540,20 @@ impl FloorInstance {
     fn apply_contact_effect_to(&mut self, pi: usize, kind: AlienKind) {
         match kind {
             AlienKind::Damage => {
-                self.players[pi].player.hp = self.players[pi].player.hp.saturating_sub(1);
+                let dmg = level_damage_units(self.players[pi].player.level, HP_UNIT);
+                self.players[pi].player.hp = self.players[pi].player.hp.saturating_sub(dmg);
+                self.players[pi].player.invincible = INVINCIBLE_TICKS;
+                self.players[pi].event = Some("dmg");
+            }
+            AlienKind::Fast => {
+                let dmg = level_damage_units(self.players[pi].player.level, HP_UNIT);
+                self.players[pi].player.hp = self.players[pi].player.hp.saturating_sub(dmg);
+                self.players[pi].player.invincible = INVINCIBLE_TICKS;
+                self.players[pi].event = Some("dmg");
+            }
+            AlienKind::Heavy => {
+                let dmg = level_damage_units(self.players[pi].player.level, HP_UNIT * 2);
+                self.players[pi].player.hp = self.players[pi].player.hp.saturating_sub(dmg);
                 self.players[pi].player.invincible = INVINCIBLE_TICKS;
                 self.players[pi].event = Some("dmg");
             }
@@ -559,7 +601,8 @@ impl FloorInstance {
                 if slot.player.poison_tick_timer > 0 { slot.player.poison_tick_timer -= 1; }
                 if slot.player.poison_tick_timer == 0 {
                     slot.player.poison_tick_timer = POISON_DAMAGE_INTERVAL;
-                    slot.player.hp = slot.player.hp.saturating_sub(1);
+                    let dmg = level_damage_units(slot.player.level, HP_UNIT);
+                    slot.player.hp = slot.player.hp.saturating_sub(dmg);
                     slot.event = Some("poison_tick");
                     if slot.player.hp == 0 { slot.phase = Phase::GameOver; }
                 }
@@ -700,11 +743,22 @@ impl FloorInstance {
                                 dx.abs() + dy.abs()
                             })
                             .min().unwrap_or(999);
-                        let (base_spd, angry_spd) = match self.floor_num {
+                        let (mut base_spd, mut angry_spd) = match self.floor_num {
                             1 => (10u32, 7u32),
                             2 => (6u32, 4u32),
                             _ => (BASE_SPEED, ANGRY_SPEED),
                         };
+                        match self.aliens[ai].kind {
+                            AlienKind::Fast => {
+                                base_spd = base_spd.saturating_sub(2).max(1);
+                                angry_spd = angry_spd.saturating_sub(1).max(1);
+                            }
+                            AlienKind::Heavy => {
+                                base_spd += 3;
+                                angry_spd += 2;
+                            }
+                            _ => {}
+                        }
                         let speed = if nearest_dist <= ANGRY_DIST { angry_spd } else { base_spd };
                         self.aliens[ai].move_timer = speed;
                         if let Some((nx, ny)) = pending[ai].0 {
@@ -796,7 +850,7 @@ impl FloorInstance {
             .collect();
         let holes: Vec<serde_json::Value> = self.holes.iter().map(|h| {
             let (st, t, total) = match &h.state {
-                HoleState::Digging(t)           => ("dig",     *t, DIG_TICKS),
+                HoleState::Digging(t)           => ("dig",     *t, h.dig_total),
                 HoleState::Open(t)              => ("open",    *t, HOLE_LIFE),
                 HoleState::Trapped{escape,..}   => ("trapped", *escape, ESCAPE_TICKS),
                 HoleState::Filling{ticks,..}    => ("fill",    *ticks,  FILL_TICKS),
@@ -814,7 +868,7 @@ impl FloorInstance {
                 "x": s.player.x, "y": s.player.y,
                 "dir": s.player.dir.name(),
                 "name": s.profile.name,
-                "hp": s.player.hp, "max_hp": s.player.max_hp,
+                "hp": hp_to_display(s.player.hp), "max_hp": hp_to_display(s.player.max_hp),
                 "poisoned": s.player.poison_ticks > 0,
             }))
             .collect();
@@ -824,7 +878,7 @@ impl FloorInstance {
             "profile": {"name": slot.profile.name, "player_id": slot.profile.user_id},
             "inventory": {"green": slot.inventory.green, "red": slot.inventory.red, "blue": slot.inventory.blue, "holy": slot.inventory.holy},
             "player": {
-                "x": p.x, "y": p.y, "hp": p.hp, "max_hp": p.max_hp,
+                "x": p.x, "y": p.y, "hp": hp_to_display(p.hp), "max_hp": hp_to_display(p.max_hp),
                 "score": p.score, "level": p.level, "exp": p.exp, "exp_next": p.exp_next,
                 "poisoned": p.poison_ticks > 0, "poison_ticks": p.poison_ticks,
                 "dir": p.dir.name(), "inv": p.invincible > 0,
@@ -922,6 +976,10 @@ fn make_aliens(grid: &Vec<Vec<u8>>, floor: u32, start: (usize,usize)) -> Vec<Ali
         );
         let kind = if is_heal_spawn {
             AlienKind::Heal
+        } else if floor >= 5 && i % 5 == 4 {
+            AlienKind::Heavy
+        } else if floor >= 2 && i % 4 == 1 {
+            AlienKind::Fast
         } else if floor >= 3 && i % 3 == 2 {
             AlienKind::Poison
         } else {
