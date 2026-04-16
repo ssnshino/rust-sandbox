@@ -368,7 +368,7 @@ function showTitle(msg){
   setBoxPanelOpen(false);
   setMenuPanelOpen(false);
   syncNameInput();
-  setNameNote('この名前はハイスコア登録にも使うよ');
+  setNameNote(msg.note||'この名前はハイスコア登録にも使うよ', !!msg.note_error);
 }
 
 function startGame(){

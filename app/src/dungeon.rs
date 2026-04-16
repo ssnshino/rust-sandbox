@@ -9,7 +9,7 @@ use tokio::time::{interval, Duration};
 use crate::dungeon_gen::{generate_for_floor, COLS, ROWS};
 use crate::scores::ScoreBoard;
 
-pub const MAX_PLAYERS: usize = 16;
+pub const MAX_PLAYERS: usize = 4;
 const MAX_HP: u8 = 5;
 const BASE_EXP_NEXT: u32 = 30;
 const POISON_TICKS: u32 = 180;
@@ -734,6 +734,12 @@ impl Room {
         Room { floors: HashMap::new(), scores }
     }
 
+    fn total_players(&self) -> usize {
+        self.floors.values()
+            .map(|f| f.lock().unwrap().players.len())
+            .sum()
+    }
+
     fn get_or_create_floor(&mut self, floor_num: u32, seed: u64) -> Arc<Mutex<FloorInstance>> {
         if let Some(f) = self.floors.get(&floor_num) {
             return Arc::clone(f);
@@ -825,6 +831,18 @@ pub async fn run(
                         // Join floor 1
                         let floor_arc = {
                             let mut r = room.lock().unwrap();
+                            if current_floor.is_none() && r.total_players() >= MAX_PLAYERS {
+                                let sb  = scores.lock().unwrap();
+                                let msg = serde_json::json!({
+                                    "type":"title",
+                                    "scores":sb.list(),
+                                    "min_score":sb.min_score(),
+                                    "note": format!("いまは {} 人までだよ。またあとで入ってね！", MAX_PLAYERS),
+                                    "note_error": true,
+                                }).to_string();
+                                let _   = tx.send(msg);
+                                continue;
+                            }
                             r.get_or_create_floor(1, now_ns())
                         };
                         {
