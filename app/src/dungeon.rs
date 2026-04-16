@@ -260,7 +260,11 @@ impl Game {
         let kind = self.roll_potion_kind(chest_id + x + y);
         self.add_item_to_inventory(kind);
         if self.event != Some("levelup") {
-            self.event = Some("chest_open");
+            self.event = Some(match kind {
+                ItemKind::Green => "chest_green",
+                ItemKind::Red   => "chest_red",
+                ItemKind::Blue  => "chest_blue",
+            });
         }
     }
 
@@ -736,12 +740,12 @@ pub async fn run(mut socket: WebSocket, scores: Arc<Mutex<ScoreBoard>>, player_c
                         if let Some(ref mut g)=gs {
                             if g.phase==Phase::Playing {
                                 g.apply_move(&dir);
-                                // send new grid if floor advanced
                                 if g.new_grid_ready {
                                     g.new_grid_ready = false;
                                     if socket.send(Message::Text(g.grid_json())).await.is_err() { break; }
-                                    if socket.send(Message::Text(g.to_json())).await.is_err() { break; }
                                 }
+                                // always send state so events (chest, item) are not lost before next tick
+                                if socket.send(Message::Text(g.to_json())).await.is_err() { break; }
                             }
                         }
                     }
