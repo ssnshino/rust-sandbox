@@ -23,6 +23,8 @@ const INVINCIBLE_TICKS: u32 = 20;
 const BASE_SPEED: u32 = 4;
 const ANGRY_SPEED: u32 = 2;
 const ANGRY_DIST: i32 = 6;
+const AGGRO_RANGE: i32 = 6;
+const SEARCH_TICKS: u32 = 10;
 const TICK_MS: u64 = 150;
 const INITIAL_ALIENS: usize = 4;
 const RESPAWN_TICKS: u32 = 40;
@@ -51,6 +53,24 @@ impl Dir {
     }
     fn name(self) -> &'static str {
         match self { Dir::Up=>"up", Dir::Down=>"down", Dir::Left=>"left", Dir::Right=>"right" }
+    }
+    fn left(self) -> Self {
+        match self { Dir::Up=>Dir::Left, Dir::Left=>Dir::Down, Dir::Down=>Dir::Right, Dir::Right=>Dir::Up }
+    }
+    fn right(self) -> Self {
+        match self { Dir::Up=>Dir::Right, Dir::Right=>Dir::Down, Dir::Down=>Dir::Left, Dir::Left=>Dir::Up }
+    }
+    fn back(self) -> Self {
+        match self { Dir::Up=>Dir::Down, Dir::Down=>Dir::Up, Dir::Left=>Dir::Right, Dir::Right=>Dir::Left }
+    }
+    fn from_delta(dx: i32, dy: i32, fallback: Self) -> Self {
+        match (dx, dy) {
+            (0, -1) => Dir::Up,
+            (0, 1) => Dir::Down,
+            (-1, 0) => Dir::Left,
+            (1, 0) => Dir::Right,
+            _ => fallback,
+        }
     }
     fn parse(s: &str) -> Option<Self> {
         match s { "up"=>Some(Dir::Up),"down"=>Some(Dir::Down),"left"=>Some(Dir::Left),"right"=>Some(Dir::Right),_=>None }
@@ -126,7 +146,11 @@ impl AlienKind {
 }
 #[derive(Clone, PartialEq)]
 enum AlienState { Active, Trapped(usize), Dead(u32) }
-struct Alien { x: usize, y: usize, kind: AlienKind, state: AlienState, move_timer: u32, id: usize }
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AlienHand { Left, Right }
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AlienMode { Wander, Search(u32), Chase }
+struct Alien { x: usize, y: usize, kind: AlienKind, state: AlienState, move_timer: u32, id: usize, dir: Dir, hand: AlienHand, mode: AlienMode }
 
 // ── Floor instance ────────────────────────────────────────────────────────────
 struct FloorInstance {
@@ -204,6 +228,11 @@ impl FloorInstance {
     fn alien_target_for(&self, ax: usize, ay: usize) -> Option<(usize, usize)> {
         let candidates: Vec<(usize, usize)> = self.players.iter()
             .filter(|s| s.phase == Phase::Playing)
+            .filter(|s| {
+                let dx = s.player.x as i32 - ax as i32;
+                let dy = s.player.y as i32 - ay as i32;
+                dx.abs() + dy.abs() <= AGGRO_RANGE
+            })
             .flat_map(|s| {
                 let px = s.player.x;
                 let py = s.player.y;
@@ -229,6 +258,30 @@ impl FloorInstance {
             let dy = *ty as i32 - ay as i32;
             dx.abs() + dy.abs()
         })
+    }
+
+    fn alien_step_open(&self, x: usize, y: usize, dir: Dir) -> Option<(usize, usize)> {
+        let (dx, dy) = dir.delta();
+        let nx = x as i32 + dx;
+        let ny = y as i32 + dy;
+        if !self.is_path(nx, ny) { return None; }
+        let (nx, ny) = (nx as usize, ny as usize);
+        let blocked = self.holes.iter().any(|h| h.x==nx && h.y==ny && matches!(h.state, HoleState::Trapped{..}))
+            || !self.alien_can_enter(nx, ny);
+        if blocked { None } else { Some((nx, ny)) }
+    }
+
+    fn wander_next(&self, x: usize, y: usize, dir: Dir, hand: AlienHand) -> Option<((usize, usize), Dir)> {
+        let dirs = match hand {
+            AlienHand::Left => [dir.left(), dir, dir.right(), dir.back()],
+            AlienHand::Right => [dir.right(), dir, dir.left(), dir.back()],
+        };
+        for cand in dirs {
+            if let Some((nx, ny)) = self.alien_step_open(x, y, cand) {
+                return Some(((nx, ny), cand));
+            }
+        }
+        None
     }
 
     fn respawn_pos(&self) -> Option<(usize, usize)> {
@@ -579,15 +632,43 @@ impl FloorInstance {
             if remove { self.holes.remove(i); } else { i += 1; }
         }
 
-        // Aliens: BFS to nearest player
+        // Aliens: aggro chase + handed wandering
         let count = self.aliens.len();
-        let pending: Vec<Option<(usize, usize)>> = (0..count).map(|ai| {
-            let (ax, ay) = (self.aliens[ai].x, self.aliens[ai].y);
-            if self.aliens[ai].state == AlienState::Active && self.aliens[ai].move_timer == 0 {
+        let pending: Vec<(Option<(usize, usize)>, Dir, AlienHand, AlienMode)> = (0..count).map(|ai| {
+            let alien = &self.aliens[ai];
+            let (ax, ay) = (alien.x, alien.y);
+            let mut next_dir = alien.dir;
+            let mut next_hand = alien.hand;
+            let mut next_mode = alien.mode;
+            let mut step = None;
+
+            if alien.state == AlienState::Active && alien.move_timer == 0 {
                 if let Some((tx, ty)) = self.alien_target_for(ax, ay) {
-                    self.bfs_next(ax, ay, tx, ty)
-                } else { None }
-            } else { None }
+                    next_mode = AlienMode::Chase;
+                    if let Some((nx, ny)) = self.bfs_next(ax, ay, tx, ty) {
+                        next_dir = Dir::from_delta(nx as i32 - ax as i32, ny as i32 - ay as i32, next_dir);
+                        step = Some((nx, ny));
+                    }
+                } else {
+                    next_mode = match alien.mode {
+                        AlienMode::Chase => AlienMode::Search(SEARCH_TICKS),
+                        AlienMode::Search(t) if t > 0 => AlienMode::Search(t - 1),
+                        AlienMode::Search(_) => AlienMode::Wander,
+                        AlienMode::Wander => AlienMode::Wander,
+                    };
+                    if (self.tick + ai as u64 + self.floor_num as u64) % 29 == 0 {
+                        next_hand = match next_hand {
+                            AlienHand::Left => AlienHand::Right,
+                            AlienHand::Right => AlienHand::Left,
+                        };
+                    }
+                    if let Some(((nx, ny), dir2)) = self.wander_next(ax, ay, next_dir, next_hand) {
+                        next_dir = dir2;
+                        step = Some((nx, ny));
+                    }
+                }
+            }
+            (step, next_dir, next_hand, next_mode)
         }).collect();
 
         for ai in 0..count {
@@ -599,6 +680,7 @@ impl FloorInstance {
                         self.aliens[ai].state = AlienState::Active;
                         self.aliens[ai].x = rx; self.aliens[ai].y = ry;
                         self.aliens[ai].move_timer = BASE_SPEED;
+                        self.aliens[ai].mode = AlienMode::Wander;
                     } else { self.aliens[ai].state = AlienState::Dead(t - 1); }
                 }
                 AlienState::Trapped(_) => {}
@@ -606,6 +688,10 @@ impl FloorInstance {
                     if self.aliens[ai].move_timer > 0 {
                         self.aliens[ai].move_timer -= 1;
                     } else {
+                        let (_, next_dir, next_hand, next_mode) = pending[ai];
+                        self.aliens[ai].dir = next_dir;
+                        self.aliens[ai].hand = next_hand;
+                        self.aliens[ai].mode = next_mode;
                         let nearest_dist = self.players.iter()
                             .filter(|s| s.phase == Phase::Playing)
                             .map(|s| {
@@ -621,7 +707,7 @@ impl FloorInstance {
                         };
                         let speed = if nearest_dist <= ANGRY_DIST { angry_spd } else { base_spd };
                         self.aliens[ai].move_timer = speed;
-                        if let Some((nx, ny)) = pending[ai] {
+                        if let Some((nx, ny)) = pending[ai].0 {
                             let hi = self.holes.iter().position(|h| h.x == nx && h.y == ny && matches!(h.state, HoleState::Open(_)));
                             if let Some(hi) = hi {
                                 let aid = self.aliens[ai].id;
@@ -830,10 +916,25 @@ fn make_aliens(grid: &Vec<Vec<u8>>, floor: u32, start: (usize,usize)) -> Vec<Ali
     if picked.is_empty() { picked.push(start); }
     while picked.len() < count { picked.push(*picked.last().unwrap()); }
     picked.into_iter().enumerate().map(|(i, (ax, ay))| {
-        let kind = if floor >= 4 && i == count.saturating_sub(1) && floor % 3 == 1 {
+        let is_heal_spawn = floor >= 4 && (
+            i == count.saturating_sub(1)
+            || (count >= 5 && i == count.saturating_sub(3) && floor % 2 == 0)
+        );
+        let kind = if is_heal_spawn {
             AlienKind::Heal
-        } else if i % 3 == 2 { AlienKind::Poison } else { AlienKind::Damage };
-        Alien { x: ax, y: ay, kind, state: AlienState::Active, move_timer: BASE_SPEED + i as u32 * 3, id: i }
+        } else if floor >= 3 && i % 3 == 2 {
+            AlienKind::Poison
+        } else {
+            AlienKind::Damage
+        };
+        let dir = match i % 4 {
+            0 => Dir::Down,
+            1 => Dir::Left,
+            2 => Dir::Up,
+            _ => Dir::Right,
+        };
+        let hand = if (floor as usize + i) % 5 == 0 { AlienHand::Right } else { AlienHand::Left };
+        Alien { x: ax, y: ay, kind, state: AlienState::Active, move_timer: BASE_SPEED + i as u32 * 3, id: i, dir, hand, mode: AlienMode::Wander }
     }).collect()
 }
 
