@@ -27,6 +27,9 @@ html,body{background:#0f0f1a;color:#e2e8f0;font-family:sans-serif;height:100%;ov
 #title-scores td:last-child{text-align:right;color:#ffd700}
 #start-btn{padding:14px 48px;font-size:1.1rem;font-weight:700;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:12px;cursor:pointer;letter-spacing:.1em}
 #start-btn:hover{opacity:.85}
+#lang-switch{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:320px;margin:0 auto 16px}
+.lang-btn{padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#cbd5e1;font-size:.88rem;font-weight:700;cursor:pointer}
+.lang-btn.active{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border-color:transparent;box-shadow:0 8px 20px rgba(79,70,229,.28)}
 @media (max-width:640px){
   #title{justify-content:flex-start;padding-top:76px;padding-bottom:36px}
   #title-scores{margin-bottom:18px}
@@ -185,14 +188,18 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
 
 <!-- TITLE SCREEN -->
 <div id="title">
-  <h1>あやかダンジョン</h1>
-  <p class="sub">× 平安京エイリアン</p>
+  <h1 id="title-heading">あやかダンジョン</h1>
+  <p class="sub" id="title-sub">× 平安京エイリアン</p>
   <p class="build">build __BUILD_HASH__</p>
+  <div id="lang-switch">
+    <button class="lang-btn" id="lang-ja" type="button" onclick="setLanguage('ja')">🇯🇵 Japanese</button>
+    <button class="lang-btn" id="lang-en" type="button" onclick="setLanguage('en')">🇬🇧 English</button>
+  </div>
   <div id="title-scores">
-    <table><thead><tr><th>#</th><th>名前</th><th>スコア</th></tr></thead><tbody id="title-tbody"></tbody></table>
+    <table><thead><tr><th>#</th><th class="label-name">名前</th><th class="label-score">スコア</th></tr></thead><tbody id="title-tbody"></tbody></table>
   </div>
   <div id="name-entry">
-    <label for="player-name">プレイヤー名</label>
+    <label for="player-name" id="player-name-label">プレイヤー名</label>
     <input id="player-name" type="text" maxlength="20" placeholder="なまえをいれてね" autocomplete="nickname">
     <p id="name-note">この名前はハイスコア登録にも使うよ</p>
   </div>
@@ -204,7 +211,7 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
   <div id="hud">
     <span id="score-row">SCORE 0</span>
     <span id="high-row">HIGH 0</span>
-    <span id="hud-menu-wrap"><button id="menu-btn" type="button" onclick="toggleMenuPanel()"><span class="menu-icon">☰</span><span>MENU</span></button></span>
+    <span id="hud-menu-wrap"><button id="menu-btn" type="button" onclick="toggleMenuPanel()"><span class="menu-icon">☰</span><span id="menu-btn-text">MENU</span></button></span>
   </div>
   <div id="canvas-wrap">
     <aside id="status-window" aria-label="プレイヤーステータス">
@@ -219,28 +226,28 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
     <div id="box-panel" aria-label="アイテムボックス" hidden>
       <div id="box-panel-title">ITEM BOX</div>
       <button class="box-item" id="box-item-green" type="button" onclick="useItem('green')" disabled>
-        <span class="box-item-name"><span class="box-item-dot green"></span>みどりのポーション</span>
-        <span class="box-item-meta"><span>HP+1</span><span class="box-item-count" id="box-count-green">0</span></span>
+        <span class="box-item-name"><span class="box-item-dot green"></span><span id="box-name-green">みどりのポーション</span></span>
+        <span class="box-item-meta"><span id="box-meta-green">HP+1</span><span class="box-item-count" id="box-count-green">0</span></span>
       </button>
       <button class="box-item" id="box-item-red" type="button" onclick="useItem('red')" disabled>
-        <span class="box-item-name"><span class="box-item-dot red"></span>あかのポーション</span>
-        <span class="box-item-meta"><span>どくけし</span><span class="box-item-count" id="box-count-red">0</span></span>
+        <span class="box-item-name"><span class="box-item-dot red"></span><span id="box-name-red">あかのポーション</span></span>
+        <span class="box-item-meta"><span id="box-meta-red">どくけし</span><span class="box-item-count" id="box-count-red">0</span></span>
       </button>
       <button class="box-item" id="box-item-blue" type="button" onclick="useItem('blue')" disabled>
-        <span class="box-item-name"><span class="box-item-dot blue"></span>あおのポーション</span>
-        <span class="box-item-meta"><span>ぜんかいふく</span><span class="box-item-count" id="box-count-blue">0</span></span>
+        <span class="box-item-name"><span class="box-item-dot blue"></span><span id="box-name-blue">あおのポーション</span></span>
+        <span class="box-item-meta"><span id="box-meta-blue">ぜんかいふく</span><span class="box-item-count" id="box-count-blue">0</span></span>
       </button>
       <button class="box-item" id="box-item-holy" type="button" disabled>
-        <span class="box-item-name"><span class="box-item-dot" style="background:#fbbf24"></span>聖なる床板</span>
-        <span class="box-item-meta"><span>Bで足もと設置/回収</span><span class="box-item-count" id="box-count-holy">0</span></span>
+        <span class="box-item-name"><span class="box-item-dot" style="background:#fbbf24"></span><span id="box-name-holy">聖なる床板</span></span>
+        <span class="box-item-meta"><span id="box-meta-holy">Bで足もと設置/回収</span><span class="box-item-count" id="box-count-holy">0</span></span>
       </button>
       <p id="box-panel-note">ポーションはBOXから、聖なる床板はBボタンでつかうよ</p>
     </div>
     <div id="menu-panel" aria-label="ゲームメニュー" hidden>
       <div id="menu-panel-title">GAME MENU</div>
-      <button class="menu-item" type="button" disabled><span>セーブ</span><span class="menu-item-meta">準備中</span></button>
-      <button class="menu-item" type="button" disabled><span>ロード</span><span class="menu-item-meta">準備中</span></button>
-      <button class="menu-item" type="button" onclick="returnToTitle()"><span>タイトルに戻る</span><span class="menu-item-meta">いったん終了</span></button>
+      <button class="menu-item" type="button" disabled><span id="menu-save-label">セーブ</span><span class="menu-item-meta" id="menu-coming-soon-1">準備中</span></button>
+      <button class="menu-item" type="button" disabled><span id="menu-load-label">ロード</span><span class="menu-item-meta" id="menu-coming-soon-2">準備中</span></button>
+      <button class="menu-item" type="button" onclick="returnToTitle()"><span id="menu-return-label">タイトルに戻る</span><span class="menu-item-meta" id="menu-return-meta">いったん終了</span></button>
     </div>
   </div>
   <div id="gm-box"><div id="gm-message"><span id="gm-face">あやかGM▶</span><span id="gm-text"></span></div><span id="floor-badge">FLOOR 1</span></div>
@@ -259,8 +266,8 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
       </div>
     </div>
     <div id="action-buttons">
-      <button id="bact-btn" onclick="sendBact()"><span class="act-label">B</span><small>床板</small></button>
-      <button id="act-btn" onclick="sendAct()"><span class="act-label">A</span><small>掘る/埋める</small></button>
+      <button id="bact-btn" onclick="sendBact()"><span class="act-label">B</span><small id="bact-label">床板</small></button>
+      <button id="act-btn" onclick="sendAct()"><span class="act-label">A</span><small id="act-label">掘る/埋める</small></button>
     </div>
   </div>
 </div>
@@ -268,14 +275,14 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
 <!-- GAMEOVER OVERLAY -->
 <div id="gameover">
   <div id="go-panel">
-    <h2>GAME OVER</h2>
-    <p class="go-score">スコア: <span id="final-score"></span></p>
+    <h2 id="gameover-title">GAME OVER</h2>
+    <p class="go-score"><span id="gameover-score-label">スコア</span>: <span id="final-score"></span></p>
     <div id="hs-entry" style="display:none">
       <p id="hs-status">ハイスコアを登録したよ！</p>
       <input id="hs-name" type="hidden" maxlength="20" placeholder="あなたの名前">
       <button id="hs-submit" style="display:none" onclick="submitScore()">登録</button>
     </div>
-    <div id="go-scores"><table><thead><tr><th>#</th><th>名前</th><th>スコア</th></tr></thead><tbody id="go-tbody"></tbody></table></div>
+    <div id="go-scores"><table><thead><tr><th>#</th><th class="label-name">名前</th><th class="label-score">スコア</th></tr></thead><tbody id="go-tbody"></tbody></table></div>
     <button id="retry-btn" onclick="goToTitle()">タイトルへ</button>
   </div>
 </div>
@@ -305,6 +312,277 @@ let boxPanelOpen=false;
 let menuPanelOpen=false;
 let movingHudUntil=0;
 const STATUS_COMPACT_MS=420;
+const LANG_STORAGE_KEY='ayaka-dungeon-lang';
+let currentLang='ja';
+const I18N={
+  ja:{
+    htmlLang:'ja',
+    pageTitle:'あやかダンジョン',
+    backTop:'← TOP',
+    title:'あやかダンジョン',
+    titleSub:'× 平安京エイリアン',
+    rankName:'名前',
+    rankScore:'スコア',
+    playerName:'プレイヤー名',
+    startBtn:'スタート',
+    move:'MOVE',
+    namePlaceholder:'なまえをいれてね',
+    nameNote:'この名前はハイスコア登録にも使うよ',
+    noteNeedName:'名前を入れてからスタートしてね',
+    noteRoomFull:max=>`いまは ${max} 人までだよ。またあとで入ってね！`,
+    score:'SCORE',
+    high:'HIGH',
+    floor:'FLOOR',
+    menu:'MENU',
+    itemBox:'ITEM BOX',
+    gameMenu:'GAME MENU',
+    menuSave:'セーブ',
+    menuLoad:'ロード',
+    menuComingSoon:'準備中',
+    menuReturnTitle:'タイトルに戻る',
+    menuReturnMeta:'いったん終了',
+    gmFace:'あやかGM▶',
+    puniconAria:'移動スティック',
+    statusAria:'プレイヤーステータス',
+    boxAria:'アイテムボックス',
+    menuAria:'ゲームメニュー',
+    boxGreen:'みどりのポーション',
+    boxRed:'あかのポーション',
+    boxBlue:'あおのポーション',
+    boxHoly:'聖なる床板',
+    boxGreenMeta:'HP+1',
+    boxRedMeta:'どくけし',
+    boxBlueMeta:'ぜんかいふく',
+    boxHolyMeta:'Bで足もと設置/回収',
+    boxNote:'ポーションはBOXから、聖なる床板はBボタンでつかうよ',
+    actionA:'掘る/埋める',
+    actionB:'床板',
+    gameOver:'GAME OVER',
+    gameOverScore:'スコア',
+    hsRegistered:'ハイスコアを登録したよ！',
+    hsRegisteredDone:'ハイスコア登録ずみだよ',
+    retry:'タイトルへ',
+    noRecords:'記録なし',
+    damage:'ダメージ！',
+    poisonDamage:'どく！',
+    itemGet:name=>`${name}をゲット！`,
+    floorClear:(floor)=>`FLOOR ${floor} CLEAR!`,
+    floorStart:(floor)=>`FLOOR ${floor} START!`,
+    floorBonus:bonus=>`+${bonus} pts`,
+    gmStart:'行くよっ！エイリアンに気をつけて！',
+    gmGameOver:'あ〜やられちゃった…またがんばろ！',
+    gmFloorClear:floor=>`FLOOR ${floor} クリア！やるじゃん！`,
+    gmFloorStart:floor=>`FLOOR ${floor}、いくよっ！気合い入れて！`,
+    allyFallback:'なかま',
+    hp:'HP',
+    exp:'EXP',
+    levelNote:'HP MAX UP',
+    itemNames:{
+      green:'みどりのポーション',
+      red:'あかのポーション',
+      blue:'あおのポーション',
+      holy:'聖なる床板',
+    },
+    gm:{
+      kill:['やった！倒した！！','ナイス！スコアゲット！','この調子だよっ！','また一体っ！！'],
+      dmg:['痛っ！HP注意！','気をつけて！','やられた！！','エイリアンが来るよっ！'],
+      poison:['毒になっちゃった！','赤紫は危ないよっ！','うわっ、毒が回る…！'],
+      poison_tick:['毒がじわじわ効いてる…！','早く治したいね…','うう、HPが削られる…'],
+      heal:['緑だ！ちょっと回復したよ！','ラッキー、HP回復！','やさしいエイリアン…？'],
+      trapped:['トラップ成功！今のうちに埋めて！','はまったはまった！急いで！','チャンスだよっ！'],
+      levelup:['レベルアップ！つよくなったよっ！','いい感じ！最大HPが増えた！','やったね、もっと潜れる！'],
+      use_green:['みどりのポーションで回復！','HPをちょっと戻したよ！'],
+      use_red:['どくが消えたよっ！','あかのポーションでスッキリ！'],
+      use_blue:['あおのポーションで全回復！','完全復活っ！まだまだいけるよ！'],
+      chest_green:['宝笥をあけたよ！','みどりのポーションだ！'],
+      chest_red:['宝笥からあかのポーション！','どくけしが入ってた！'],
+      chest_blue:['メッチャラッキー！あおのポーション！','宝笥から全回復アイテム！'],
+      holy_place:['聖なる床板を置いたよ！','ここはひとまず安全地帯かも！','床板でバリケード完成っ！'],
+      holy_pickup:['聖なる床板を回収！','床板ゲットだね！','うまく持ち帰れたよっ！'],
+    },
+  },
+  en:{
+    htmlLang:'en',
+    pageTitle:'Ayaka Dungeon',
+    backTop:'← MENU',
+    title:'Ayaka Dungeon',
+    titleSub:'× Heiankyo Alien',
+    rankName:'Name',
+    rankScore:'Score',
+    playerName:'Player Name',
+    startBtn:'START',
+    move:'MOVE',
+    namePlaceholder:'enter your name',
+    nameNote:'This name is also used for high scores.',
+    noteNeedName:'Enter your name before you start.',
+    noteRoomFull:max=>`Only ${max} players can join right now. Try again in a bit!`,
+    score:'SCORE',
+    high:'HIGH',
+    floor:'FLOOR',
+    menu:'MENU',
+    itemBox:'ITEM BOX',
+    gameMenu:'GAME MENU',
+    menuSave:'Save',
+    menuLoad:'Load',
+    menuComingSoon:'Coming soon',
+    menuReturnTitle:'Back to Title',
+    menuReturnMeta:'Leave game',
+    gmFace:'Ayaka GM▶',
+    puniconAria:'move stick',
+    statusAria:'player status',
+    boxAria:'item box',
+    menuAria:'game menu',
+    boxGreen:'Green Potion',
+    boxRed:'Red Potion',
+    boxBlue:'Blue Potion',
+    boxHoly:'Holy Floorboard',
+    boxGreenMeta:'HP+1',
+    boxRedMeta:'Cure Poison',
+    boxBlueMeta:'Full Heal',
+    boxHolyMeta:'B places/picks at your feet',
+    boxNote:'Use potions from BOX. Use holy floorboards with the B button.',
+    actionA:'Dig/Bury',
+    actionB:'Board',
+    gameOver:'GAME OVER',
+    gameOverScore:'Score',
+    hsRegistered:'Your high score was saved!',
+    hsRegisteredDone:'High score already saved.',
+    retry:'Back to Title',
+    noRecords:'No records yet',
+    damage:'DAMAGE!',
+    poisonDamage:'POISON!',
+    itemGet:name=>`Got ${name}!`,
+    floorClear:(floor)=>`FLOOR ${floor} CLEAR!`,
+    floorStart:(floor)=>`FLOOR ${floor} START!`,
+    floorBonus:bonus=>`+${bonus} pts`,
+    gmStart:'Let’s go! Watch out for aliens!',
+    gmGameOver:'Aww, they got you... Let’s try again!',
+    gmFloorClear:floor=>`Floor ${floor} clear! Nice run!`,
+    gmFloorStart:floor=>`Floor ${floor}, here we go!`,
+    allyFallback:'ALLY',
+    hp:'HP',
+    exp:'EXP',
+    levelNote:'MAX HP UP',
+    itemNames:{
+      green:'Green Potion',
+      red:'Red Potion',
+      blue:'Blue Potion',
+      holy:'Holy Floorboard',
+    },
+    gm:{
+      kill:['Nice! You got one!','Score! Keep going!','That was clean!','Another alien down!'],
+      dmg:['Ouch! Watch your HP!','Careful!','That one hurt!','Alien incoming!'],
+      poison:['You got poisoned!','Purple-red ones are dangerous!','Uh-oh, the poison is spreading...'],
+      poison_tick:['The poison is ticking...','You need an antidote soon...','Your HP is slipping away...'],
+      heal:['Green one! Tiny heal!','Lucky, some HP back!','A nice alien...?'],
+      trapped:['Trapped it! Bury it now!','Got one in a hole! Hurry!','Now’s your chance!'],
+      levelup:['Level up! You got stronger!','Looking good! Max HP increased!','Nice! You can go deeper now!'],
+      use_green:['Green potion used!','A little HP is back!'],
+      use_red:['Poison cured!','The red potion cleaned it up!'],
+      use_blue:['Blue potion full heal!','Fully restored! Let’s keep going!'],
+      chest_green:['You opened a chest!','Green potion!'],
+      chest_red:['A red potion in the chest!','Found poison cure!'],
+      chest_blue:['Huge luck! Blue potion!','A full-heal item from the chest!'],
+      holy_place:['Holy floorboard placed!','This could be a safe zone!','Barrier complete!'],
+      holy_pickup:['Picked up a holy floorboard!','Holy board secured!','You carried it off safely!'],
+    },
+  },
+};
+
+function tr(key,...args){
+  const val=I18N[currentLang]?.[key];
+  if(typeof val==='function') return val(...args);
+  return val ?? I18N.ja[key] ?? key;
+}
+function trItem(kind){
+  return I18N[currentLang].itemNames[kind] || I18N.ja.itemNames[kind] || kind;
+}
+function trGm(eventKey){
+  return I18N[currentLang].gm[eventKey] || I18N.ja.gm[eventKey] || null;
+}
+function localizeServerNote(note){
+  if(!note) return tr('nameNote');
+  const full=note.match(/いまは\s*(\d+)\s*人まで/);
+  if(full) return tr('noteRoomFull', Number(full[1]));
+  return note;
+}
+function loadLanguage(){
+  try{
+    const saved=localStorage.getItem(LANG_STORAGE_KEY);
+    if(saved==='ja'||saved==='en') currentLang=saved;
+  }catch(_err){}
+}
+function saveLanguage(){
+  try{
+    localStorage.setItem(LANG_STORAGE_KEY,currentLang);
+  }catch(_err){}
+}
+function applyStaticTexts(){
+  document.documentElement.lang=I18N[currentLang].htmlLang;
+  document.title=tr('pageTitle');
+  document.querySelector('.back-home').textContent=tr('backTop');
+  document.getElementById('title-heading').textContent=tr('title');
+  document.getElementById('title-sub').textContent=tr('titleSub');
+  document.querySelectorAll('.label-name').forEach(el=>el.textContent=tr('rankName'));
+  document.querySelectorAll('.label-score').forEach(el=>el.textContent=tr('rankScore'));
+  document.getElementById('player-name-label').textContent=tr('playerName');
+  document.getElementById('player-name').placeholder=tr('namePlaceholder');
+  document.getElementById('start-btn').textContent=tr('startBtn');
+  document.getElementById('menu-btn-text').textContent=tr('menu');
+  document.querySelector('#status-window .status-row.hp .label').textContent=tr('hp');
+  document.querySelector('#status-window .status-row.exp .label').textContent=tr('exp');
+  document.getElementById('box-panel').setAttribute('aria-label',tr('boxAria'));
+  document.getElementById('menu-panel').setAttribute('aria-label',tr('menuAria'));
+  document.getElementById('status-window').setAttribute('aria-label',tr('statusAria'));
+  document.getElementById('punicon').setAttribute('aria-label',tr('puniconAria'));
+  document.getElementById('box-panel-title').textContent=tr('itemBox');
+  document.getElementById('box-name-green').textContent=tr('boxGreen');
+  document.getElementById('box-name-red').textContent=tr('boxRed');
+  document.getElementById('box-name-blue').textContent=tr('boxBlue');
+  document.getElementById('box-name-holy').textContent=tr('boxHoly');
+  document.getElementById('box-meta-green').textContent=tr('boxGreenMeta');
+  document.getElementById('box-meta-red').textContent=tr('boxRedMeta');
+  document.getElementById('box-meta-blue').textContent=tr('boxBlueMeta');
+  document.getElementById('box-meta-holy').textContent=tr('boxHolyMeta');
+  document.getElementById('box-panel-note').textContent=tr('boxNote');
+  document.getElementById('menu-panel-title').textContent=tr('gameMenu');
+  document.getElementById('menu-save-label').textContent=tr('menuSave');
+  document.getElementById('menu-load-label').textContent=tr('menuLoad');
+  document.getElementById('menu-coming-soon-1').textContent=tr('menuComingSoon');
+  document.getElementById('menu-coming-soon-2').textContent=tr('menuComingSoon');
+  document.getElementById('menu-return-label').textContent=tr('menuReturnTitle');
+  document.getElementById('menu-return-meta').textContent=tr('menuReturnMeta');
+  document.getElementById('gm-face').textContent=tr('gmFace');
+  document.getElementById('punicon-hint').textContent=tr('move');
+  document.getElementById('bact-label').textContent=tr('actionB');
+  document.getElementById('act-label').textContent=tr('actionA');
+  document.getElementById('gameover-title').textContent=tr('gameOver');
+  document.getElementById('gameover-score-label').textContent=tr('gameOverScore');
+  document.getElementById('retry-btn').textContent=tr('retry');
+  document.getElementById('levelup-label').textContent='LEVEL UP!';
+  document.getElementById('levelup-note').textContent=tr('levelNote');
+  document.getElementById('dmg-label').textContent=tr('damage');
+  document.getElementById('hs-status').textContent=scoreSubmitted?tr('hsRegisteredDone'):tr('hsRegistered');
+  document.getElementById('lang-ja').classList.toggle('active',currentLang==='ja');
+  document.getElementById('lang-en').classList.toggle('active',currentLang==='en');
+  if(state) updateHUD();
+}
+function setLanguage(lang){
+  if(lang!=='ja'&&lang!=='en') return;
+  currentLang=lang;
+  saveLanguage();
+  applyStaticTexts();
+  const noteEl=document.getElementById('name-note');
+  if(noteEl){
+    if(noteEl.dataset.noteKey==='need-name') noteEl.textContent=tr('noteNeedName');
+    else if(noteEl.dataset.noteKey==='room-full'){
+      const m=noteEl.textContent.match(/(\d+)/);
+      noteEl.textContent=tr('noteRoomFull', Number(m?.[1]||4));
+    } else if(noteEl.dataset.noteKey!=='custom'){
+      noteEl.textContent=tr('nameNote');
+    }
+  }
+}
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 function connect() {
@@ -334,7 +612,6 @@ function connect() {
   };
   ws.onclose=()=>{ setTimeout(connect,2000); };
 }
-connect();
 
 function send(obj){ if(ws&&ws.readyState===1) ws.send(JSON.stringify(obj)); }
 
@@ -360,14 +637,19 @@ function syncNameInput(){
   if(input) input.value=playerProfile.name||'';
 }
 
-function setNameNote(text,isError=false){
+function setNameNote(text,isError=false,noteKey=''){
   const note=document.getElementById('name-note');
   if(!note) return;
   note.textContent=text;
   note.style.color=isError?'#fca5a5':'#94a3b8';
+  note.dataset.error=isError?'1':'';
+  note.dataset.noteKey=noteKey;
 }
 
+loadLanguage();
 loadPlayerProfile();
+applyStaticTexts();
+connect();
 
 // ── Title ─────────────────────────────────────────────────────────────────────
 function showTitle(msg){
@@ -381,20 +663,21 @@ function showTitle(msg){
   setBoxPanelOpen(false);
   setMenuPanelOpen(false);
   syncNameInput();
-  setNameNote(msg.note||'この名前はハイスコア登録にも使うよ', !!msg.note_error);
+  const noteKey=msg.note && /人まで/.test(msg.note) ? 'room-full' : (msg.note ? 'custom' : 'name-note');
+  setNameNote(msg.note?localizeServerNote(msg.note):tr('nameNote'), !!msg.note_error, noteKey);
 }
 
 function startGame(){
   const input=document.getElementById('player-name');
   const name=(input?.value||'').trim();
   if(!name){
-    setNameNote('名前を入れてからスタートしてね',true);
+    setNameNote(tr('noteNeedName'),true,'need-name');
     input?.focus();
     return;
   }
   playerProfile={...playerProfile,name};
   savePlayerProfile();
-  setNameNote('この名前はハイスコア登録にも使うよ');
+  setNameNote(tr('nameNote'),false,'name-note');
   send({type:'start',profile:playerProfile});
   document.getElementById('title').style.display='none';
   document.getElementById('game').style.display='flex';
@@ -407,7 +690,7 @@ function startGame(){
   setMenuPanelOpen(false);
   gameActive=true;
   ac(); // wake AudioContext on user gesture
-  setGm('行くよっ！エイリアンに気をつけて！');
+  setGm(tr('gmStart'));
 }
 
 // ── State handling ────────────────────────────────────────────────────────────
@@ -425,9 +708,9 @@ function updateHUD(){
   syncStatusWindowMode();
   const {hp,score,max_hp,level,exp,exp_next}=state.player;
   const hs=Math.max(highScore,score);
-  document.getElementById('score-row').textContent='SCORE '+score;
-  document.getElementById('high-row').textContent='HIGH '+hs;
-  document.getElementById('floor-badge').textContent='FLOOR '+currentFloor;
+  document.getElementById('score-row').textContent=tr('score')+' '+score;
+  document.getElementById('high-row').textContent=tr('high')+' '+hs;
+  document.getElementById('floor-badge').textContent=tr('floor')+' '+currentFloor;
   const displayName=state.profile?.name||playerProfile.name||'-';
   document.getElementById('status-name-text').textContent=`${displayName} (Lv.${level||1})`;
   document.getElementById('status-dot').classList.toggle('poison', !!state.player.poisoned);
@@ -699,7 +982,7 @@ function render(){
     ctx.fillStyle='#f8fafc';
     ctx.font='bold 10px sans-serif';
     ctx.textAlign='center';
-    ctx.fillText((other.name||'ALLY').slice(0,8), cx, sy-6);
+    ctx.fillText((other.name||tr('allyFallback')).slice(0,8), cx, sy-6);
   }
 
   // Player (always center of view)
@@ -719,31 +1002,14 @@ function render(){
   }
 }
 
-// ── GM messages ───────────────────────────────────────────────────────────────
-const GM={
-  kill:['やった！倒した！！','ナイス！スコアゲット！','この調子だよっ！','また一体っ！！'],
-  dmg:['痛っ！HP注意！','気をつけて！','やられた！！','エイリアンが来るよっ！'],
-  poison:['毒になっちゃった！','赤紫は危ないよっ！','うわっ、毒が回る…！'],
-  poison_tick:['毒がじわじわ効いてる…！','早く治したいね…','うう、HPが削られる…'],
-  heal:['緑だ！ちょっと回復したよ！','ラッキー、HP回復！','やさしいエイリアン…？'],
-  trapped:['トラップ成功！今のうちに埋めて！','はまったはまった！急いで！','チャンスだよっ！'],
-  levelup:['レベルアップ！つよくなったよっ！','いい感じ！最大HPが増えた！','やったね、もっと潜れる！'],
-  use_green:['みどりのポーションで回復！','HPをちょっと戻したよ！'],
-  use_red:['どくが消えたよっ！','あかのポーションでスッキリ！'],
-  use_blue:['あおのポーションで全回復！','完全復活っ！まだまだいけるよ！'],
-  chest_green:['宝笥をあけたよ！','みどりのポーションだ！'],
-  chest_red:['宝笥からあかのポーション！','どくけしが入ってた！'],
-  chest_blue:['メッチャラッキー！あおのポーション！','宝笥から全回復アイテム！'],
-  holy_place:['聖なる床板を置いたよ！','ここはひとまず安全地帯かも！','床板でバリケード完成っ！'],
-  holy_pickup:['聖なる床板を回収！','床板ゲットだね！','うまく持ち帰れたよっ！'],
-};
 function setGm(txt){ document.getElementById('gm-text').textContent=txt; }
 function rnd(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 function handleEvent(ev){
   if(!ev) return;
-  if(GM[ev]) setGm(rnd(GM[ev]));
+  const gmSet=trGm(ev);
+  if(gmSet) setGm(rnd(gmSet));
   if(ev==='dmg')            { showDmgFlash(); SFX.dmg(); }
-  if(ev==='poison')         { showDmgFlash('どく！','#a855f7'); SFX.dmg(); }
+  if(ev==='poison')         { showDmgFlash(tr('poisonDamage'),'#a855f7'); SFX.dmg(); }
   if(ev==='poison_tick')    { showDmgFlash('POISON','#7c3aed'); SFX.dmg(); }
   if(ev==='heal')           SFX.kill();
   if(ev==='kill')           SFX.kill();
@@ -753,18 +1019,19 @@ function handleEvent(ev){
   if(ev==='use_green')      SFX.kill();
   if(ev==='use_red')        SFX.act();
   if(ev==='use_blue')       SFX.floor();
-  if(ev==='item_green')  { showItemFlash('みどりのポーション','#22c55e'); SFX.kill(); }
-  if(ev==='item_red')    { showItemFlash('あかのポーション','#ef4444'); SFX.kill(); }
-  if(ev==='item_blue')   { showItemFlash('あおのポーション','#38bdf8'); SFX.kill(); }
-  if(ev==='chest_green') { showItemFlash('みどりのポーション','#22c55e'); SFX.trapped(); }
-  if(ev==='chest_red')   { showItemFlash('あかのポーション','#ef4444'); SFX.trapped(); }
-  if(ev==='chest_blue')  { showItemFlash('あおのポーション','#38bdf8'); SFX.trapped(); }
-  if(ev==='holy_place')  { showItemFlash('聖なる床板を設置！','#f59e0b'); SFX.act(); }
-  if(ev==='holy_pickup') { showItemFlash('聖なる床板をゲット！','#fbbf24'); SFX.kill(); }
+  if(ev==='item_green')  { showItemFlash(trItem('green'),'#22c55e'); SFX.kill(); }
+  if(ev==='item_red')    { showItemFlash(trItem('red'),'#ef4444'); SFX.kill(); }
+  if(ev==='item_blue')   { showItemFlash(trItem('blue'),'#38bdf8'); SFX.kill(); }
+  if(ev==='chest_green') { showItemFlash(trItem('green'),'#22c55e'); SFX.trapped(); }
+  if(ev==='chest_red')   { showItemFlash(trItem('red'),'#ef4444'); SFX.trapped(); }
+  if(ev==='chest_blue')  { showItemFlash(trItem('blue'),'#38bdf8'); SFX.trapped(); }
+  if(ev==='holy_place')  { showItemFlash(trItem('holy'),'#f59e0b'); SFX.act(); }
+  if(ev==='holy_pickup') { showItemFlash(trItem('holy'),'#fbbf24'); SFX.kill(); }
 }
 
-let dmgFlashTimer=null;
-function showDmgFlash(label='ダメージ！',color='#ef5350'){
+let flashTimer=null;
+let itemFlashTimer=null;
+function showDmgFlash(label=tr('damage'),color='#ef5350'){
   const el=document.getElementById('dmg-flash');
   const textEl=document.getElementById('dmg-label');
   textEl.textContent=label;
@@ -772,15 +1039,14 @@ function showDmgFlash(label='ダメージ！',color='#ef5350'){
   el.classList.remove('show');
   void el.offsetWidth;
   el.classList.add('show');
-  clearTimeout(dmgFlashTimer);
-  dmgFlashTimer=setTimeout(()=>el.classList.remove('show'),700);
+  clearTimeout(flashTimer);
+  flashTimer=setTimeout(()=>el.classList.remove('show'),700);
 }
 
-let itemFlashTimer=null;
 function showItemFlash(name, color){
   const el=document.getElementById('item-flash');
   const lbl=document.getElementById('item-label');
-  lbl.textContent=name+'をゲット！';
+  lbl.textContent=tr('itemGet',name);
   lbl.style.color=color;
   lbl.style.textShadow=`0 0 18px ${color},0 2px 4px rgba(0,0,0,.8)`;
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
@@ -791,26 +1057,26 @@ function showItemFlash(name, color){
 let floorFlashTimer=null;
 function showFloorFlash(floor,bonus){
   const el=document.getElementById('floor-flash');
-  document.getElementById('floor-label').textContent='FLOOR '+floor+' CLEAR!';
-  document.getElementById('floor-bonus').textContent='+'+bonus+' pts';
+  document.getElementById('floor-label').textContent=tr('floorClear',floor);
+  document.getElementById('floor-bonus').textContent=tr('floorBonus',bonus);
   el.classList.remove('show');
   void el.offsetWidth;
   el.classList.add('show');
   clearTimeout(floorFlashTimer);
   floorFlashTimer=setTimeout(()=>el.classList.remove('show'),1200);
-  setGm('FLOOR '+floor+' クリア！やるじゃん！');
+  setGm(tr('gmFloorClear',floor));
 }
 
 function showFloorStart(floor){
   const el=document.getElementById('floor-flash');
-  document.getElementById('floor-label').textContent='FLOOR '+floor+' START!';
+  document.getElementById('floor-label').textContent=tr('floorStart',floor);
   document.getElementById('floor-bonus').textContent='';
   el.classList.remove('show');
   void el.offsetWidth;
   el.classList.add('show');
   clearTimeout(floorFlashTimer);
   floorFlashTimer=setTimeout(()=>el.classList.remove('show'),1200);
-  setGm('FLOOR '+floor+'、いくよっ！気合い入れて！');
+  setGm(tr('gmFloorStart',floor));
 }
 
 function showLevelUpFlash(){
@@ -831,9 +1097,9 @@ function showGameover(msg){
   const status=document.getElementById('hs-status');
   document.getElementById('hs-entry').style.display=qualifies?'block':'none';
   if(qualifies){
-    const name=(playerProfile.name||'ななし').trim();
+    const name=(playerProfile.name||'Player').trim();
     document.getElementById('hs-name').value=name;
-    status.textContent=scoreSubmitted?'ハイスコア登録ずみだよ':'ハイスコアを登録したよ！';
+    status.textContent=scoreSubmitted?tr('hsRegisteredDone'):tr('hsRegistered');
     if(!scoreSubmitted){
       scoreSubmitted=true;
       send({type:'submit',name,score:finalScore});
@@ -841,7 +1107,7 @@ function showGameover(msg){
   }
   renderScoresTable('go-tbody',msg.scores,null);
   document.getElementById('gameover').style.display='flex';
-  setGm('あ〜やられちゃった…またがんばろ！');
+  setGm(tr('gmGameOver'));
   document.querySelector('.back-home').style.display='inline-flex';
   setBoxPanelOpen(false);
   setMenuPanelOpen(false);
@@ -877,7 +1143,7 @@ function renderScoresTable(tbodyId,scores,myRankVal){
   });
   if(!scores.length){
     const tr=document.createElement('tr');
-    tr.innerHTML='<td colspan="3" style="color:#64748b;text-align:center">記録なし</td>';
+    tr.innerHTML=`<td colspan="3" style="color:#64748b;text-align:center">${escHtml(tr('noRecords'))}</td>`;
     tbody.appendChild(tr);
   }
 }
