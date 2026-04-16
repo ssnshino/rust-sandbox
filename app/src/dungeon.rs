@@ -11,6 +11,9 @@ use crate::scores::ScoreBoard;
 
 const MAX_HP: u8 = 5;
 const BASE_EXP_NEXT: u32 = 30;
+const POISON_TICKS: u32 = 180;
+const POISON_DAMAGE_INTERVAL: u32 = 90;
+const HEAL_AMOUNT: u8 = 1;
 const DIG_TICKS: u32 = 5;
 const FILL_TICKS: u32 = 5;
 const HOLE_LIFE: u32 = 60;
@@ -50,7 +53,7 @@ impl Dir {
     }
 }
 
-struct Player { x:usize, y:usize, hp:u8, max_hp:u8, score:u32, level:u32, exp:u32, exp_next:u32, dir:Dir, invincible:u32 }
+struct Player { x:usize, y:usize, hp:u8, max_hp:u8, score:u32, level:u32, exp:u32, exp_next:u32, poison_ticks:u32, poison_tick_timer:u32, dir:Dir, invincible:u32 }
 
 struct PlayerProfile { user_id: Option<String>, name: String }
 
@@ -62,9 +65,38 @@ enum HoleState {
 }
 struct Hole { x:usize, y:usize, state:HoleState, id:usize }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ItemKind { Green, Red, Blue }
+impl ItemKind {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Green => "green",
+            Self::Red => "red",
+            Self::Blue => "blue",
+        }
+    }
+}
+
+struct Item { x:usize, y:usize, kind:ItemKind, id:usize }
+struct Chest { x:usize, y:usize, id:usize }
+
+struct Inventory { green:u32, red:u32, blue:u32 }
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AlienKind { Damage, Poison, Heal }
+impl AlienKind {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Damage => "damage",
+            Self::Poison => "poison",
+            Self::Heal => "heal",
+        }
+    }
+}
+
 #[derive(Clone, PartialEq)]
 enum AlienState { Active, Trapped(usize), Dead(u32) }
-struct Alien { x:usize, y:usize, state:AlienState, move_timer:u32, id:usize }
+struct Alien { x:usize, y:usize, kind:AlienKind, state:AlienState, move_timer:u32, id:usize }
 
 #[derive(PartialEq, Eq)]
 enum Phase { Playing, GameOver }
@@ -73,10 +105,15 @@ struct Game {
     grid: Vec<Vec<u8>>,
     player: Player,
     profile: PlayerProfile,
+    inventory: Inventory,
     aliens: Vec<Alien>,
     holes: Vec<Hole>,
+    items: Vec<Item>,
+    chests: Vec<Chest>,
     tick: u64,
     next_hole_id: usize,
+    next_item_id: usize,
+    next_chest_id: usize,
     phase: Phase,
     event: Option<&'static str>,
     kills: u32,
@@ -129,9 +166,10 @@ impl Game {
         let grid = generate_for_floor(seed, 1);
         let start = pick_start(&grid, seed);
         let goal  = bfs_farthest(&grid, start.0, start.1);
-        let player = Player { x:start.0,y:start.1,hp:MAX_HP,max_hp:MAX_HP,score:0,level:1,exp:0,exp_next:BASE_EXP_NEXT,dir:Dir::Down,invincible:0 };
+        let player = Player { x:start.0,y:start.1,hp:MAX_HP,max_hp:MAX_HP,score:0,level:1,exp:0,exp_next:BASE_EXP_NEXT,poison_ticks:0,poison_tick_timer:POISON_DAMAGE_INTERVAL,dir:Dir::Down,invincible:0 };
         let aliens = make_aliens(&grid, 1, start);
-        Game { grid,player,profile,aliens,holes:Vec::new(),tick:0,next_hole_id:0,
+        let chests = make_chests(&grid, 1, start, goal);
+        Game { grid,player,profile,inventory:Inventory { green:0, red:0, blue:0 },aliens,holes:Vec::new(),items:Vec::new(),chests,tick:0,next_hole_id:0,next_item_id:0,next_chest_id:1000,
                phase:Phase::Playing,event:None,kills:0,
                floor:1,goal,start,new_grid_ready:false,floor_bonus:0,cleared_floor:0 }
     }
@@ -150,6 +188,8 @@ impl Game {
         self.player.dir = Dir::Down;
         self.player.hp = self.player.hp.min(self.player.max_hp);
         self.holes.clear();
+        self.items.clear();
+        self.chests = make_chests(&self.grid, self.floor, self.start, self.goal);
         self.aliens = make_aliens(&self.grid, self.floor, self.start);
         self.new_grid_ready = true;
     }
@@ -171,6 +211,123 @@ impl Game {
             self.player.hp = self.player.max_hp;
             self.player.exp_next += 15;
             self.event = Some("levelup");
+        }
+    }
+
+    fn apply_contact_effect(&mut self, alien_kind: AlienKind) {
+        match alien_kind {
+            AlienKind::Damage => {
+                self.player.hp = self.player.hp.saturating_sub(1);
+                self.player.invincible = INVINCIBLE_TICKS;
+                self.event = Some("dmg");
+            }
+            AlienKind::Poison => {
+                self.player.poison_ticks = POISON_TICKS;
+                self.player.poison_tick_timer = POISON_DAMAGE_INTERVAL;
+                self.player.invincible = INVINCIBLE_TICKS;
+                self.event = Some("poison");
+            }
+            AlienKind::Heal => {
+                self.player.hp = self.player.hp.saturating_add(HEAL_AMOUNT).min(self.player.max_hp);
+                self.player.invincible = INVINCIBLE_TICKS / 2;
+                if self.event != Some("levelup") {
+                    self.event = Some("heal");
+                }
+            }
+        }
+        if self.player.hp == 0 {
+            self.phase = Phase::GameOver;
+        }
+    }
+
+    fn roll_potion_kind(&self, salt: usize) -> ItemKind {
+        let roll = (self.tick as usize + salt * 17 + self.floor as usize * 13) % 100;
+        if roll < 10 { ItemKind::Blue } else if roll < 34 { ItemKind::Red } else { ItemKind::Green }
+    }
+
+    fn maybe_spawn_drop(&mut self, x: usize, y: usize, alien_id: usize) {
+        let roll = (self.tick as usize + alien_id * 17 + x * 11 + y * 7 + self.floor as usize * 13) % 100;
+        if roll >= 38 {
+            return;
+        }
+        let kind = self.roll_potion_kind(alien_id + x + y);
+        let id = self.next_item_id;
+        self.next_item_id += 1;
+        self.items.push(Item { x, y, kind, id });
+    }
+
+    fn open_chest(&mut self, chest_id: usize, x: usize, y: usize) {
+        let kind = self.roll_potion_kind(chest_id + x + y);
+        self.add_item_to_inventory(kind);
+        if self.event != Some("levelup") {
+            self.event = Some(match kind {
+                ItemKind::Green => "chest_green",
+                ItemKind::Red   => "chest_red",
+                ItemKind::Blue  => "chest_blue",
+            });
+        }
+    }
+
+    fn add_item_to_inventory(&mut self, kind: ItemKind) {
+        match kind {
+            ItemKind::Green => {
+                self.inventory.green += 1;
+                if self.event != Some("levelup") {
+                    self.event = Some("item_green");
+                }
+            }
+            ItemKind::Red => {
+                self.inventory.red += 1;
+                if self.event != Some("levelup") {
+                    self.event = Some("item_red");
+                }
+            }
+            ItemKind::Blue => {
+                self.inventory.blue += 1;
+                if self.event != Some("levelup") {
+                    self.event = Some("item_blue");
+                }
+            }
+        }
+    }
+
+
+    fn use_item(&mut self, kind: &str) {
+        match kind {
+            "green" => {
+                if self.inventory.green == 0 {
+                    return;
+                }
+                self.inventory.green -= 1;
+                self.player.hp = self.player.hp.saturating_add(HEAL_AMOUNT).min(self.player.max_hp);
+                if self.event != Some("levelup") {
+                    self.event = Some("use_green");
+                }
+            }
+            "red" => {
+                if self.inventory.red == 0 {
+                    return;
+                }
+                self.inventory.red -= 1;
+                self.player.poison_ticks = 0;
+                self.player.poison_tick_timer = POISON_DAMAGE_INTERVAL;
+                if self.event != Some("levelup") {
+                    self.event = Some("use_red");
+                }
+            }
+            "blue" => {
+                if self.inventory.blue == 0 {
+                    return;
+                }
+                self.inventory.blue -= 1;
+                self.player.hp = self.player.max_hp;
+                self.player.poison_ticks = 0;
+                self.player.poison_tick_timer = POISON_DAMAGE_INTERVAL;
+                if self.event != Some("levelup") {
+                    self.event = Some("use_blue");
+                }
+            }
+            _ => {}
         }
     }
 
@@ -210,6 +367,15 @@ impl Game {
         let (nx,ny)=(nx as usize,ny as usize);
         if self.hole_at(nx,ny).is_some() { return; }
         self.player.x=nx; self.player.y=ny;
+        if let Some(ci)=self.chests.iter().position(|ch| ch.x==nx && ch.y==ny) {
+            let chest = self.chests.remove(ci);
+            self.open_chest(chest.id, chest.x, chest.y);
+        }
+        if let Some(ii)=self.items.iter().position(|it| it.x==nx && it.y==ny) {
+            let kind = self.items[ii].kind;
+            self.items.remove(ii);
+            self.add_item_to_inventory(kind);
+        }
         // goal check
         if (self.player.x, self.player.y) == self.goal {
             self.event = Some("floor_complete");
@@ -242,6 +408,18 @@ impl Game {
         self.tick+=1;
         self.event=None;
         if self.player.invincible>0 { self.player.invincible-=1; }
+        if self.player.poison_ticks>0 {
+            self.player.poison_ticks-=1;
+            if self.player.poison_tick_timer>0 {
+                self.player.poison_tick_timer-=1;
+            }
+            if self.player.poison_tick_timer==0 {
+                self.player.poison_tick_timer=POISON_DAMAGE_INTERVAL;
+                self.player.hp=self.player.hp.saturating_sub(1);
+                self.event=Some("poison_tick");
+                if self.player.hp==0 { self.phase=Phase::GameOver; }
+            }
+        }
 
         // ── Holes ──
         let mut i=0;
@@ -271,14 +449,19 @@ impl Game {
                 HoleState::Filling{ticks,alien_id:aid} => {
                     if ticks<=1 {
                         if let Some(alien_id)=aid {
+                            let mut drop_pos = None;
                             if let Some(a)=self.aliens.iter_mut().find(|a|a.id==alien_id) {
                                 a.state=AlienState::Dead(RESPAWN_TICKS);
+                                drop_pos = Some((a.x, a.y, a.id));
                                 self.kills+=1;
                                 self.player.score+=10+self.kills*5;
                                 self.gain_exp(8);
                                 if self.event != Some("levelup") {
                                     self.event=Some("kill");
                                 }
+                            }
+                            if let Some((ax, ay, aid2)) = drop_pos {
+                                self.maybe_spawn_drop(ax, ay, aid2);
                             }
                         }
                         true
@@ -341,10 +524,11 @@ impl Game {
                         &&self.aliens[ai].x==self.player.x&&self.aliens[ai].y==self.player.y
                         &&self.player.invincible==0
                     {
-                        self.player.hp=self.player.hp.saturating_sub(1);
-                        self.player.invincible=INVINCIBLE_TICKS;
-                        self.event=Some("dmg");
-                        if self.player.hp==0 { self.phase=Phase::GameOver; }
+                        let kind = self.aliens[ai].kind;
+                        self.apply_contact_effect(kind);
+                        if kind == AlienKind::Heal {
+                            self.aliens[ai].state = AlienState::Dead(RESPAWN_TICKS * 2);
+                        }
                     }
                 }
             }
@@ -363,7 +547,7 @@ impl Game {
         let p=&self.player;
         let aliens: Vec<serde_json::Value>=self.aliens.iter()
             .filter(|a|!matches!(a.state,AlienState::Dead(_)))
-            .map(|a|serde_json::json!({"x":a.x,"y":a.y,"trapped":matches!(a.state,AlienState::Trapped(_)),"id":a.id}))
+            .map(|a|serde_json::json!({"x":a.x,"y":a.y,"trapped":matches!(a.state,AlienState::Trapped(_)),"id":a.id,"kind":a.kind.as_str()}))
             .collect();
         let holes: Vec<serde_json::Value>=self.holes.iter().map(|h|{
             let (st,t,total)=match &h.state {
@@ -374,15 +558,49 @@ impl Game {
             };
             serde_json::json!({"x":h.x,"y":h.y,"st":st,"t":t,"total":total})
         }).collect();
+        let items: Vec<serde_json::Value>=self.items.iter().map(|it|{
+            serde_json::json!({"x":it.x,"y":it.y,"kind":it.kind.as_str(),"id":it.id})
+        }).collect();
+        let chests: Vec<serde_json::Value>=self.chests.iter().map(|ch|{
+            serde_json::json!({"x":ch.x,"y":ch.y,"id":ch.id})
+        }).collect();
         serde_json::json!({
             "type":"state",
             "phase":if self.phase==Phase::Playing{"playing"}else{"gameover"},
             "profile":{"name":self.profile.name,"player_id":self.profile.user_id},
-            "player":{"x":p.x,"y":p.y,"hp":p.hp,"max_hp":p.max_hp,"score":p.score,"level":p.level,"exp":p.exp,"exp_next":p.exp_next,"dir":p.dir.name(),"inv":p.invincible>0},
-            "aliens":aliens,"holes":holes,"event":self.event,"tick":self.tick,
+            "inventory":{"green":self.inventory.green,"red":self.inventory.red,"blue":self.inventory.blue},
+            "player":{"x":p.x,"y":p.y,"hp":p.hp,"max_hp":p.max_hp,"score":p.score,"level":p.level,"exp":p.exp,"exp_next":p.exp_next,"poisoned":p.poison_ticks>0,"poison_ticks":p.poison_ticks,"dir":p.dir.name(),"inv":p.invincible>0},
+            "aliens":aliens,"holes":holes,"items":items,"chests":chests,"event":self.event,"tick":self.tick,
             "floor":self.floor,"goal":{"x":self.goal.0,"y":self.goal.1}
         }).to_string()
     }
+}
+
+fn make_chests(grid: &Vec<Vec<u8>>, floor: u32, start: (usize, usize), goal: (usize, usize)) -> Vec<Chest> {
+    let count = if floor <= 2 { 1 } else { 2 };
+    let mut cells: Vec<(usize, usize, usize)> = (1..ROWS-1)
+        .flat_map(|y| (1..COLS-1).filter_map(move |x| {
+            if grid[y][x] != 1 || (x, y) == start || (x, y) == goal {
+                return None;
+            }
+            let dist = x.abs_diff(start.0) + y.abs_diff(start.1);
+            if dist < 8 {
+                return None;
+            }
+            Some((x, y, dist))
+        }))
+        .collect();
+    cells.sort_by(|a, b| b.2.cmp(&a.2));
+    let mut out = Vec::new();
+    for (i, (x, y, _)) in cells.into_iter().enumerate() {
+        if out.iter().all(|ch: &Chest| ch.x.abs_diff(x) + ch.y.abs_diff(y) >= 6) {
+            out.push(Chest { x, y, id: 2000 + i + floor as usize * 10 });
+            if out.len() >= count {
+                break;
+            }
+        }
+    }
+    out
 }
 
 fn make_aliens(grid: &Vec<Vec<u8>>, floor: u32, start: (usize, usize)) -> Vec<Alien> {
@@ -416,7 +634,14 @@ fn make_aliens(grid: &Vec<Vec<u8>>, floor: u32, start: (usize, usize)) -> Vec<Al
     }
 
     picked.into_iter().enumerate().map(|(i, (ax, ay))| {
-        Alien { x:ax, y:ay, state:AlienState::Active, move_timer:BASE_SPEED+i as u32*3, id:i }
+        let kind = if floor >= 4 && i == count.saturating_sub(1) && floor % 3 == 1 {
+            AlienKind::Heal
+        } else if i % 3 == 2 {
+            AlienKind::Poison
+        } else {
+            AlienKind::Damage
+        };
+        Alien { x:ax, y:ay, kind, state:AlienState::Active, move_timer:BASE_SPEED+i as u32*3, id:i }
     }).collect()
 }
 
@@ -429,7 +654,7 @@ struct StartProfile {
 
 #[derive(Deserialize)]
 #[serde(tag="type",rename_all="lowercase")]
-enum ClientMsg { Start { profile: StartProfile }, Move{dir:String}, Act, Submit{name:String,score:u32}, Restart }
+enum ClientMsg { Start { profile: StartProfile }, Move{dir:String}, Act, Useitem{kind:String}, Submit{name:String,score:u32}, Restart }
 
 pub async fn run(mut socket: WebSocket, scores: Arc<Mutex<ScoreBoard>>, player_count: Arc<AtomicUsize>) {
     let _player_count_guard = PlayerCountGuard::new(player_count);
@@ -515,17 +740,25 @@ pub async fn run(mut socket: WebSocket, scores: Arc<Mutex<ScoreBoard>>, player_c
                         if let Some(ref mut g)=gs {
                             if g.phase==Phase::Playing {
                                 g.apply_move(&dir);
-                                // send new grid if floor advanced
                                 if g.new_grid_ready {
                                     g.new_grid_ready = false;
                                     if socket.send(Message::Text(g.grid_json())).await.is_err() { break; }
-                                    if socket.send(Message::Text(g.to_json())).await.is_err() { break; }
                                 }
+                                // always send state so events (chest, item) are not lost before next tick
+                                if socket.send(Message::Text(g.to_json())).await.is_err() { break; }
                             }
                         }
                     }
                     ClientMsg::Act => {
                         if let Some(ref mut g)=gs { if g.phase==Phase::Playing { g.apply_act(); } }
+                    }
+                    ClientMsg::Useitem { kind } => {
+                        if let Some(ref mut g)=gs {
+                            if g.phase==Phase::Playing {
+                                g.use_item(&kind);
+                                if socket.send(Message::Text(g.to_json())).await.is_err() { break; }
+                            }
+                        }
                     }
                     ClientMsg::Submit { name, score } => {
                         let msg_str = {
