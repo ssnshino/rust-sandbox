@@ -1,7 +1,7 @@
 use axum::extract::ws::{Message, WebSocket};
 use serde::{Deserialize, Serialize};
 use std::sync::{
-    atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering},
+    atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicUsize, Ordering},
     Arc,
 };
 use tokio::sync::watch;
@@ -26,6 +26,19 @@ const BRICK_START_Y: f64 = 50.0;
 const LIVES: u32 = 3;
 const TOTAL_BRICKS: usize = BRICK_COLS * BRICK_ROWS;
 const NO_TARGET: u64 = u64::MAX;
+
+struct PlayerCountGuard(Arc<AtomicUsize>);
+impl PlayerCountGuard {
+    fn new(counter: Arc<AtomicUsize>) -> Self {
+        counter.fetch_add(1, Ordering::Relaxed);
+        Self(counter)
+    }
+}
+impl Drop for PlayerCountGuard {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::Relaxed);
+    }
+}
 
 fn pack_f64(v: Option<f64>) -> u64 {
     v.map(|f| f.to_bits()).unwrap_or(NO_TARGET)
@@ -280,7 +293,8 @@ impl Game {
 
 // ── WebSocket ハンドラ ─────────────────────────────────
 
-pub async fn run(mut socket: WebSocket) {
+pub async fn run(mut socket: WebSocket, player_count: Arc<AtomicUsize>) {
+    let _player_count_guard = PlayerCountGuard::new(player_count);
     let dir_a      = Arc::new(AtomicI32::new(0));
     let launch_a   = Arc::new(AtomicBool::new(false));
     let target_x_a = Arc::new(AtomicU64::new(NO_TARGET));

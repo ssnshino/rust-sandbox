@@ -40,6 +40,14 @@
       background: rgba(124,58,237,0.3); color: #c4b5fd;
       border-color: rgba(124,58,237,0.5);
     }
+    .badge.live {
+      background: rgba(34,197,94,0.16); color: #bbf7d0;
+      border-color: rgba(34,197,94,0.28);
+    }
+    .badge.waiting {
+      background: rgba(251,191,36,0.18); color: #fde68a;
+      border-color: rgba(251,191,36,0.34);
+    }
     footer { margin-top: 40px; font-size: 0.8rem; color: #475569; }
     code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; }
   </style>
@@ -57,7 +65,7 @@
           <div class="card-title">Pong — シングル</div>
           <div class="card-desc">WebSocket でサーバー同期する CPU 対戦 Pong</div>
         </div>
-        <span class="badge">1P</span>
+        <span class="badge live" data-count-key="pong_single">1P • --人</span>
       </a>
       <a class="card" href="/pong?mode=2p">
         <span class="card-icon">⚔️</span>
@@ -65,7 +73,7 @@
           <div class="card-title">Pong — 2P 対戦</div>
           <div class="card-desc">別の端末・別タブで同時接続してリアルタイム対戦</div>
         </div>
-        <span class="badge">2P</span>
+        <span class="badge live" data-count-key="pong_2p" data-waiting-key="pong_2p_waiting">2P • --人</span>
       </a>
       <a class="card" href="/breakout">
         <span class="card-icon">🧱</span>
@@ -73,7 +81,7 @@
           <div class="card-title">Breakout</div>
           <div class="card-desc">サーバーサイド物理演算のブロック崩し。マウス / キー / タッチ対応</div>
         </div>
-        <span class="badge">1P</span>
+        <span class="badge live" data-count-key="breakout">1P • --人</span>
       </a>
       <a class="card" href="/dungeon">
         <span class="card-icon">🏯</span>
@@ -81,7 +89,7 @@
           <div class="card-title">あやかダンジョン</div>
           <div class="card-desc">平安京エイリアン × あやかダンジョン。穴を掘ってエイリアンを倒せ！</div>
         </div>
-        <span class="badge new">NEW</span>
+        <span class="badge new live" data-count-key="dungeon">NEW • --人</span>
       </a>
     </div>
 
@@ -89,5 +97,27 @@
       <code>ayano-lab/docker/rust-sandbox</code>
     </footer>
   </div>
+<script>
+(async()=>{
+  const labels = {pong_single:"1P", pong_2p:"2P", breakout:"1P", dungeon:"NEW"};
+  async function refresh(){
+    try{
+      const res = await fetch("/api/status", {cache:"no-store"});
+      if(!res.ok) return;
+      const data = await res.json();
+      document.querySelectorAll("[data-count-key]").forEach(el=>{
+        const key = el.dataset.countKey;
+        const count = Number(data[key] ?? 0);
+        const waitingKey = el.dataset.waitingKey;
+        const waiting = waitingKey ? Number(data[waitingKey] ?? 0) : 0;
+        el.classList.toggle("waiting", waiting > 0);
+        el.textContent = waiting > 0 ? `${labels[key]} • 待ちあり` : `${labels[key]} • ${count}人`;
+      });
+    }catch(_){}
+  }
+  await refresh();
+  setInterval(refresh, 4000);
+})();
+</script>
 </body>
 </html>
