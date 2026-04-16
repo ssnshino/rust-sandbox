@@ -37,7 +37,7 @@ html,body{background:#0f0f1a;color:#e2e8f0;font-family:sans-serif;height:100%;ov
 #hud{width:100%;max-width:540px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:6px 12px;font-size:.82rem;flex-shrink:0;gap:4px}
 #score-row{text-align:left}
 #high-row{text-align:center;color:#ffd700;font-weight:700}
-#hp-row{text-align:right;color:#cbd5e1;font-size:.92rem;letter-spacing:.08em;font-weight:700}
+#hud-menu-wrap{display:flex;justify-content:flex-end}
 #score-row{color:#ffd700;font-weight:600}
 #canvas-wrap{position:relative;flex-shrink:0}
 #status-window{position:absolute;left:12px;top:12px;z-index:8;min-width:188px;padding:12px 14px;border-radius:14px;background:rgba(15,23,42,.82);border:1px solid rgba(255,255,255,.12);box-shadow:0 10px 28px rgba(0,0,0,.28);backdrop-filter:blur(8px);transition:opacity .18s ease,padding .18s ease,min-width .18s ease}
@@ -56,6 +56,9 @@ html,body{background:#0f0f1a;color:#e2e8f0;font-family:sans-serif;height:100%;ov
 .status-fill{height:100%;width:0%;border-radius:999px;transition:width .2s ease, background .2s ease}
 #hp-fill{background:linear-gradient(90deg,#22c55e,#16a34a)}
 #exp-fill{background:linear-gradient(90deg,#38bdf8,#818cf8,#c084fc)}
+#menu-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:999px;background:rgba(15,23,42,.72);border:1px solid rgba(255,255,255,.12);color:#cbd5e1;font-size:.82rem;font-weight:800;letter-spacing:.08em;box-shadow:0 6px 18px rgba(0,0,0,.18);backdrop-filter:blur(8px);cursor:pointer;flex-shrink:0}
+#menu-btn:active{opacity:.78}
+#menu-btn .menu-icon{font-size:1rem;line-height:1}
 #box-fab{position:absolute;top:12px;right:12px;z-index:9;display:flex;align-items:center;gap:8px;padding:9px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(15,23,42,.88);box-shadow:0 8px 20px rgba(0,0,0,.28);color:#e2e8f0;font-size:.82rem;font-weight:800;letter-spacing:.08em;cursor:pointer;backdrop-filter:blur(8px)}
 #box-fab.empty{opacity:.72}
 #box-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;font-size:.78rem}
@@ -73,24 +76,24 @@ html,body{background:#0f0f1a;color:#e2e8f0;font-family:sans-serif;height:100%;ov
 .box-item-dot.blue{background:#38bdf8}
 .box-item-meta,.menu-item-meta{display:flex;align-items:center;gap:8px;font-size:.72rem;color:#94a3b8}
 .box-item-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:rgba(255,255,255,.08);color:#fff;font-size:.76rem;font-weight:800}
-#menu-btn{width:72px;height:72px;border-radius:24px;background:rgba(15,23,42,.82);border:1px solid rgba(255,255,255,.14);color:#fff;font-size:.76rem;font-weight:800;letter-spacing:.08em;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:0 12px 28px rgba(0,0,0,.24);backdrop-filter:blur(8px);cursor:pointer;flex-shrink:0}
-#menu-btn:active{opacity:.78}
-#menu-btn .menu-icon{font-size:1.2rem;line-height:1}
-#menu-panel{position:fixed;right:50%;bottom:128px;transform:translateX(50%);z-index:24;width:min(260px,calc(100vw - 24px));padding:14px;border-radius:18px;border:1px solid rgba(255,255,255,.14);background:rgba(15,23,42,.96);box-shadow:0 16px 40px rgba(0,0,0,.34);backdrop-filter:blur(10px)}
+#menu-panel{position:absolute;top:38px;right:0;z-index:24;width:min(260px,calc(100vw - 24px));padding:14px;border-radius:18px;border:1px solid rgba(255,255,255,.14);background:rgba(15,23,42,.96);box-shadow:0 16px 40px rgba(0,0,0,.34);backdrop-filter:blur(10px)}
 @media (max-width:640px){
   #status-window{left:8px;top:8px;min-width:164px;padding:10px 12px}
   #status-window .status-name{max-width:164px;font-size:.92rem}
   #status-window .status-row{font-size:.72rem}
   #status-window.compact{min-width:144px;padding:8px 10px}
-  #menu-btn{width:66px;height:66px;border-radius:22px}
-  #menu-panel{bottom:116px;width:min(246px,calc(100vw - 20px))}
+  #menu-btn{padding:7px 11px;font-size:.78rem}
+  #box-panel{top:56px;right:8px;width:min(246px,calc(100vw - 20px))}
+  #menu-panel{top:34px;right:0;width:min(246px,calc(100vw - 20px))}
 }
 canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;height:540px;touch-action:none;image-rendering:pixelated}
-#gm-box{width:100%;max-width:630px;min-height:32px;padding:4px 12px;font-size:.8rem;color:#94a3b8;flex-shrink:0}
+#gm-box{width:100%;max-width:630px;min-height:32px;padding:4px 12px;font-size:.8rem;color:#94a3b8;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+#gm-message{min-width:0;flex:1}
 #gm-face{color:#ffd700;margin-right:6px}
+#floor-badge{text-align:right;color:#cbd5e1;font-size:.92rem;letter-spacing:.08em;font-weight:700;flex-shrink:0}
 
 /* ── CONTROLS ── */
-#controls{display:flex;align-items:flex-end;justify-content:space-between;width:100%;max-width:630px;padding:8px 20px 16px;gap:16px;flex-shrink:0}
+#controls{display:flex;align-items:flex-end;justify-content:space-between;width:100%;max-width:630px;padding:8px 16px 16px;gap:12px;flex-shrink:0}
 #move-pad{position:relative;display:flex;align-items:flex-end;justify-content:flex-start;min-width:176px;min-height:136px;flex:1}
 #dpad{display:grid;grid-template-rows:44px 44px 44px;grid-template-columns:44px 44px 44px;gap:4px}
 .dpad-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e2e8f0;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -104,14 +107,18 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
 #punicon-base{position:absolute;inset:14px;border-radius:50%;border:1px solid rgba(255,255,255,.08);background:radial-gradient(circle,rgba(255,255,255,.05),rgba(255,255,255,.015));pointer-events:none}
 #punicon-stick{position:absolute;left:50%;top:50%;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,rgba(124,58,237,.88),rgba(79,70,229,.94));box-shadow:0 8px 18px rgba(0,0,0,.28);transform:translate(-50%,-50%);pointer-events:none}
 #punicon-hint{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:.66rem;letter-spacing:.08em;color:#94a3b8;pointer-events:none}
-#act-btn{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;color:#fff;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex-shrink:0}
-#act-btn:active{opacity:.7}
-#act-btn .act-label{font-size:1rem}
+#action-buttons{display:flex;align-items:flex-end;gap:10px;flex-shrink:0;margin-right:2px}
+#act-btn,#bact-btn{width:80px;height:80px;border-radius:50%;border:none;color:#fff;font-size:.76rem;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex-shrink:0}
+#act-btn{background:linear-gradient(135deg,#7c3aed,#4f46e5)}
+#bact-btn{background:linear-gradient(135deg,#f59e0b,#f97316)}
+#act-btn:active,#bact-btn:active{opacity:.7}
+#act-btn .act-label,#bact-btn .act-label{font-size:1rem}
 @media (pointer:coarse), (max-width:800px){
-  #controls{padding:8px 18px 18px}
+  #controls{padding:8px 12px 18px;gap:10px}
   #dpad{display:none}
   #punicon{display:block}
-  #act-btn{width:96px;height:96px}
+  #action-buttons{gap:8px;margin-right:0}
+  #act-btn,#bact-btn{width:74px;height:74px;font-size:.72rem}
 }
 
 /* ── DAMAGE FLASH ── */
@@ -197,7 +204,7 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
   <div id="hud">
     <span id="score-row">SCORE 0</span>
     <span id="high-row">HIGH 0</span>
-    <span id="hp-row">FLOOR 1</span>
+    <span id="hud-menu-wrap"><button id="menu-btn" type="button" onclick="toggleMenuPanel()"><span class="menu-icon">☰</span><span>MENU</span></button></span>
   </div>
   <div id="canvas-wrap">
     <aside id="status-window" aria-label="プレイヤーステータス">
@@ -223,10 +230,20 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
         <span class="box-item-name"><span class="box-item-dot blue"></span>あおのポーション</span>
         <span class="box-item-meta"><span>ぜんかいふく</span><span class="box-item-count" id="box-count-blue">0</span></span>
       </button>
-      <p id="box-panel-note">BOXをひらいて使いたいアイテムをえらんでね</p>
+      <button class="box-item" id="box-item-holy" type="button" disabled>
+        <span class="box-item-name"><span class="box-item-dot" style="background:#fbbf24"></span>聖なる床板</span>
+        <span class="box-item-meta"><span>Bで足もと設置/回収</span><span class="box-item-count" id="box-count-holy">0</span></span>
+      </button>
+      <p id="box-panel-note">ポーションはBOXから、聖なる床板はBボタンでつかうよ</p>
+    </div>
+    <div id="menu-panel" aria-label="ゲームメニュー" hidden>
+      <div id="menu-panel-title">GAME MENU</div>
+      <button class="menu-item" type="button" disabled><span>セーブ</span><span class="menu-item-meta">準備中</span></button>
+      <button class="menu-item" type="button" disabled><span>ロード</span><span class="menu-item-meta">準備中</span></button>
+      <button class="menu-item" type="button" onclick="returnToTitle()"><span>タイトルに戻る</span><span class="menu-item-meta">いったん終了</span></button>
     </div>
   </div>
-  <div id="gm-box"><span id="gm-face">あやかGM▶</span><span id="gm-text"></span></div>
+  <div id="gm-box"><div id="gm-message"><span id="gm-face">あやかGM▶</span><span id="gm-text"></span></div><span id="floor-badge">FLOOR 1</span></div>
   <div id="controls">
     <div id="move-pad">
       <div id="dpad">
@@ -241,14 +258,10 @@ canvas{display:block;max-width:100vw;max-height:calc(100vh - 160px);width:540px;
         <div id="punicon-hint">MOVE</div>
       </div>
     </div>
-    <button id="menu-btn" type="button" onclick="toggleMenuPanel()"><span class="menu-icon">☰</span><small>MENU</small></button>
-    <button id="act-btn" onclick="sendAct()"><span class="act-label">ACT</span><small>掘る/埋める</small></button>
-  </div>
-  <div id="menu-panel" aria-label="ゲームメニュー" hidden>
-    <div id="menu-panel-title">GAME MENU</div>
-    <button class="menu-item" type="button" disabled><span>セーブ</span><span class="menu-item-meta">準備中</span></button>
-    <button class="menu-item" type="button" disabled><span>ロード</span><span class="menu-item-meta">準備中</span></button>
-    <button class="menu-item" type="button" onclick="returnToTitle()"><span>タイトルに戻る</span><span class="menu-item-meta">いったん終了</span></button>
+    <div id="action-buttons">
+      <button id="bact-btn" onclick="sendBact()"><span class="act-label">B</span><small>床板</small></button>
+      <button id="act-btn" onclick="sendAct()"><span class="act-label">A</span><small>掘る/埋める</small></button>
+    </div>
   </div>
 </div>
 
@@ -414,13 +427,13 @@ function updateHUD(){
   const hs=Math.max(highScore,score);
   document.getElementById('score-row').textContent='SCORE '+score;
   document.getElementById('high-row').textContent='HIGH '+hs;
-  document.getElementById('hp-row').textContent='FLOOR '+currentFloor;
+  document.getElementById('floor-badge').textContent='FLOOR '+currentFloor;
   const displayName=state.profile?.name||playerProfile.name||'-';
   document.getElementById('status-name-text').textContent=`${displayName} (Lv.${level||1})`;
   document.getElementById('status-dot').classList.toggle('poison', !!state.player.poisoned);
   document.getElementById('status-exp').textContent=`${exp||0} / ${exp_next||0}`;
   document.getElementById('status-hp').textContent=`${hp} / ${max_hp}`;
-  const inv=state.inventory||{green:0,red:0,blue:0};
+  const inv=state.inventory||{green:0,red:0,blue:0,holy:0};
   updateBoxUI(inv);
   const hpRatio=max_hp?Math.max(0,Math.min(1,hp/max_hp)):0;
   const expRatio=exp_next?Math.max(0,Math.min(1,(exp||0)/exp_next)):0;
@@ -443,16 +456,20 @@ function updateFog(px,py){
 }
 
 function updateBoxUI(inv){
-  const total=(inv.green||0)+(inv.red||0)+(inv.blue||0);
+  const total=(inv.green||0)+(inv.red||0)+(inv.blue||0)+(inv.holy||0);
   const fab=document.getElementById('box-fab');
   document.getElementById('box-count').textContent=String(total);
   fab.classList.toggle('empty', total===0);
-  const defs=['green','red','blue'];
+  const defs=['green','red','blue','holy'];
   for(const kind of defs){
     const count=inv[kind]||0;
     const btn=document.getElementById(`box-item-${kind}`);
     document.getElementById(`box-count-${kind}`).textContent=String(count);
-    btn.disabled=count===0 || !gameActive || !state || state.phase!=='playing';
+    if(kind==='holy'){
+      btn.disabled=true;
+    } else {
+      btn.disabled=count===0 || !gameActive || !state || state.phase!=='playing';
+    }
   }
 }
 
@@ -606,6 +623,23 @@ function render(){
     ctx.fillRect(sx+18,sy+22,10,4);
   }
 
+  // Holy tiles
+  for(const tile of (state.holy_tiles||[])){
+    const {sx,sy}=gridToCanvas(tile.x,tile.y,cam);
+    if(sx<-TILE||sy<-TILE||sx>=VIEW*TILE||sy>=VIEW*TILE) continue;
+    ctx.fillStyle='rgba(245,158,11,.22)';
+    ctx.fillRect(sx+4,sy+4,TILE-8,TILE-8);
+    ctx.strokeStyle='rgba(253,224,71,.95)';
+    ctx.lineWidth=3;
+    ctx.strokeRect(sx+8,sy+8,TILE-16,TILE-16);
+    ctx.fillStyle='rgba(255,248,220,.95)';
+    ctx.font='bold 18px sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText('✦',sx+TILE/2,sy+TILE/2+1);
+    ctx.textBaseline='alphabetic';
+  }
+
   // Items
   for(const it of (state.items||[])){
     if(!visited.has(it.y*100+it.x)) continue;
@@ -700,6 +734,8 @@ const GM={
   chest_green:['宝笥をあけたよ！','みどりのポーションだ！'],
   chest_red:['宝笥からあかのポーション！','どくけしが入ってた！'],
   chest_blue:['メッチャラッキー！あおのポーション！','宝笥から全回復アイテム！'],
+  holy_place:['聖なる床板を置いたよ！','ここはひとまず安全地帯かも！','床板でバリケード完成っ！'],
+  holy_pickup:['聖なる床板を回収！','床板ゲットだね！','うまく持ち帰れたよっ！'],
 };
 function setGm(txt){ document.getElementById('gm-text').textContent=txt; }
 function rnd(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
@@ -723,6 +759,8 @@ function handleEvent(ev){
   if(ev==='chest_green') { showItemFlash('みどりのポーション','#22c55e'); SFX.trapped(); }
   if(ev==='chest_red')   { showItemFlash('あかのポーション','#ef4444'); SFX.trapped(); }
   if(ev==='chest_blue')  { showItemFlash('あおのポーション','#38bdf8'); SFX.trapped(); }
+  if(ev==='holy_place')  { showItemFlash('聖なる床板を設置！','#f59e0b'); SFX.act(); }
+  if(ev==='holy_pickup') { showItemFlash('聖なる床板をゲット！','#fbbf24'); SFX.kill(); }
 }
 
 let dmgFlashTimer=null;
@@ -863,6 +901,7 @@ const puniconStick=document.getElementById('punicon-stick');
 
 function sendDir(dir){ markHudMoving(); SFX.step(); send({type:'move',dir}); }
 function sendAct(){ SFX.act(); send({type:'act'}); }
+function sendBact(){ SFX.act(); send({type:'bact'}); }
 
 // クライアント側の通行可能チェック（サーバー確定前の予測用）
 function isPassable(x,y){
@@ -944,6 +983,9 @@ document.addEventListener('keydown',e=>{
   } else if(e.code==='KeyZ'||e.code==='Space'){
     e.preventDefault();
     sendAct();
+  } else if(e.code==='KeyX'||e.code==='KeyC'){
+    e.preventDefault();
+    sendBact();
   }
 });
 document.addEventListener('keyup',e=>{

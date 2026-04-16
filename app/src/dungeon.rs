@@ -78,8 +78,8 @@ impl Player {
 
 struct PlayerProfile { user_id: Option<String>, name: String }
 
-struct Inventory { green: u32, red: u32, blue: u32 }
-impl Inventory { fn new() -> Self { Inventory { green: 0, red: 0, blue: 0 } } }
+struct Inventory { green: u32, red: u32, blue: u32, holy: u32 }
+impl Inventory { fn new() -> Self { Inventory { green: 0, red: 0, blue: 0, holy: 4 } } }
 
 #[derive(PartialEq, Eq)]
 enum Phase { Playing, GameOver }
@@ -115,6 +115,7 @@ impl ItemKind {
 }
 struct Item  { x: usize, y: usize, kind: ItemKind, id: usize }
 struct Chest { x: usize, y: usize, id: usize }
+struct HolyTile { x: usize, y: usize, id: usize, owner_session_id: u64, owner_name: String }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum AlienKind { Damage, Poison, Heal }
@@ -135,12 +136,14 @@ struct FloorInstance {
     holes: Vec<Hole>,
     items: Vec<Item>,
     chests: Vec<Chest>,
+    holy_tiles: Vec<HolyTile>,
     tick: u64,
     goal: (usize, usize),
     start: (usize, usize),
     next_hole_id: usize,
     next_item_id: usize,
     next_chest_id: usize,
+    next_holy_tile_id: usize,
     players: Vec<PlayerSlot>,
     scores: Arc<Mutex<ScoreBoard>>,
 }
@@ -153,8 +156,8 @@ impl FloorInstance {
         let aliens = make_aliens(&grid, floor_num, start);
         let chests = make_chests(&grid, floor_num, start, goal);
         FloorInstance {
-            floor_num, grid, aliens, holes: Vec::new(), items: Vec::new(), chests,
-            tick: 0, goal, start, next_hole_id: 0, next_item_id: 0, next_chest_id: 1000,
+            floor_num, grid, aliens, holes: Vec::new(), items: Vec::new(), chests, holy_tiles: Vec::new(),
+            tick: 0, goal, start, next_hole_id: 0, next_item_id: 0, next_chest_id: 1000, next_holy_tile_id: 5000,
             players: Vec::new(), scores,
         }
     }
@@ -190,6 +193,69 @@ impl FloorInstance {
         self.holes.iter().position(|h| h.x == x && h.y == y)
     }
 
+    fn holy_tile_at(&self, x: usize, y: usize) -> Option<usize> {
+        self.holy_tiles.iter().position(|t| t.x == x && t.y == y)
+    }
+
+    fn alien_can_enter(&self, x: usize, y: usize) -> bool {
+        !self.holy_tiles.iter().any(|t| t.x == x && t.y == y)
+    }
+
+    fn alien_target_for(&self, ax: usize, ay: usize) -> Option<(usize, usize)> {
+        let candidates: Vec<(usize, usize)> = self.players.iter()
+            .filter(|s| s.phase == Phase::Playing)
+            .flat_map(|s| {
+                let px = s.player.x;
+                let py = s.player.y;
+                if self.alien_can_enter(px, py) {
+                    vec![(px, py)]
+                } else {
+                    [(0i32,-1),(0,1),(-1,0),(1,0)].iter()
+                        .filter_map(|&(dx, dy)| {
+                            let nx = px as i32 + dx;
+                            let ny = py as i32 + dy;
+                            if !self.is_path(nx, ny) { return None; }
+                            let (nx, ny) = (nx as usize, ny as usize);
+                            let blocked = self.holes.iter().any(|h| h.x == nx && h.y == ny && matches!(h.state, HoleState::Trapped{..}))
+                                || !self.alien_can_enter(nx, ny);
+                            if blocked { None } else { Some((nx, ny)) }
+                        })
+                        .collect()
+                }
+            })
+            .collect();
+        candidates.into_iter().min_by_key(|(tx, ty)| {
+            let dx = *tx as i32 - ax as i32;
+            let dy = *ty as i32 - ay as i32;
+            dx.abs() + dy.abs()
+        })
+    }
+
+    fn respawn_pos(&self) -> Option<(usize, usize)> {
+        let mut best: Option<((usize, usize), i32)> = None;
+        for y in 1..ROWS-1 {
+            for x in 1..COLS-1 {
+                if self.grid[y][x] != 1 { continue; }
+                if !self.alien_can_enter(x, y) { continue; }
+                if self.holes.iter().any(|h| h.x == x && h.y == y) { continue; }
+                let nearest = self.players.iter()
+                    .filter(|s| s.phase == Phase::Playing)
+                    .map(|s| {
+                        let dx = s.player.x as i32 - x as i32;
+                        let dy = s.player.y as i32 - y as i32;
+                        dx.abs() + dy.abs()
+                    })
+                    .min()
+                    .unwrap_or(999);
+                match best {
+                    Some((_, dist)) if nearest <= dist => {}
+                    _ => best = Some(((x, y), nearest)),
+                }
+            }
+        }
+        best.map(|(pos, _)| pos)
+    }
+
     fn bfs_next(&self, fx: usize, fy: usize, tx: usize, ty: usize) -> Option<(usize, usize)> {
         if fx == tx && fy == ty { return None; }
         let mut vis = vec![vec![false; COLS]; ROWS];
@@ -199,7 +265,8 @@ impl FloorInstance {
             let nx = fx as i32 + dx; let ny = fy as i32 + dy;
             if self.is_path(nx, ny) {
                 let (nx, ny) = (nx as usize, ny as usize);
-                let blocked = self.holes.iter().any(|h| h.x==nx && h.y==ny && matches!(h.state, HoleState::Trapped{..}));
+                let blocked = self.holes.iter().any(|h| h.x==nx && h.y==ny && matches!(h.state, HoleState::Trapped{..}))
+                    || !self.alien_can_enter(nx, ny);
                 if !blocked && !vis[ny][nx] { vis[ny][nx]=true; q.push_back((nx,ny,nx,ny)); }
             }
         }
@@ -209,23 +276,13 @@ impl FloorInstance {
                 let nx = cx as i32 + dx; let ny = cy as i32 + dy;
                 if self.is_path(nx, ny) {
                     let (nx, ny) = (nx as usize, ny as usize);
-                    let blocked = self.holes.iter().any(|h| h.x==nx && h.y==ny && matches!(h.state, HoleState::Trapped{..}));
+                    let blocked = self.holes.iter().any(|h| h.x==nx && h.y==ny && matches!(h.state, HoleState::Trapped{..}))
+                        || !self.alien_can_enter(nx, ny);
                     if !blocked && !vis[ny][nx] { vis[ny][nx]=true; q.push_back((nx,ny,fx2,fy2)); }
                 }
             }
         }
         None
-    }
-
-    fn nearest_player_to(&self, ax: usize, ay: usize) -> Option<(usize, usize)> {
-        self.players.iter()
-            .filter(|s| s.phase == Phase::Playing)
-            .min_by_key(|s| {
-                let dx = s.player.x as i32 - ax as i32;
-                let dy = s.player.y as i32 - ay as i32;
-                dx.abs() + dy.abs()
-            })
-            .map(|s| (s.player.x, s.player.y))
     }
 
     // ── Player actions ────────────────────────────────────────────────────────
@@ -318,6 +375,40 @@ impl FloorInstance {
         }
     }
 
+    fn apply_bact(&mut self, session_id: u64) {
+        let Some(pi) = self.player_idx(session_id) else { return; };
+        if self.players[pi].phase != Phase::Playing { return; }
+        let x = self.players[pi].player.x;
+        let y = self.players[pi].player.y;
+
+        if let Some(hi) = self.holy_tile_at(x, y) {
+            self.holy_tiles.remove(hi);
+            self.players[pi].inventory.holy += 1;
+            if self.players[pi].event != Some("levelup") {
+                self.players[pi].event = Some("holy_pickup");
+            }
+            return;
+        }
+
+        if self.players[pi].inventory.holy == 0 { return; }
+        if self.hole_at(x, y).is_some() { return; }
+        if self.chests.iter().any(|ch| ch.x == x && ch.y == y) { return; }
+        if self.items.iter().any(|it| it.x == x && it.y == y) { return; }
+        if (x, y) == self.goal { return; }
+
+        let id = self.next_holy_tile_id;
+        self.next_holy_tile_id += 1;
+        self.players[pi].inventory.holy -= 1;
+        self.holy_tiles.push(HolyTile {
+            x, y, id,
+            owner_session_id: session_id,
+            owner_name: self.players[pi].profile.name.clone(),
+        });
+        if self.players[pi].event != Some("levelup") {
+            self.players[pi].event = Some("holy_place");
+        }
+    }
+
     // ── Item helpers ──────────────────────────────────────────────────────────
     fn roll_potion_kind(&self, salt: usize) -> ItemKind {
         let roll = (self.tick as usize + salt * 17 + self.floor_num as usize * 13) % 100;
@@ -388,6 +479,18 @@ impl FloorInstance {
         }
     }
 
+    fn can_attack_holy_adjacent(&self, pi: usize, ax: usize, ay: usize) -> bool {
+        if self.players[pi].phase != Phase::Playing || self.players[pi].player.invincible > 0 {
+            return false;
+        }
+        let px = self.players[pi].player.x;
+        let py = self.players[pi].player.y;
+        if self.holy_tile_at(px, py).is_none() {
+            return false;
+        }
+        px.abs_diff(ax) + py.abs_diff(ay) == 1
+    }
+
     // ── Tick ─────────────────────────────────────────────────────────────────
     fn tick_all(&mut self) {
         if self.players.is_empty() { return; }
@@ -428,7 +531,9 @@ impl FloorInstance {
                         let ep = [(0i32,-1),(0,1),(-1,0),(1,0)].iter()
                             .filter_map(|&(dx, dy)| {
                                 let nx = hx as i32 + dx; let ny = hy as i32 + dy;
-                                if self.is_path(nx, ny) { Some((nx as usize, ny as usize)) } else { None }
+                                if self.is_path(nx, ny) && self.alien_can_enter(nx as usize, ny as usize) {
+                                    Some((nx as usize, ny as usize))
+                                } else { None }
                             }).next();
                         if let Some(a) = self.aliens.iter_mut().find(|a| a.id == alien_id) {
                             a.state = AlienState::Active;
@@ -479,7 +584,7 @@ impl FloorInstance {
         let pending: Vec<Option<(usize, usize)>> = (0..count).map(|ai| {
             let (ax, ay) = (self.aliens[ai].x, self.aliens[ai].y);
             if self.aliens[ai].state == AlienState::Active && self.aliens[ai].move_timer == 0 {
-                if let Some((tx, ty)) = self.nearest_player_to(ax, ay) {
+                if let Some((tx, ty)) = self.alien_target_for(ax, ay) {
                     self.bfs_next(ax, ay, tx, ty)
                 } else { None }
             } else { None }
@@ -489,11 +594,8 @@ impl FloorInstance {
             match self.aliens[ai].state.clone() {
                 AlienState::Dead(t) => {
                     if t <= 1 {
-                        // Respawn far from any living player
-                        let any_left = self.players.iter().any(|s| s.phase == Phase::Playing && s.player.x < COLS/2);
-                        let rx = if any_left { COLS - 2 } else { 1 };
-                        let any_top = self.players.iter().any(|s| s.phase == Phase::Playing && s.player.y < ROWS/2);
-                        let ry = if any_top { ROWS - 2 } else { 1 };
+                        // Respawn far from players, but never on holy tiles / blocked cells
+                        let (rx, ry) = self.respawn_pos().unwrap_or(self.start);
                         self.aliens[ai].state = AlienState::Active;
                         self.aliens[ai].x = rx; self.aliens[ai].y = ry;
                         self.aliens[ai].move_timer = BASE_SPEED;
@@ -551,10 +653,21 @@ impl FloorInstance {
                                 && s.player.x == axi && s.player.y == ayi)
                             .map(|(i, _)| i)
                             .collect();
+                        let holy_adjacent_contacts: Vec<usize> = if kind == AlienKind::Heal {
+                            Vec::new()
+                        } else {
+                            self.players.iter().enumerate()
+                                .filter(|(i, _)| self.can_attack_holy_adjacent(*i, axi, ayi))
+                                .map(|(i, _)| i)
+                                .collect()
+                        };
                         let mut kill_heal = false;
                         for pi in contacts {
                             self.apply_contact_effect_to(pi, kind);
                             if kind == AlienKind::Heal { kill_heal = true; }
+                        }
+                        for pi in holy_adjacent_contacts {
+                            self.apply_contact_effect_to(pi, kind);
                         }
                         if kill_heal { self.aliens[ai].state = AlienState::Dead(RESPAWN_TICKS * 2); }
                     }
@@ -606,6 +719,9 @@ impl FloorInstance {
         }).collect();
         let items:  Vec<serde_json::Value> = self.items.iter().map(|it| serde_json::json!({"x":it.x,"y":it.y,"kind":it.kind.as_str(),"id":it.id})).collect();
         let chests: Vec<serde_json::Value> = self.chests.iter().map(|ch| serde_json::json!({"x":ch.x,"y":ch.y,"id":ch.id})).collect();
+        let holy_tiles: Vec<serde_json::Value> = self.holy_tiles.iter().map(|t| serde_json::json!({
+            "x": t.x, "y": t.y, "id": t.id, "owner_name": t.owner_name, "owner_session_id": t.owner_session_id
+        })).collect();
         let others: Vec<serde_json::Value> = self.players.iter().enumerate()
             .filter(|(i, s)| *i != pi && s.phase == Phase::Playing)
             .map(|(_, s)| serde_json::json!({
@@ -620,7 +736,7 @@ impl FloorInstance {
             "type": "state",
             "phase": if slot.phase == Phase::Playing { "playing" } else { "gameover" },
             "profile": {"name": slot.profile.name, "player_id": slot.profile.user_id},
-            "inventory": {"green": slot.inventory.green, "red": slot.inventory.red, "blue": slot.inventory.blue},
+            "inventory": {"green": slot.inventory.green, "red": slot.inventory.red, "blue": slot.inventory.blue, "holy": slot.inventory.holy},
             "player": {
                 "x": p.x, "y": p.y, "hp": p.hp, "max_hp": p.max_hp,
                 "score": p.score, "level": p.level, "exp": p.exp, "exp_next": p.exp_next,
@@ -628,7 +744,7 @@ impl FloorInstance {
                 "dir": p.dir.name(), "inv": p.invincible > 0,
             },
             "others": others,
-            "aliens": aliens, "holes": holes, "items": items, "chests": chests,
+            "aliens": aliens, "holes": holes, "items": items, "chests": chests, "holy_tiles": holy_tiles,
             "event": slot.event, "tick": self.tick,
             "floor": self.floor_num, "goal": {"x": self.goal.0, "y": self.goal.1},
         }).to_string()
@@ -756,6 +872,27 @@ impl Room {
         });
         floor
     }
+
+    fn remove_floor_if_empty(&mut self, floor_num: u32) {
+        let should_remove = self.floors.get(&floor_num)
+            .map(|f| f.lock().unwrap().players.is_empty())
+            .unwrap_or(false);
+        if should_remove {
+            self.floors.remove(&floor_num);
+        }
+    }
+}
+
+fn leave_floor(room: &SharedRoom, floor_arc: &Arc<Mutex<FloorInstance>>, session_id: u64) -> Option<PlayerSlot> {
+    let (floor_num, slot) = {
+        let mut f = floor_arc.lock().unwrap();
+        let floor_num = f.floor_num;
+        let slot = f.remove_player(session_id);
+        (floor_num, slot)
+    };
+    let mut r = room.lock().unwrap();
+    r.remove_floor_if_empty(floor_num);
+    slot
 }
 
 // ── Client messages ───────────────────────────────────────────────────────────
@@ -772,6 +909,7 @@ enum ClientMsg {
     Start   { profile: StartProfile },
     Move    { dir: String },
     Act,
+    Bact,
     Useitem { kind: String },
     Submit  { name: String, score: u32 },
     Restart,
@@ -825,7 +963,7 @@ pub async fn run(
 
                         // Leave current floor
                         if let Some(ref fa) = current_floor {
-                            fa.lock().unwrap().remove_player(session_id);
+                            leave_floor(&room, fa, session_id);
                         }
 
                         // Join floor 1
@@ -872,8 +1010,8 @@ pub async fn run(
                         };
                         if let Some(next_floor_num) = next_floor_opt {
                             let (cleared_floor, slot) = {
-                                let mut f = fa.lock().unwrap();
-                                (f.floor_num, f.remove_player(session_id))
+                                let floor_num = fa.lock().unwrap().floor_num;
+                                (floor_num, leave_floor(&room, fa, session_id))
                             };
                             if let Some(mut s) = slot {
                                 let bonus = 100 * cleared_floor;
@@ -901,6 +1039,16 @@ pub async fn run(
                         fa.lock().unwrap().apply_act(session_id);
                     }
 
+                    ClientMsg::Bact => {
+                        let Some(ref fa) = current_floor else { continue; };
+                        let msg = {
+                            let mut f = fa.lock().unwrap();
+                            f.apply_bact(session_id);
+                            f.player_idx(session_id).map(|pi| f.to_json_for(pi))
+                        };
+                        if let Some(m) = msg { let _ = tx.send(m); }
+                    }
+
                     ClientMsg::Useitem { kind } => {
                         let Some(ref fa) = current_floor else { continue; };
                         let msg = {
@@ -922,7 +1070,7 @@ pub async fn run(
 
                     ClientMsg::Restart => {
                         if let Some(ref fa) = current_floor {
-                            fa.lock().unwrap().remove_player(session_id);
+                            leave_floor(&room, fa, session_id);
                         }
                         current_floor = None;
                         let msg = {
@@ -939,6 +1087,6 @@ pub async fn run(
     // Cleanup on disconnect
     eprintln!("[dungeon] session_close id={}", session_id);
     if let Some(fa) = current_floor {
-        fa.lock().unwrap().remove_player(session_id);
+        leave_floor(&room, &fa, session_id);
     }
 }
