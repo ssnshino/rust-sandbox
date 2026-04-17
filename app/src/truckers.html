@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>中型宇宙トラック野郎</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #050510;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'DotGothic16', monospace;
+      color: #e2e8f0;
+      user-select: none;
+      overflow: hidden;
+    }
+    canvas { display: block; image-rendering: pixelated; }
+    #wrap {
+      position: relative;
+      width: 540px;
+      max-width: 100vw;
+    }
+
+    /* ── Overlay screens ── */
+    .overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(5,5,20,.88);
+      gap: 14px;
+      z-index: 10;
+    }
+    .overlay h1 {
+      font-size: 1.5rem; letter-spacing: .08em;
+      color: #fff;
+      text-shadow: 0 0 8px #fff, 0 0 20px #a855f7, 0 0 40px #7c3aed;
+    }
+    .overlay h2 { font-size: 1rem; color: #a855f7; }
+    .overlay p  { font-size: 0.8rem; color: #94a3b8; line-height: 1.6; text-align: center; }
+    .btn {
+      padding: 10px 28px;
+      background: rgba(168,85,247,.2);
+      border: 1px solid rgba(168,85,247,.5);
+      border-radius: 8px;
+      color: #e2e8f0; cursor: pointer;
+      font-family: inherit; font-size: 0.85rem; letter-spacing: .05em;
+      transition: background .15s, box-shadow .15s;
+    }
+    .btn:hover {
+      background: rgba(168,85,247,.35);
+      box-shadow: 0 0 12px rgba(168,85,247,.4);
+    }
+    #btn-back {
+      position: absolute; top: 10px; left: 10px; z-index: 20;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12);
+      border-radius: 6px; padding: 5px 12px; color: #9ca3af;
+      font-family: inherit; font-size: 0.7rem; cursor: pointer;
+      transition: background .15s;
+    }
+    #btn-back:hover { background: rgba(255,255,255,.1); color: #e2e8f0; }
+    #btn-lang {
+      position: absolute; top: 10px; right: 10px; z-index: 20;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12);
+      border-radius: 6px; padding: 5px 12px; color: #9ca3af;
+      font-family: inherit; font-size: 0.7rem; cursor: pointer;
+      transition: background .15s;
+    }
+    #btn-lang:hover { background: rgba(255,255,255,.1); color: #e2e8f0; }
+
+    /* ── HUD ── */
+    #hud {
+      position: absolute; top: 0; left: 0; right: 0;
+      padding: 8px 14px;
+      display: flex; align-items: center; gap: 12px;
+      pointer-events: none;
+      z-index: 5;
+      background: linear-gradient(to bottom, rgba(5,5,20,.7) 0%, transparent 100%);
+    }
+    #hud-score { font-size: 0.82rem; color: #fde68a; text-shadow: 0 0 6px #f59e0b; min-width: 100px; }
+    #hud-hp    { font-size: 1rem; flex: 1; }
+    #hud-round { font-size: 0.78rem; color: #a5b4fc; }
+    #hud-dest  {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 6px 14px;
+      font-size: 0.78rem; color: #7dd3fc;
+      background: linear-gradient(to top, rgba(5,5,20,.7) 0%, transparent 100%);
+      pointer-events: none; z-index: 5;
+    }
+
+    /* ── GM Comment ── */
+    #gm-comment {
+      position: absolute; bottom: 34px; right: 12px;
+      font-size: 0.75rem; color: #f9a8d4;
+      text-shadow: 0 0 8px #ec4899;
+      pointer-events: none; z-index: 6;
+      transition: opacity .3s;
+      opacity: 0;
+      max-width: 180px; text-align: right;
+    }
+    #gm-comment.show { opacity: 1; }
+
+    /* ── Score list ── */
+    .score-list { width: 260px; }
+    .score-list table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+    .score-list td { padding: 3px 6px; color: #94a3b8; }
+    .score-list tr:first-child td { color: #fde68a; }
+    .score-list tr:nth-child(2) td { color: #e2e8f0; }
+    .score-list tr:nth-child(3) td { color: #fdba74; }
+    .score-list .rank { color: #6b7280; width: 24px; }
+
+    /* ── Virtual stick ── */
+    #vstick-area {
+      position: absolute; bottom: 12px; left: 12px;
+      width: 120px; height: 120px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 50%;
+      display: none;
+      z-index: 8;
+      touch-action: none;
+    }
+    #vstick-knob {
+      position: absolute;
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: rgba(168,85,247,.35);
+      border: 1px solid rgba(168,85,247,.6);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="canvas" width="540" height="540"></canvas>
+
+  <!-- HUD (shown during play) -->
+  <div id="hud" style="display:none">
+    <span id="hud-score">SCORE: 0</span>
+    <span id="hud-hp"></span>
+    <span id="hud-round"></span>
+  </div>
+  <div id="hud-dest" style="display:none"></div>
+
+  <!-- GM comment bubble -->
+  <div id="gm-comment"></div>
+
+  <!-- Title screen -->
+  <div id="screen-title" class="overlay">
+    <h1 data-i18n="title">🚛 宇宙トラック野郎 🚛</h1>
+    <p data-i18n="title_sub">アステロイドベルトで配達！黄道12ステーションを巡れ！</p>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <input id="name-input" type="text" maxlength="16"
+        style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);
+               border-radius:6px;padding:8px 12px;color:#e2e8f0;font-family:inherit;font-size:0.85rem;width:160px;"
+        data-i18n-placeholder="name_placeholder">
+      <button class="btn" id="btn-start" data-i18n="btn_start">スタート！</button>
+    </div>
+    <div id="title-scores" class="score-list"></div>
+    <p style="font-size:0.7rem;color:#4b5563;" data-i18n="controls">
+      矢印キー / WASD で操作
+    </p>
+  </div>
+
+  <!-- Gameover screen -->
+  <div id="screen-gameover" class="overlay" style="display:none">
+    <h1 data-i18n="gameover">GAME OVER</h1>
+    <h2 id="go-score"></h2>
+    <p id="go-rank"></p>
+    <div id="go-scores" class="score-list"></div>
+    <button class="btn" id="btn-restart" data-i18n="btn_restart">もう一度</button>
+  </div>
+
+  <!-- LapClear (shown briefly) -->
+  <div id="screen-lapclear" class="overlay" style="display:none">
+    <h1 data-i18n="lap_clear">1 LAP クリア！！</h1>
+    <h2 id="lc-text"></h2>
+    <p data-i18n="lap_clear_sub">難易度アップ！次のラウンドへ…</p>
+  </div>
+
+  <button id="btn-back" onclick="location.href='/'">← <span data-i18n="back">メニュー</span></button>
+  <button id="btn-lang">🇯🇵 / 🇬🇧</button>
+
+  <!-- Virtual stick for touch -->
+  <div id="vstick-area" style="display:none">
+    <div id="vstick-knob"></div>
+  </div>
+</div>
+
+<script>
+// ── i18n ──────────────────────────────────────────────────────────────────────
+const I18N = {
+  ja: {
+    title:         '🚛 宇宙トラック野郎 🚛',
+    title_sub:     'アステロイドベルトで配達！黄道12ステーションを巡れ！',
+    name_placeholder: 'なまえ',
+    btn_start:     'スタート！',
+    btn_restart:   'もう一度',
+    controls:      '矢印キー / WASD で操作',
+    back:          'メニュー',
+    gameover:      'GAME OVER',
+    lap_clear:     '1 LAP クリア！！',
+    lap_clear_sub: '難易度アップ！次のラウンドへ…',
+    score_label:   'スコア: ',
+    round_label:   'ROUND ',
+    dest_prefix:   '→ 次の目的地: ',
+    dest_return:   '→ 帰還せよ: ',
+    rank_msg:      (r) => `${r}位にランクイン！`,
+    no_rank:       'ランク外',
+    lap:           'LAP',
+    hp_bonus:      'HPボーナス！',
+    // GM comments
+    gm_delivery:   ['届いたよっ！','ナイスドライブ！','よっしゃ！','グッジョブ！'],
+    gm_damage:     ['いたっ！','こわれちゃう！','きをつけて！'],
+    gm_lap_clear:  ['いっしゅうしたよ！！','さすがトラック野郎！','やったぁ！'],
+  },
+  en: {
+    title:         '🚛 Space Truckers 🚛',
+    title_sub:     'Deliver cargo across the asteroid belt! Visit all 12 zodiac stations!',
+    name_placeholder: 'Your name',
+    btn_start:     'Start!',
+    btn_restart:   'Try Again',
+    controls:      'Arrow keys / WASD to move',
+    back:          'Menu',
+    gameover:      'GAME OVER',
+    lap_clear:     '1 LAP CLEAR!!',
+    lap_clear_sub: 'Difficulty up! Next round…',
+    score_label:   'SCORE: ',
+    round_label:   'ROUND ',
+    dest_prefix:   '→ Next: ',
+    dest_return:   '→ Return to: ',
+    rank_msg:      (r) => `Ranked #${r}!`,
+    no_rank:       'Not ranked',
+    lap:           'LAP',
+    hp_bonus:      'HP Bonus!',
+    gm_delivery:   ['Delivered!','Nice drive!','Yeah!','Good job!'],
+    gm_damage:     ['Ouch!','Watch out!','Take care!'],
+    gm_lap_clear:  ['One lap done!!','That\'s a trucker!','Woohoo!'],
+  },
+};
+
+let lang = localStorage.getItem('gc_lang') || 'ja';
+function t(k){ return I18N[lang][k] ?? k; }
+
+function applyLang(){
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.dataset.i18n);
+    if(typeof v === 'string') el.textContent = v;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const v = t(el.dataset.i18nPlaceholder);
+    if(typeof v === 'string') el.placeholder = v;
+  });
+  document.getElementById('btn-lang').textContent = lang==='ja' ? '🇯🇵 / 🇬🇧' : '🇬🇧 / 🇯🇵';
+  document.documentElement.lang = lang;
+}
+
+document.getElementById('btn-lang').addEventListener('click', () => {
+  lang = lang==='ja' ? 'en' : 'ja';
+  localStorage.setItem('gc_lang', lang);
+  applyLang();
+  if(lastState) renderTitle(lastState);
+});
+
+applyLang();
+
+// ── Canvas ────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+const W = 540, H = 540;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let ws = null;
+let lastState = null;
+let keys = { up: false, down: false, left: false, right: false };
+let gmTimeout = null;
+
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws/truckers`);
+
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    handleMsg(msg);
+  };
+  ws.onclose = () => {
+    ws = null;
+    setTimeout(connect, 2000);
+  };
+}
+
+function send(obj){ if(ws && ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify(obj)); }
+
+// ── Input ─────────────────────────────────────────────────────────────────────
+let inputDirty = false;
+
+document.addEventListener('keydown', e => {
+  const changed = applyKey(e.code, true);
+  if(changed){ inputDirty = true; sendKeys(); }
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+});
+document.addEventListener('keyup', e => {
+  const changed = applyKey(e.code, false);
+  if(changed){ inputDirty = true; sendKeys(); }
+});
+
+function applyKey(code, val){
+  const map = {
+    ArrowUp:'up', KeyW:'up',
+    ArrowDown:'down', KeyS:'down',
+    ArrowLeft:'left', KeyA:'left',
+    ArrowRight:'right', KeyD:'right',
+  };
+  const k = map[code];
+  if(k && keys[k] !== val){ keys[k] = val; return true; }
+  return false;
+}
+
+function sendKeys(){
+  send({ type:'input', keys: {...keys} });
+}
+
+// ── Message handler ───────────────────────────────────────────────────────────
+function handleMsg(msg){
+  if(msg.type !== 'state') return;
+
+  const prev = lastState;
+  lastState = msg;
+
+  switch(msg.phase){
+    case 'title':
+      showScreen('title');
+      renderTitle(msg);
+      break;
+    case 'playing':
+      showScreen('playing');
+      render(msg);
+      handleEvents(msg, prev);
+      break;
+    case 'lap_clear':
+      showScreen('lap_clear');
+      document.getElementById('lc-text').textContent =
+        t('score_label') + msg.score + '  +  ' + t('hp_bonus');
+      showGmComment(pickRandom(t('gm_lap_clear')));
+      render(msg);
+      break;
+    case 'gameover':
+      showScreen('gameover');
+      document.getElementById('go-score').textContent = t('score_label') + (msg.score||0);
+      document.getElementById('go-rank').textContent =
+        msg.rank ? t('rank_msg')(msg.rank) : t('no_rank');
+      renderScoreList('go-scores', msg.scores||[]);
+      break;
+  }
+}
+
+function handleEvents(msg, prev){
+  if(!msg.event) return;
+  if(msg.event === 'delivery')  showGmComment(pickRandom(t('gm_delivery')));
+  if(msg.event === 'damage')    showGmComment(pickRandom(t('gm_damage')));
+}
+
+function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function showGmComment(text){
+  const el = document.getElementById('gm-comment');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(gmTimeout);
+  gmTimeout = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── Screen switching ──────────────────────────────────────────────────────────
+function showScreen(name){
+  document.getElementById('screen-title').style.display    = name==='title'    ? 'flex' : 'none';
+  document.getElementById('screen-gameover').style.display = name==='gameover' ? 'flex' : 'none';
+  document.getElementById('screen-lapclear').style.display = name==='lap_clear'? 'flex' : 'none';
+  document.getElementById('hud').style.display      = name==='playing' ? 'flex' : 'none';
+  document.getElementById('hud-dest').style.display = name==='playing' ? 'block' : 'none';
+}
+
+// ── Title rendering ───────────────────────────────────────────────────────────
+function renderTitle(msg){
+  renderStarfield();
+  renderStationsStatic();
+  renderScoreList('title-scores', msg.scores||[]);
+}
+
+function renderScoreList(containerId, scores){
+  const el = document.getElementById(containerId);
+  if(!scores.length){ el.innerHTML = ''; return; }
+  let html = '<table>';
+  scores.slice(0,8).forEach((s,i) => {
+    html += `<tr><td class="rank">${i+1}.</td><td>${esc(s.name)}</td><td>${s.score.toLocaleString()}</td></tr>`;
+  });
+  html += '</table>';
+  el.innerHTML = html;
+}
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Main render ───────────────────────────────────────────────────────────────
+function render(s){
+  ctx.clearRect(0,0,W,H);
+  renderStarfield(s.tick);
+  renderStationRing();
+  renderStations(s);
+  renderAsteroids(s.asteroids);
+  renderDirectionLine(s);
+  renderShip(s.ship, s);
+  renderHUD(s);
+}
+
+// Starfield (static with slight shimmer)
+const STARS = Array.from({length:80}, (_,i) => {
+  const sd = lcg(i*17+3);
+  return {
+    x: lcg_f(sd)*W,
+    y: lcg_f(lcg(sd))*H,
+    r: 0.5 + lcg_f(lcg(lcg(sd)))*1.2,
+    phase: lcg_f(lcg(lcg(lcg(sd))))*Math.PI*2,
+  };
+});
+
+function lcg(s){ return (s*1664525+1013904223) >>> 0; }
+function lcg_f(s){ return lcg(s)/4294967295; }
+
+function renderStarfield(tick=0){
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0,0,W,H);
+  for(const st of STARS){
+    const alpha = 0.4 + 0.35 * Math.sin(tick*0.02 + st.phase);
+    ctx.beginPath();
+    ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(200,220,255,${alpha.toFixed(2)})`;
+    ctx.fill();
+  }
+}
+
+// Big faint circle showing station ring
+function renderStationRing(){
+  ctx.beginPath();
+  ctx.arc(270, 270, 210, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(99,102,241,0.12)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function renderStationsStatic(){
+  renderStarfield();
+  renderStationRing();
+  // Draw all stations faintly
+  const stations = buildStations();
+  for(const s of stations){
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 10, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(99,102,241,0.25)';
+    ctx.fill();
+    ctx.font = '11px DotGothic16, monospace';
+    ctx.fillStyle = 'rgba(165,180,252,0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.symbol, s.x, s.y - 14);
+  }
+}
+
+function buildStations(){
+  const angles = [90,60,30,0,330,300,270,240,210,180,150,120];
+  const names_ja = ['おひつじ','おうし','ふたご','かに','しし','おとめ','てんびん','さそり','いて','やぎ','みずがめ','うお'];
+  const names_en = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+  const symbols  = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+  return angles.map((a,i) => {
+    const r = a * Math.PI / 180;
+    return { x: 270+210*Math.cos(r), y: 270-210*Math.sin(r),
+             name_ja: names_ja[i], name_en: names_en[i], symbol: symbols[i], idx: i };
+  });
+}
+
+function renderStations(s){
+  const target = s.target;
+  for(const st of (s.stations||[])){
+    const isTarget = st.idx === target.idx;
+    const isPast = !isTarget && (target.return ? true : st.idx < target.idx);
+
+    // glow for target
+    if(isTarget){
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, 18, 0, Math.PI*2);
+      const grd = ctx.createRadialGradient(st.x, st.y, 4, st.x, st.y, 18);
+      grd.addColorStop(0, 'rgba(250,204,21,0.4)');
+      grd.addColorStop(1, 'rgba(250,204,21,0)');
+      ctx.fillStyle = grd;
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    ctx.arc(st.x, st.y, 10, 0, Math.PI*2);
+    ctx.fillStyle = isTarget ? '#fbbf24' : isPast ? 'rgba(99,102,241,0.4)' : 'rgba(99,102,241,0.7)';
+    ctx.fill();
+    ctx.strokeStyle = isTarget ? '#fde68a' : 'rgba(165,180,252,0.3)';
+    ctx.lineWidth = isTarget ? 2 : 1;
+    ctx.stroke();
+
+    // symbol + name
+    ctx.textAlign = 'center';
+    ctx.font = '12px DotGothic16, monospace';
+    ctx.fillStyle = isTarget ? '#fde68a' : 'rgba(165,180,252,0.7)';
+    ctx.fillText(st.symbol, st.x, st.y - 15);
+
+    ctx.font = '9px DotGothic16, monospace';
+    ctx.fillStyle = isTarget ? 'rgba(253,230,138,0.9)' : 'rgba(148,163,184,0.5)';
+    const name = lang==='ja' ? st.name_ja : st.name_en;
+    ctx.fillText(name, st.x, st.y + 22);
+  }
+}
+
+function renderAsteroids(asteroids){
+  if(!asteroids) return;
+  for(const a of asteroids){
+    ctx.save();
+    ctx.translate(a.x, a.y);
+    ctx.rotate(lcg_f(a.seed) * Math.PI * 2);
+
+    const r = a.r;
+    const pts = 7 + (lcg(a.seed) % 4);
+    ctx.beginPath();
+    for(let i=0;i<pts;i++){
+      const angle = (i/pts)*Math.PI*2;
+      const jitter = 0.7 + lcg_f(lcg(a.seed + i*31)) * 0.6;
+      const px = Math.cos(angle)*r*jitter;
+      const py = Math.sin(angle)*r*jitter;
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(120,100,80,0.8)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(180,160,140,0.6)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function renderDirectionLine(s){
+  if(!s.target || !s.ship) return;
+  const tx = s.target.x, ty = s.target.y;
+  const sx = s.ship.x,   sy = s.ship.y;
+  ctx.beginPath();
+  ctx.moveTo(sx, sy);
+  ctx.lineTo(tx, ty);
+  ctx.strokeStyle = 'rgba(251,191,36,0.2)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,8]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Arrow head at destination
+  const dx = tx-sx, dy = ty-sy;
+  const dist = Math.sqrt(dx*dx+dy*dy);
+  if(dist < 2) return;
+  const nx = dx/dist, ny = dy/dist;
+  const arrowTip = { x: tx - nx*12, y: ty - ny*12 };
+  ctx.beginPath();
+  ctx.moveTo(arrowTip.x + ny*5, arrowTip.y - nx*5);
+  ctx.lineTo(arrowTip.x + nx*10, arrowTip.y + ny*10);
+  ctx.lineTo(arrowTip.x - ny*5, arrowTip.y + nx*5);
+  ctx.fillStyle = 'rgba(251,191,36,0.5)';
+  ctx.fill();
+}
+
+function renderShip(ship, s){
+  if(!ship) return;
+  ctx.save();
+  ctx.translate(ship.x, ship.y);
+  ctx.rotate(ship.angle);
+
+  const inv = ship.invincible;
+  if(inv && Math.floor(s.tick/4)%2===1){
+    ctx.restore();
+    return; // flash during invincibility
+  }
+
+  // Body (triangle pointing right = angle 0)
+  ctx.beginPath();
+  ctx.moveTo(14, 0);
+  ctx.lineTo(-10, 8);
+  ctx.lineTo(-6, 0);
+  ctx.lineTo(-10, -8);
+  ctx.closePath();
+  ctx.fillStyle = '#60a5fa';
+  ctx.fill();
+  ctx.strokeStyle = '#93c5fd';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Engine glow when thrusting
+  const thrusting = Math.abs(ship.vx) > 0.5 || Math.abs(ship.vy) > 0.5;
+  if(thrusting){
+    ctx.beginPath();
+    ctx.moveTo(-6, 0);
+    ctx.lineTo(-6 - (6 + Math.random()*6), (Math.random()-0.5)*6);
+    ctx.strokeStyle = 'rgba(251,191,36,0.8)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function renderHUD(s){
+  // Score
+  document.getElementById('hud-score').textContent = t('score_label') + s.score.toLocaleString();
+
+  // HP hearts
+  const hearts = '❤️'.repeat(s.hp) + '🖤'.repeat(Math.max(0,3-s.hp));
+  document.getElementById('hud-hp').textContent = hearts;
+
+  // Round
+  document.getElementById('hud-round').textContent = t('round_label') + s.round;
+
+  // Destination
+  const dest = s.target;
+  if(dest){
+    const prefix = dest.return ? t('dest_return') : t('dest_prefix');
+    const name = lang==='ja' ? dest.name_ja : dest.name_en;
+    document.getElementById('hud-dest').textContent = prefix + dest.symbol + ' ' + name;
+  }
+}
+
+// ── Title / Gameover buttons ──────────────────────────────────────────────────
+document.getElementById('btn-start').addEventListener('click', () => {
+  const name = document.getElementById('name-input').value.trim() || (lang==='ja' ? '野郎' : 'Trucker');
+  send({ type:'start', name });
+});
+
+document.getElementById('name-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){
+    document.getElementById('btn-start').click();
+    e.preventDefault();
+  }
+});
+
+document.getElementById('btn-restart').addEventListener('click', () => {
+  send({ type:'restart' });
+});
+
+// ── Touch virtual stick ───────────────────────────────────────────────────────
+const vstickArea = document.getElementById('vstick-area');
+const vstickKnob = document.getElementById('vstick-knob');
+let vstickActive = false;
+let vstickCenter = { x: 0, y: 0 };
+const STICK_MAX = 44;
+
+function isTouchDevice(){ return 'ontouchstart' in window; }
+if(isTouchDevice()){
+  vstickArea.style.display = 'block';
+}
+
+vstickArea.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const rect = vstickArea.getBoundingClientRect();
+  vstickCenter = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+  vstickActive = true;
+  updateStick(e.touches[0]);
+}, {passive:false});
+
+vstickArea.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if(vstickActive) updateStick(e.touches[0]);
+}, {passive:false});
+
+document.addEventListener('touchend', e => {
+  vstickActive = false;
+  vstickKnob.style.transform = 'translate(-50%,-50%)';
+  keys.up = keys.down = keys.left = keys.right = false;
+  sendKeys();
+});
+
+function updateStick(touch){
+  const dx = touch.clientX - vstickCenter.x;
+  const dy = touch.clientY - vstickCenter.y;
+  const dist = Math.sqrt(dx*dx+dy*dy);
+  const clamped = Math.min(dist, STICK_MAX);
+  const nx = dist>0 ? dx/dist : 0;
+  const ny = dist>0 ? dy/dist : 0;
+  vstickKnob.style.transform = `translate(calc(-50% + ${nx*clamped}px), calc(-50% + ${ny*clamped}px))`;
+
+  const threshold = 0.4;
+  keys.up    = ny < -threshold;
+  keys.down  = ny >  threshold;
+  keys.left  = nx < -threshold;
+  keys.right = nx >  threshold;
+  sendKeys();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+showScreen('title');
+renderStationsStatic();
+connect();
+</script>
+</body>
+</html>
