@@ -27,6 +27,7 @@ struct AppState {
     dungeon_players:     Arc<AtomicUsize>,
     fighting_players:    Arc<AtomicUsize>,
     dungeon_room:        dungeon::SharedRoom,
+    fight_room:          fighting::SharedFightRoom,
 }
 
 #[tokio::main]
@@ -43,6 +44,7 @@ async fn main() {
         dungeon_players:     Arc::new(AtomicUsize::new(0)),
         fighting_players:    Arc::new(AtomicUsize::new(0)),
         dungeon_room:        Arc::new(Mutex::new(dungeon::Room::new(dungeon_scores))),
+        fight_room:          Arc::new(fighting::FightRoom::new()),
     };
     let app = Router::new()
         .route("/",                    get(index))
@@ -57,6 +59,7 @@ async fn main() {
         .route("/ws/dungeon",          get(ws_dungeon))
         .route("/fighting",            get(fighting_page))
         .route("/ws/fighting",         get(ws_fighting))
+        .route("/ws/fighting/2p",      get(ws_fighting_2p))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -88,16 +91,21 @@ async fn ws_dungeon(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl Int
 async fn ws_fighting(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl IntoResponse {
     ws.on_upgrade(move |socket| fighting::run(socket, s.fighting_scores, s.fighting_players))
 }
+async fn ws_fighting_2p(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| fighting::run_2p(socket, s.fighting_scores, s.fighting_players, s.fight_room))
+}
 
 async fn get_status(State(s): State<AppState>) -> impl IntoResponse {
-    let pong_2p_waiting = s.pong.waiting_count().await;
+    let pong_2p_waiting  = s.pong.waiting_count().await;
+    let fight_2p_waiting = s.fight_room.waiting_count().await;
     Json(serde_json::json!({
-        "pong_single":     s.pong_single_players.load(Ordering::Relaxed),
-        "pong_2p":         s.pong_2p_players.load(Ordering::Relaxed),
-        "pong_2p_waiting": pong_2p_waiting,
-        "breakout":        s.breakout_players.load(Ordering::Relaxed),
-        "dungeon":         s.dungeon_players.load(Ordering::Relaxed),
-        "fighting":        s.fighting_players.load(Ordering::Relaxed),
+        "pong_single":      s.pong_single_players.load(Ordering::Relaxed),
+        "pong_2p":          s.pong_2p_players.load(Ordering::Relaxed),
+        "pong_2p_waiting":  pong_2p_waiting,
+        "breakout":         s.breakout_players.load(Ordering::Relaxed),
+        "dungeon":          s.dungeon_players.load(Ordering::Relaxed),
+        "fighting":         s.fighting_players.load(Ordering::Relaxed),
+        "fighting_2p_waiting": fight_2p_waiting,
     }))
 }
 
