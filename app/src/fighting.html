@@ -506,8 +506,8 @@ const POSES = {
   idle:        [[ 0,-80],[ 0,-62],[ 0,-38],[-10,-58],[10,-58],[-18,-48],[18,-48],[-22,-40],[22,-40],[-8,-38],[8,-38],[-12,-18],[12,-18],[-14,0],[14,0]],
   walkf:       null, // animated
   walkb:       null,
-  punch:       [[ 0,-80],[ 0,-62],[ 0,-38],[-10,-58],[10,-58],[-16,-46],[36,-44],[-18,-38],[52,-42],[-8,-38],[8,-38],[-12,-18],[12,-18],[-14,0],[14,0]],
-  kick:        [[ 0,-80],[ 0,-62],[ 0,-38],[-10,-58],[10,-58],[-16,-48],[14,-48],[-20,-40],[16,-40],[-8,-38],[8,-38],[-12,-18],[40,-12],[-14,0],[52,0]],
+  punch:       [[ 0,-80],[ 0,-62],[ 0,-38],[-10,-58],[10,-58],[-16,-46],[28,-60],[-18,-38],[48,-64],[-8,-38],[8,-38],[-12,-18],[12,-18],[-14,0],[14,0]],
+  kick:        [[ 0,-80],[ 0,-62],[ 0,-38],[-10,-58],[10,-58],[-16,-48],[14,-48],[-20,-40],[16,-40],[-8,-38],[8,-38],[-12,-18],[32,-50],[-14,0],[48,-76]],
   crouch:       [[ 0,-54],[ 0,-44],[ 0,-26],[-10,-42],[10,-42],[-16,-32],[16,-32],[-20,-24],[20,-24],[-8,-26],[8,-26],[-16,-12],[16,-12],[-18,0],[18,0]],
   crouch_walkf: null, // animated
   crouch_walkb: null,
@@ -529,6 +529,26 @@ const STICK_LINES = [
   [2,9],[9,11],[11,13], // left leg: hip-lhip-lkn-lft
   [2,10],[10,12],[12,14], // right leg: hip-rhip-rkn-rft
 ];
+
+const BODY_PROFILES = {
+  normal:   { scaleX:1.00, scaleY:1.00, armX:1.00, hipX:1.00, legY:1.00, headSize:1.00, torsoW:20, torsoH:24, lineWidth:1.00 },
+  small:    { scaleX:0.72, scaleY:0.74, armX:0.84, hipX:0.82, legY:0.72, headSize:1.24, torsoW:15, torsoH:17, lineWidth:0.90 },
+  tall:     { scaleX:0.94, scaleY:1.30, armX:0.98, hipX:0.90, legY:1.42, headSize:0.94, torsoW:18, torsoH:34, lineWidth:0.96 },
+  fat:      { scaleX:1.42, scaleY:1.10, armX:1.18, hipX:1.55, legY:0.98, headSize:1.06, torsoW:40, torsoH:34, lineWidth:1.24 },
+  muscular: { scaleX:1.34, scaleY:1.18, armX:1.42, hipX:1.20, legY:1.08, headSize:1.02, torsoW:36, torsoH:32, lineWidth:1.42 },
+};
+
+function transformPose(pts, bodyType){
+  const p = BODY_PROFILES[bodyType] || BODY_PROFILES.normal;
+  return pts.map(([x,y], idx)=>{
+    let nx = x * p.scaleX;
+    let ny = y * p.scaleY;
+    if([3,4,5,6,7,8].includes(idx)) nx *= p.armX;
+    if([9,10].includes(idx)) nx *= p.hipX;
+    if([11,12,13,14].includes(idx)) { nx *= p.hipX; ny *= p.legY; }
+    return [nx, ny];
+  });
+}
 
 function getPose(st, frame){
   if(st==='walkf'||st==='walkb'){
@@ -559,7 +579,9 @@ function drawStick(f, isCpu){
   const blink = f.inv && Math.floor(animFrame/3)%2===0;
   if(blink) return;
 
-  const pts = getPose(f.state, animFrame);
+  const bodyType = f.body_type || 'normal';
+  const profile = BODY_PROFILES[bodyType] || BODY_PROFILES.normal;
+  const pts = transformPose(getPose(f.state, animFrame), bodyType);
   if(!pts) return;
 
   // Mirror for facing left
@@ -573,9 +595,17 @@ function drawStick(f, isCpu){
 
   ctx.save();
   ctx.strokeStyle = lineColor;
-  ctx.lineWidth   = isCpu ? 3 : 3.5;
+  ctx.lineWidth   = (isCpu ? 3 : 3.5) * profile.lineWidth;
   ctx.lineCap     = 'round';
   ctx.lineJoin    = 'round';
+
+  const [neckX, neckY] = mapped[1];
+  const [hipX, hipY] = mapped[2];
+  const torsoY = (neckY + hipY) / 2;
+  ctx.fillStyle = isCpu ? 'rgba(248,113,113,.16)' : 'rgba(79,195,247,.16)';
+  ctx.beginPath();
+  ctx.ellipse((neckX + hipX) / 2, torsoY, profile.torsoW / 2, profile.torsoH / 2, 0, 0, Math.PI * 2);
+  ctx.fill();
 
   for(const [a,b] of STICK_LINES){
     ctx.beginPath();
@@ -586,13 +616,13 @@ function drawStick(f, isCpu){
 
   // Head circle
   const [hx,hy] = mapped[0];
-  ctx.beginPath(); ctx.arc(hx, hy, 10, 0, Math.PI*2);
+  ctx.beginPath(); ctx.arc(hx, hy, 10 * profile.headSize, 0, Math.PI*2);
   ctx.strokeStyle = lineColor; ctx.stroke();
 
   // Player: ribbon
   if(!isCpu){
     ctx.fillStyle='#f472b6';
-    ctx.beginPath(); ctx.arc(hx, hy-8, 5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx, hy-(8 * profile.headSize), 5, 0, Math.PI*2); ctx.fill();
   }
 
   // Name label

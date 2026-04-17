@@ -47,6 +47,7 @@ enum FightState {
 struct Fighter {
     x: f32, y: f32, vy: f32, vx: f32,
     hp: u8, max_hp: u8,
+    body_type: BodyType,
     state: FightState,
     state_timer: u32,
     facing: i8,
@@ -54,9 +55,9 @@ struct Fighter {
 }
 
 impl Fighter {
-    fn new(x: f32, facing: i8, hp: u8) -> Self {
+    fn new(x: f32, facing: i8, hp: u8, body_type: BodyType) -> Self {
         Fighter { x, y: GROUND_Y, vy: 0.0, vx: 0.0, hp, max_hp: hp,
-            state: FightState::Idle, state_timer: 0, facing, invincible: 0 }
+            body_type, state: FightState::Idle, state_timer: 0, facing, invincible: 0 }
     }
     fn is_dead(&self) -> bool { self.state == FightState::Dead }
     fn on_ground(&self) -> bool { self.y >= GROUND_Y - 0.1 }
@@ -70,15 +71,60 @@ impl Fighter {
                  FightState::CrouchWalkB | FightState::CrouchPunch | FightState::CrouchKick)
     }
     fn is_guarding(&self) -> bool { self.state == FightState::Guard }
-    fn hitbox_cy(&self) -> f32 { if self.is_crouching() { self.y - 20.0 } else { self.y - 40.0 } }
-    fn hitbox_h(&self)  -> f32 { if self.is_crouching() { 20.0 } else { 40.0 } }
+    fn hitbox_cy(&self) -> f32 {
+        if self.is_crouching() {
+            match self.body_type {
+                BodyType::Small => self.y - 14.0,
+                BodyType::Fat => self.y - 22.0,
+                BodyType::Tall => self.y - 24.0,
+                BodyType::Muscular => self.y - 23.0,
+                BodyType::Normal => self.y - 20.0,
+            }
+        } else {
+            match self.body_type {
+                BodyType::Small => self.y - 26.0,
+                BodyType::Fat => self.y - 44.0,
+                BodyType::Tall => self.y - 52.0,
+                BodyType::Muscular => self.y - 46.0,
+                BodyType::Normal => self.y - 40.0,
+            }
+        }
+    }
+    fn hitbox_h(&self)  -> f32 {
+        if self.is_crouching() {
+            match self.body_type {
+                BodyType::Small => 14.0,
+                BodyType::Fat => 24.0,
+                BodyType::Tall => 24.0,
+                BodyType::Muscular => 24.0,
+                BodyType::Normal => 20.0,
+            }
+        } else {
+            match self.body_type {
+                BodyType::Small => 26.0,
+                BodyType::Fat => 46.0,
+                BodyType::Tall => 52.0,
+                BodyType::Muscular => 48.0,
+                BodyType::Normal => 40.0,
+            }
+        }
+    }
+    fn hitbox_w(&self) -> f32 {
+        match self.body_type {
+            BodyType::Small => 24.0,
+            BodyType::Fat => 56.0,
+            BodyType::Tall => 34.0,
+            BodyType::Muscular => 48.0,
+            BodyType::Normal => 40.0,
+        }
+    }
 
     fn attack_box(&self) -> Option<(f32, f32, f32, f32)> { // x,y,w,h (top-left)
         let t = self.state_timer;
         if t < ATTACK_HIT_START || t > ATTACK_HIT_END { return None; }
         let (fwd, cy_off, w, h) = match self.state {
-            FightState::Punch       => (55.0, -42.0, 30.0, 18.0),
-            FightState::Kick        => (65.0, -22.0, 32.0, 20.0),
+            FightState::Punch       => (56.0, -58.0, 28.0, 16.0),
+            FightState::Kick        => (66.0, -54.0, 30.0, 18.0),
             FightState::CrouchPunch => (50.0, -18.0, 28.0, 16.0),
             FightState::CrouchKick  => (62.0, -14.0, 30.0, 18.0),
             FightState::JumpPunch   => (48.0, -50.0, 28.0, 18.0),
@@ -163,6 +209,21 @@ struct Input { left: bool, right: bool, up: bool, down: bool, punch: bool, kick:
 #[derive(Clone)]
 enum CpuKind { WeakPuncher, Kicker, Jumper, Guarder, Boss }
 
+#[derive(Clone, Copy)]
+enum BodyType { Normal, Small, Fat, Tall, Muscular }
+
+impl BodyType {
+    fn as_str(self) -> &'static str {
+        match self {
+            BodyType::Normal => "normal",
+            BodyType::Small => "small",
+            BodyType::Fat => "fat",
+            BodyType::Tall => "tall",
+            BodyType::Muscular => "muscular",
+        }
+    }
+}
+
 #[derive(Clone)]
 struct CpuAI {
     kind: CpuKind,
@@ -189,19 +250,28 @@ impl CpuAI {
 
         match self.kind {
             CpuKind::WeakPuncher => {
-                // Periodically retreat to avoid being predictable
-                let retreat_phase = tick % 90 < 14;
-                if dist > 88.0 {
+                // Tiny and fidgety: often shuffles left/right and prefers low attacks
+                let retreat_phase = tick % 52 < 16;
+                let sidestep_phase = tick % 24 < 7;
+                if dist > 72.0 {
                     cpu.state = FightState::WalkF;
-                    cpu.x += cpu.facing as f32 * WALK_SPD * 0.7;
-                } else if dist < 40.0 || (dist < 72.0 && retreat_phase) {
+                    cpu.x += cpu.facing as f32 * WALK_SPD * 0.95;
+                } else if dist < 34.0 || (dist < 64.0 && retreat_phase) {
                     cpu.state = FightState::WalkB;
-                    cpu.x -= cpu.facing as f32 * WALK_SPD * 0.55;
-                } else if cpu.on_ground() && tick % 36 < 4 {
-                    let atk = if tick % 4 == 0 { FightState::CrouchPunch } else { FightState::Punch };
+                    cpu.x -= cpu.facing as f32 * WALK_SPD * 0.9;
+                } else if sidestep_phase {
+                    if tick % 2 == 0 {
+                        cpu.state = FightState::WalkF;
+                        cpu.x += cpu.facing as f32 * WALK_SPD * 0.7;
+                    } else {
+                        cpu.state = FightState::WalkB;
+                        cpu.x -= cpu.facing as f32 * WALK_SPD * 0.7;
+                    }
+                } else if cpu.on_ground() && tick % 30 < 5 {
+                    let atk = if tick % 5 <= 3 { FightState::CrouchPunch } else { FightState::Punch };
                     cpu.state = atk; cpu.state_timer = 0;
-                    self.wait = 14 + (tick % 8) as u32;
-                } else if tick % 80 < 10 {
+                    self.wait = 10 + (tick % 6) as u32;
+                } else if tick % 70 < 10 {
                     cpu.state = FightState::Guard;
                 } else {
                     cpu.state = FightState::Idle;
@@ -231,29 +301,36 @@ impl CpuAI {
             CpuKind::Jumper => {
                 if !cpu.on_ground() {
                     // In air: attack when close enough
-                    if self.jump_atk && cpu.y < GROUND_Y - 28.0 && dist < 120.0 {
-                        cpu.state = FightState::JumpKick; cpu.state_timer = 0;
+                    if self.jump_atk && cpu.y < GROUND_Y - 18.0 && dist < 145.0 {
+                        cpu.state = if tick % 3 == 0 { FightState::JumpPunch } else { FightState::JumpKick };
+                        cpu.state_timer = 0;
                         self.jump_atk = false;
                     }
                     return;
                 }
                 // Just landed — quick ground kick if close
-                if !self.jump_atk && dist < 85.0 && tick % 10 < 3 {
+                if !self.jump_atk && dist < 95.0 && tick % 12 < 4 {
                     cpu.state = FightState::Kick; cpu.state_timer = 0;
-                    self.wait = 10; return;
+                    self.wait = 8; return;
                 }
-                if dist > 105.0 {
+                if dist > 96.0 {
                     cpu.state = FightState::WalkF;
-                    cpu.x += cpu.facing as f32 * WALK_SPD;
-                } else if dist < 55.0 {
+                    cpu.x += cpu.facing as f32 * WALK_SPD * 1.05;
+                } else if dist < 50.0 {
                     cpu.state = FightState::WalkB;
-                    cpu.x -= cpu.facing as f32 * WALK_SPD * 0.8;
-                } else if tick % 36 < 4 {
-                    if dist > 130.0 { cpu.vx = cpu.facing as f32 * DIAG_JUMP_VX; }
+                    cpu.x -= cpu.facing as f32 * WALK_SPD * 0.9;
+                } else if tick % 22 < 6 {
+                    cpu.vx = if dist > 110.0 {
+                        cpu.facing as f32 * (DIAG_JUMP_VX + 1.5)
+                    } else if tick % 2 == 0 {
+                        cpu.facing as f32 * (DIAG_JUMP_VX * 0.75)
+                    } else {
+                        -cpu.facing as f32 * (DIAG_JUMP_VX * 0.5)
+                    };
                     cpu.vy = JUMP_VY;
                     cpu.state = FightState::Jump;
                     self.jump_atk = true;
-                } else if tick % 18 < 2 {
+                } else if tick % 16 < 3 {
                     cpu.state = FightState::Punch; cpu.state_timer = 0;
                 } else {
                     cpu.state = FightState::Idle;
@@ -340,14 +417,14 @@ impl CpuAI {
 }
 
 // ── Stage config ──────────────────────────────────────────────────────────────
-struct StageCfg { cpu_hp: u8, kind: CpuKind, name: &'static str, name_en: &'static str }
+struct StageCfg { cpu_hp: u8, kind: CpuKind, name: &'static str, name_en: &'static str, body_type: BodyType }
 fn stage_cfg(s: u32) -> StageCfg {
     match s {
-        1 => StageCfg { cpu_hp: 6,  kind: CpuKind::WeakPuncher, name: "ヨワヨワくん", name_en: "Weakling" },
-        2 => StageCfg { cpu_hp: 8,  kind: CpuKind::Kicker,      name: "キッカー",     name_en: "Kicker" },
-        3 => StageCfg { cpu_hp: 9,  kind: CpuKind::Jumper,      name: "ジャンパー",   name_en: "Jumper" },
-        4 => StageCfg { cpu_hp: 10, kind: CpuKind::Guarder,     name: "ガードマン",   name_en: "Guardsman" },
-        _ => StageCfg { cpu_hp: 14, kind: CpuKind::Boss,        name: "ボス",         name_en: "Boss" },
+        1 => StageCfg { cpu_hp: 6,  kind: CpuKind::WeakPuncher, name: "ヨワヨワくん", name_en: "Weakling",  body_type: BodyType::Small },
+        2 => StageCfg { cpu_hp: 8,  kind: CpuKind::Kicker,      name: "キッカー",     name_en: "Kicker",    body_type: BodyType::Tall },
+        3 => StageCfg { cpu_hp: 9,  kind: CpuKind::Jumper,      name: "ジャンパー",   name_en: "Jumper",    body_type: BodyType::Small },
+        4 => StageCfg { cpu_hp: 10, kind: CpuKind::Guarder,     name: "ガードマン",   name_en: "Guardsman", body_type: BodyType::Fat },
+        _ => StageCfg { cpu_hp: 14, kind: CpuKind::Boss,        name: "ボス",         name_en: "Boss",      body_type: BodyType::Muscular },
     }
 }
 
@@ -372,8 +449,8 @@ impl FightGame {
         let cfg = stage_cfg(1);
         FightGame {
             phase: Phase::Title, stage: 1, tick: 0, score: 0, event: None,
-            player: Fighter::new(100.0,  1, P_MAX_HP),
-            cpu:    Fighter::new(420.0, -1, cfg.cpu_hp),
+            player: Fighter::new(100.0,  1, P_MAX_HP, BodyType::Normal),
+            cpu:    Fighter::new(420.0, -1, cfg.cpu_hp, cfg.body_type),
             cpu_ai: CpuAI::new(cfg.kind),
             input: Input::default(),
         }
@@ -387,8 +464,8 @@ impl FightGame {
 
     fn load_stage(&mut self, stage: u32) {
         let cfg = stage_cfg(stage);
-        self.player = Fighter::new(100.0,  1, P_MAX_HP);
-        self.cpu    = Fighter::new(420.0, -1, cfg.cpu_hp);
+        self.player = Fighter::new(100.0,  1, P_MAX_HP, BodyType::Normal);
+        self.cpu    = Fighter::new(420.0, -1, cfg.cpu_hp, cfg.body_type);
         self.cpu_ai = CpuAI::new(cfg.kind);
         self.stage  = stage;
         self.tick   = 0;
@@ -421,7 +498,8 @@ impl FightGame {
 
         // Hit detection: player → cpu
         if let Some((ax, ay, aw, ah)) = self.player.attack_box() {
-            let (bx, by, bw, bh) = (self.cpu.x - 20.0, self.cpu.hitbox_cy(), 40.0, self.cpu.hitbox_h());
+            let bw = self.cpu.hitbox_w();
+            let (bx, by, bh) = (self.cpu.x - bw / 2.0, self.cpu.hitbox_cy(), self.cpu.hitbox_h());
             if self.cpu.invincible == 0 && rects_overlap(ax, ay, aw, ah, bx, by, bw, bh) {
                 let guarded = matches!(self.cpu_ai.kind, CpuKind::Guarder) && self.cpu_ai.guard;
                 if !guarded {
@@ -442,7 +520,8 @@ impl FightGame {
 
         // Hit detection: cpu → player
         if let Some((ax, ay, aw, ah)) = self.cpu.attack_box() {
-            let (bx, by, bw, bh) = (self.player.x - 20.0, self.player.hitbox_cy(), 40.0, self.player.hitbox_h());
+            let bw = self.player.hitbox_w();
+            let (bx, by, bh) = (self.player.x - bw / 2.0, self.player.hitbox_cy(), self.player.hitbox_h());
             if self.player.invincible == 0 && rects_overlap(ax, ay, aw, ah, bx, by, bw, bh) {
                 // ガード中はダメージ0（ノックバックのみ）
                 if self.player.is_guarding() {
@@ -560,12 +639,14 @@ impl FightGame {
                 "hp": self.player.hp, "max_hp": self.player.max_hp,
                 "state": self.player.state_name(), "facing": self.player.facing,
                 "inv": self.player.invincible > 0,
+                "body_type": BodyType::Normal.as_str(),
             },
             "cpu": {
                 "x": self.cpu.x as i32, "y": self.cpu.y as i32,
                 "hp": self.cpu.hp, "max_hp": self.cpu.max_hp,
                 "state": self.cpu.state_name(), "facing": self.cpu.facing,
                 "inv": self.cpu.invincible > 0,
+                "body_type": cfg.body_type.as_str(),
             },
         }).to_string()
     }
@@ -713,8 +794,8 @@ async fn game_loop_2p(
 
     'match_loop: loop {
         // Reset fighters for each round
-        let mut f1 = Fighter::new(100.0,  1, P_MAX_HP);
-        let mut f2 = Fighter::new(440.0, -1, P_MAX_HP);
+        let mut f1 = Fighter::new(100.0,  1, P_MAX_HP, BodyType::Normal);
+        let mut f2 = Fighter::new(440.0, -1, P_MAX_HP, BodyType::Normal);
         let mut i1 = Input::default();
         let mut i2 = Input::default();
         let mut tick: u64 = 0;
@@ -835,7 +916,8 @@ fn apply_input_2p<'a>(f: &mut Fighter, inp: &Input, ev: Option<&'a str>) -> Opti
 
 fn check_hit_2p<'a>(attacker: &mut Fighter, defender: &mut Fighter, ev: Option<&'a str>) -> Option<&'a str> {
     let Some((ax,ay,aw,ah)) = attacker.attack_box() else { return ev; };
-    let (bx,by,bw,bh) = (defender.x-20.0, defender.hitbox_cy(), 40.0, defender.hitbox_h());
+    let bw = defender.hitbox_w();
+    let (bx,by,bh) = (defender.x - bw / 2.0, defender.hitbox_cy(), defender.hitbox_h());
     if defender.invincible > 0 || !rects_overlap(ax,ay,aw,ah,bx,by,bw,bh) { return ev; }
     if defender.is_guarding() {
         defender.invincible = INVINCIBLE_TICKS / 2;
@@ -853,7 +935,8 @@ fn check_hit_2p<'a>(attacker: &mut Fighter, defender: &mut Fighter, ev: Option<&
 fn check_hit_2p_rev<'a>(f1: &mut Fighter, f2: &mut Fighter, ev: Option<&'a str>) -> Option<&'a str> {
     // f2 attacks f1
     let Some((ax,ay,aw,ah)) = f2.attack_box() else { return ev; };
-    let (bx,by,bw,bh) = (f1.x-20.0, f1.hitbox_cy(), 40.0, f1.hitbox_h());
+    let bw = f1.hitbox_w();
+    let (bx,by,bh) = (f1.x - bw / 2.0, f1.hitbox_cy(), f1.hitbox_h());
     if f1.invincible > 0 || !rects_overlap(ax,ay,aw,ah,bx,by,bw,bh) { return ev; }
     if f1.is_guarding() {
         f1.invincible = INVINCIBLE_TICKS / 2;
@@ -888,12 +971,14 @@ fn make_2p_json(me: &Fighter, opp: &Fighter, my_name: &str, opp_name: &str,
             "hp": me.hp, "max_hp": me.max_hp,
             "state": me.state_name(), "facing": me.facing,
             "inv": me.invincible > 0,
+            "body_type": BodyType::Normal.as_str(),
         },
         "cpu": {
             "x": opp.x as i32, "y": opp.y as i32,
             "hp": opp.hp, "max_hp": opp.max_hp,
             "state": opp.state_name(), "facing": opp.facing,
             "inv": opp.invincible > 0,
+            "body_type": BodyType::Normal.as_str(),
         },
     }).to_string()
 }
