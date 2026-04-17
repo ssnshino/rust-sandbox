@@ -7,7 +7,8 @@ mod fighting;
 mod truckers;
 
 use axum::{
-    extract::{ws::WebSocketUpgrade, State},
+    extract::{ws::WebSocketUpgrade, Path, State},
+    http::{header::{CACHE_CONTROL, CONTENT_TYPE}, StatusCode},
     response::{Html, IntoResponse},
     routing::get,
     Json, Router,
@@ -66,6 +67,7 @@ async fn main() {
         .route("/ws/fighting",         get(ws_fighting))
         .route("/ws/fighting/2p",      get(ws_fighting_2p))
         .route("/truckers",            get(truckers_page))
+        .route("/truckers/refs/:name", get(truckers_ref))
         .route("/ws/truckers",         get(ws_truckers))
         .with_state(state);
 
@@ -83,6 +85,20 @@ async fn dungeon_page()  -> Html<String> {
 }
 async fn fighting_page() -> Html<&'static str> { Html(include_str!("fighting.html")) }
 async fn truckers_page() -> Html<&'static str> { Html(include_str!("truckers.html")) }
+async fn truckers_ref(Path(name): Path<String>) -> impl IntoResponse {
+    let bytes: &[u8] = match name.as_str() {
+        "man.jpg" => include_bytes!("truckers_man.jpg"),
+        "girl.jpg" => include_bytes!("truckers_girl.jpg"),
+        _ => return StatusCode::NOT_FOUND.into_response(),
+    };
+    (
+        [
+            (CONTENT_TYPE, "image/jpeg"),
+            (CACHE_CONTROL, "public, max-age=3600"),
+        ],
+        bytes,
+    ).into_response()
+}
 
 async fn ws_1p(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl IntoResponse {
     ws.on_upgrade(move |socket| game::run_1p(socket, s.pong_single_players))

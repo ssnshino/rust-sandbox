@@ -13,6 +13,7 @@
 | Pong（vs CPU / 2P） | [pong.md](./pong.md) | `/pong`, `/ws`, `/ws2p` |
 | Breakout | [breakout.md](./breakout.md) | `/breakout`, `/ws/breakout`, `/api/breakout/scores` |
 | あやかダンジョン × 平安京エイリアン | [dungeon.md](./dungeon.md) | `/dungeon`, `/ws/dungeon`, `/api/dungeon/scores` |
+| 宇宙トラック野郎 | [truckers.md](./truckers.md) | `/truckers`, `/truckers/refs/:name`, `/ws/truckers` |
 
 ## 共通アーキテクチャ
 
@@ -54,7 +55,8 @@ rust-sandbox/
 │   ├── index.md            # この文書（インデックス）
 │   ├── pong.md             # Pong 仕様書
 │   ├── breakout.md         # Breakout 仕様書
-│   └── dungeon.md          # あやかダンジョン仕様書
+│   ├── dungeon.md          # あやかダンジョン仕様書
+│   └── truckers.md         # 宇宙トラック野郎仕様書
 └── app/
     ├── Cargo.toml
     └── src/
@@ -62,10 +64,12 @@ rust-sandbox/
         ├── game.rs           # Pong
         ├── breakout.rs       # Breakout
         ├── dungeon.rs        # あやかダンジョン
+        ├── truckers.rs       # 宇宙トラック野郎
         ├── dungeon_gen.rs    # 迷路生成
         ├── scores.rs         # ハイスコア共通
         ├── index.html
         ├── pong.html
         ├── breakout.html
-        └── dungeon.html
+        ├── dungeon.html
+        └── truckers.html
 ```

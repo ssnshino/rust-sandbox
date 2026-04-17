@@ -63,6 +63,50 @@
       transform:none;
       margin:0;
     }
+    #screen-clear{
+      overflow:hidden;
+      align-items:center;
+      justify-content:center;
+      padding:18px 18px 26px;
+    }
+    #screen-clear h1, #screen-clear h2{
+      position:relative;
+      z-index:3;
+      text-align:center;
+      max-width:72%;
+    }
+    #clear-cast{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      z-index:1;
+    }
+    .clear-face{
+      position:absolute;
+      bottom:10px;
+      width:148px;
+      max-width:30vw;
+      filter:drop-shadow(0 6px 20px rgba(0,0,0,.45));
+      opacity:.95;
+    }
+    .clear-face.left{ left:10px; }
+    .clear-face.right{ right:10px; }
+    .clear-bubble{
+      position:absolute;
+      bottom:124px;
+      max-width:170px;
+      padding:8px 10px;
+      border-radius:12px;
+      font-size:.68rem;
+      line-height:1.45;
+      color:#f8fafc;
+      background:rgba(15,23,42,.78);
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow:0 6px 18px rgba(0,0,0,.25);
+    }
+    .clear-bubble.left{ left:14px; text-align:left; }
+    .clear-bubble.right{ right:14px; text-align:right; }
+    .clear-bubble strong{ color:#fde68a; display:block; margin-bottom:2px; }
     .btn {
       padding:10px 28px;
       background:rgba(168,85,247,.2); border:1px solid rgba(168,85,247,.5);
@@ -199,8 +243,15 @@
 
   <!-- Stage/Lap clear flash -->
   <div id="screen-clear" class="overlay" style="display:none;background:rgba(5,5,20,.55);">
+    <div id="clear-cast">
+      <img class="clear-face left" src="/truckers/refs/girl.jpg" alt="GM portrait">
+      <img class="clear-face right" src="/truckers/refs/man.jpg" alt="Driver portrait">
+      <div id="clear-girl-line" class="clear-bubble left"></div>
+      <div id="clear-man-line" class="clear-bubble right"></div>
+    </div>
     <h1 id="cl-title" style="font-size:1.8rem;"></h1>
     <h2 id="cl-sub"></h2>
+    <button class="btn" id="btn-continue" data-i18n="btn_continue" style="position:relative;z-index:3;">次のステーションへ！</button>
   </div>
 
   <button id="btn-back" onclick="location.href='/'">← <span data-i18n="back">メニュー</span></button>
@@ -224,6 +275,7 @@ const I18N = {
     name_ph:  'なまえ',
     btn_start:'スタート！',
     btn_restart:'もう一度',
+    btn_continue:'次のステーションへ！',
     controls: '矢印キー / WASD で操作',
     back:     'メニュー',
     go_title: 'GAME OVER',
@@ -231,6 +283,7 @@ const I18N = {
     round_lbl:'ROUND ',
     lap_lbl:  'LAP ',
     dest_lbl: (to) => `→ ${to.symbol} ${to.name_ja} へ配達中`,
+    booster_lbl: '▲ 中継ブースターへ接続！',
     dock_lbl: (to) => `▲ ${to.symbol} ${to.name_ja} のエアロックへ！`,
     clear_title:(from,to) => `${from.symbol}→${to.symbol} 配達完了！`,
     lap_title:'1 LAP クリア！！',
@@ -242,6 +295,17 @@ const I18N = {
     gm_hit:   ['いたっ！','こわれちゃう！','きをつけて！','うわあっ！'],
     gm_lap:   ['いっしゅうしたよ！！','さすがトラック野郎！','やったぁ！'],
     gm_dock:  ['エアロックへ！','もうすぐだよ！','狙いをさだめて！'],
+    gm_booster:['中継ブースターだよ！','ここでつなぐよ！','ぴたっと合わせて！'],
+    gm_booster_ok:['ブースター接続完了！','よし、後半戦いくよ！','加速の準備できた！'],
+    gm_fast:['速いよ速いよー！','ブースター全開っ！','しっかりついてきて！'],
+    clear_booster_notice:'次のステーションへは急ぎの荷物があるので、ブースターを装着していきましょう！',
+    clear_girl:'配達完了だよ！ 次もよろしくねっ。',
+    clear_man:'おう、次の荷も運んでくる。',
+    clear_booster_girl:'急ぎ便だよっ。次はブースター付きで行こう！',
+    clear_booster_man:'了解だ。加速便でぶっ飛ばす。',
+    clear_lap_girl:'一周クリアだよっ！ この調子で行こう！',
+    clear_man_lap:'まだまだ走れる。次も頼む。',
+    clear_lap_man:'まだまだ走れる。次も頼む。',
   },
   en: {
     title:    '🚛 Space Truckers 🚛',
@@ -249,6 +313,7 @@ const I18N = {
     name_ph:  'Your name',
     btn_start:'Start!',
     btn_restart:'Try Again',
+    btn_continue:'Next Station!',
     controls: 'Arrow keys / WASD to move',
     back:     'Menu',
     go_title: 'GAME OVER',
@@ -256,6 +321,7 @@ const I18N = {
     round_lbl:'ROUND ',
     lap_lbl:  'LAP ',
     dest_lbl: (to) => `→ En route to ${to.symbol} ${to.name_en}`,
+    booster_lbl: '▲ Dock with the booster relay!',
     dock_lbl: (to) => `▲ Enter airlock: ${to.symbol} ${to.name_en}!`,
     clear_title:(from,to) => `${from.symbol}→${to.symbol} Delivered!`,
     lap_title:'1 LAP CLEAR!!',
@@ -267,6 +333,16 @@ const I18N = {
     gm_hit:   ['Ouch!','Watch out!','Take care!','Whoa!'],
     gm_lap:   ['One lap done!!','That\'s a trucker!','Woohoo!'],
     gm_dock:  ['Head to airlock!','Almost there!','Line it up!'],
+    gm_booster:['Booster relay ahead!','Dock here for the booster!','Line it up nice and tight!'],
+    gm_booster_ok:['Booster connected!','Alright, second half!','Boost package installed!'],
+    gm_fast:['Here we go, fast lane!','Booster full throttle!','Hold it steady!'],
+    clear_booster_notice:'Urgent cargo next run. Let\'s mount a booster before we go!',
+    clear_girl:'Delivery complete! Let\'s keep rolling!',
+    clear_man:'Yeah. I\'ll haul the next load too.',
+    clear_booster_girl:'Urgent cargo next! Let\'s bolt on a booster!',
+    clear_booster_man:'Roger that. I\'ll punch it hard.',
+    clear_lap_girl:'One whole lap done! Keep it going!',
+    clear_man_lap:'I can still run. Send the next job.',
   },
 };
 
@@ -293,6 +369,7 @@ applyLang();
 const canvas=document.getElementById('canvas');
 const ctx=canvas.getContext('2d');
 const W=540, H=540;
+const BOOSTER_Y=185;
 
 function lcg(s){ return ((s>>>0)*1664525+1013904223)>>>0; }
 function lcgf(s){ return (lcg(s)>>>0)/4294967295; }
@@ -314,16 +391,18 @@ const SCROLL_MAX  = 3.5;
 let scrollSpeed  = BASE_SCROLL;
 let scrollOffset = 0;
 
-function updateScroll(shipY){
+function updateScroll(shipY, fastScroll){
   const y = shipY ?? (H * 0.67);
   const pct = 1 - Math.max(0, Math.min(1, y / H));
-  const target = SCROLL_MIN + pct * (SCROLL_MAX - SCROLL_MIN);
+  const min = fastScroll ? 0.7 : SCROLL_MIN;
+  const max = fastScroll ? 7.2 : SCROLL_MAX;
+  const target = min + pct * (max - min);
   scrollSpeed += (target - scrollSpeed) * 0.08;
   scrollOffset += scrollSpeed;
 }
 
-function renderBg(tick, shipY){
-  updateScroll(shipY);
+function renderBg(tick, shipY, fastScroll){
+  updateScroll(shipY, fastScroll);
   ctx.fillStyle='#050510'; ctx.fillRect(0,0,W,H);
   for(const n of NEBULAS){
     const yo=((n.y + scrollOffset*n.parallax)%H+H)%H;
@@ -351,24 +430,37 @@ function drawNebula(x,y,r,hue){
 
 // ── Station drawing helpers ───────────────────────────────────────────────────
 // Draw a space station: body + solar panels + airlock
-function drawStation(cx, cy, symbol, name, isDestination, airlockX, pulse){
+function drawStation(cx, cy, symbol, name, isDestination, airlockX, pulse, mode='destination'){
+  const isBooster = mode === 'booster';
+  const ringStroke = isBooster ? `rgba(34,197,94,${0.45+0.4*pulse})`
+    : isDestination ? `rgba(251,191,36,${0.5+0.4*pulse})` : 'rgba(99,102,241,0.5)';
+  const bodyFill = isBooster ? 'rgba(8,28,18,0.88)'
+    : isDestination ? 'rgba(45,30,10,0.8)' : 'rgba(20,20,40,0.8)';
+  const panelFill = isBooster ? 'rgba(34,197,94,0.30)'
+    : isDestination ? 'rgba(251,191,36,0.35)' : 'rgba(99,102,241,0.3)';
+  const panelStroke = isBooster ? 'rgba(134,239,172,0.55)'
+    : isDestination ? 'rgba(251,191,36,0.5)' : 'rgba(99,102,241,0.4)';
+  const labelFill = isBooster ? `rgba(187,247,208,${0.75+0.2*pulse})`
+    : isDestination ? `rgba(253,230,138,${0.7+0.3*pulse})` : 'rgba(165,180,252,0.8)';
+  const subFill = isBooster ? 'rgba(187,247,208,0.7)'
+    : isDestination ? 'rgba(253,230,138,0.6)' : 'rgba(148,163,184,0.5)';
   // Main body
   ctx.save();
   ctx.translate(cx,cy);
 
   // Core ring
   ctx.beginPath(); ctx.arc(0,0,24,0,Math.PI*2);
-  ctx.strokeStyle=isDestination?`rgba(251,191,36,${0.5+0.4*pulse})`:'rgba(99,102,241,0.5)';
+  ctx.strokeStyle=ringStroke;
   ctx.lineWidth=3; ctx.stroke();
   ctx.beginPath(); ctx.arc(0,0,24,0,Math.PI*2);
-  ctx.fillStyle=isDestination?'rgba(45,30,10,0.8)':'rgba(20,20,40,0.8)';
+  ctx.fillStyle=bodyFill;
   ctx.fill();
 
   // Solar panels
-  ctx.fillStyle=isDestination?'rgba(251,191,36,0.35)':'rgba(99,102,241,0.3)';
+  ctx.fillStyle=panelFill;
   ctx.fillRect(-52,-6,24,12);  // left panel
   ctx.fillRect(28,-6,24,12);   // right panel
-  ctx.strokeStyle=isDestination?'rgba(251,191,36,0.5)':'rgba(99,102,241,0.4)';
+  ctx.strokeStyle=panelStroke;
   ctx.lineWidth=1;
   ctx.strokeRect(-52,-6,24,12);
   ctx.strokeRect(28,-6,24,12);
@@ -379,35 +471,37 @@ function drawStation(cx, cy, symbol, name, isDestination, airlockX, pulse){
   // Symbol + name
   ctx.textAlign='center';
   ctx.font='14px DotGothic16, monospace';
-  ctx.fillStyle=isDestination?`rgba(253,230,138,${0.7+0.3*pulse})`:'rgba(165,180,252,0.8)';
-  ctx.fillText(symbol,0,5);
+  ctx.fillStyle=labelFill;
+  ctx.fillText(isBooster ? 'BOOST' : symbol,0,5);
   ctx.font='9px DotGothic16, monospace';
-  ctx.fillStyle=isDestination?'rgba(253,230,138,0.6)':'rgba(148,163,184,0.5)';
-  ctx.fillText(name,0,20);
+  ctx.fillStyle=subFill;
+  ctx.fillText(isBooster ? (lang==='ja'?'中継':'Relay') : name,0,20);
 
   ctx.restore();
 
   // Airlock marker (separate from station center, at airlockX)
-  if(isDestination){
+  if(isDestination || isBooster){
     const ax=airlockX, ay=cy;
     // Connector tube from station to airlock
     ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(ax,ay);
-    ctx.strokeStyle=`rgba(251,191,36,${0.2+0.15*pulse})`; ctx.lineWidth=1;
+    ctx.strokeStyle=isBooster ? `rgba(34,197,94,${0.22+0.18*pulse})` : `rgba(251,191,36,${0.2+0.15*pulse})`; ctx.lineWidth=1;
     ctx.setLineDash([4,6]); ctx.stroke(); ctx.setLineDash([]);
 
     // Airlock opening (glowing)
     const glowR=14+4*pulse;
     const grd=ctx.createRadialGradient(ax,ay,2,ax,ay,glowR);
-    grd.addColorStop(0,`rgba(34,197,94,${0.6+0.3*pulse})`);
-    grd.addColorStop(1,'rgba(34,197,94,0)');
+    const glowA = isBooster ? `rgba(96,165,250,${0.6+0.3*pulse})` : `rgba(34,197,94,${0.6+0.3*pulse})`;
+    const glowB = isBooster ? 'rgba(96,165,250,0)' : 'rgba(34,197,94,0)';
+    grd.addColorStop(0,glowA);
+    grd.addColorStop(1,glowB);
     ctx.beginPath(); ctx.arc(ax,ay,glowR,0,Math.PI*2); ctx.fillStyle=grd; ctx.fill();
 
     ctx.beginPath(); ctx.arc(ax,ay,8,0,Math.PI*2);
-    ctx.fillStyle=`rgba(34,197,94,${0.4+0.3*pulse})`; ctx.fill();
-    ctx.strokeStyle=`rgba(134,239,172,${0.7+0.3*pulse})`; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle=isBooster ? `rgba(96,165,250,${0.45+0.3*pulse})` : `rgba(34,197,94,${0.4+0.3*pulse})`; ctx.fill();
+    ctx.strokeStyle=isBooster ? `rgba(191,219,254,${0.7+0.25*pulse})` : `rgba(134,239,172,${0.7+0.3*pulse})`; ctx.lineWidth=2; ctx.stroke();
 
     // Arrow pointing down to airlock
-    ctx.fillStyle=`rgba(134,239,172,${0.6+0.3*pulse})`;
+    ctx.fillStyle=isBooster ? `rgba(191,219,254,${0.65+0.25*pulse})` : `rgba(134,239,172,${0.6+0.3*pulse})`;
     ctx.textAlign='center'; ctx.font='12px sans-serif';
     ctx.fillText('▼',ax,ay+28);
   }
@@ -433,7 +527,7 @@ function drawDepartStation(cx, sy, symbol, name, departX){
 }
 
 // ── Ship drawing (upward-facing van/truck with directional thrusters) ─────────
-function drawTruck(x, y, vx, vy, invincible, tick){
+function drawTruck(x, y, vx, vy, invincible, tick, boosterAttached){
   if(invincible && Math.floor(tick/4)%2===1) return;
 
   ctx.save();
@@ -460,6 +554,16 @@ function drawTruck(x, y, vx, vy, invincible, tick){
   // Cargo section (lower)
   ctx.fillStyle='#1e3a8a';
   ctx.fillRect(-tw/2,-th/2+13, tw, th/2+2);
+
+  if(boosterAttached){
+    ctx.fillStyle='rgba(56,189,248,0.9)';
+    ctx.fillRect(-tw/2-4,-2,3,16);
+    ctx.fillRect(tw/2+1,-2,3,16);
+    ctx.strokeStyle='rgba(191,219,254,0.8)';
+    ctx.lineWidth=1;
+    ctx.strokeRect(-tw/2-4,-2,3,16);
+    ctx.strokeRect(tw/2+1,-2,3,16);
+  }
 
   // Stripe between cab and cargo
   ctx.fillStyle='#1d4ed8';
@@ -653,9 +757,10 @@ function drawHUD(s){
   ctx.fillStyle='rgba(5,5,20,0.55)'; ctx.fillRect(0,H-30,W,30);
   ctx.textAlign='center';
   const isDocking = s.phase==='docking';
+  const isBoosterDocking = s.phase==='booster_docking';
   ctx.font = isDocking ? '14px DotGothic16, monospace' : '12px DotGothic16, monospace';
-  ctx.fillStyle = isDocking ? '#86efac' : '#7dd3fc';
-  const label = isDocking ? t('dock_lbl')(s.to) : t('dest_lbl')(s.to);
+  ctx.fillStyle = isBoosterDocking ? '#bfdbfe' : isDocking ? '#86efac' : '#7dd3fc';
+  const label = isBoosterDocking ? t('booster_lbl') : isDocking ? t('dock_lbl')(s.to) : t('dest_lbl')(s.to);
   ctx.fillText(label, W/2, H-9);
   ctx.textAlign='left';
 }
@@ -752,7 +857,7 @@ function updateThrusterAudio(){
 }
 
 // ── Message handler ───────────────────────────────────────────────────────────
-let gmTimeout=null, lastEvent=null, prevPhase=null;
+let gmTimeout=null, lastEvent=null, prevPhase=null, lastFastScroll=false;
 
 function handleMsg(msg){
   if(msg.type!=='state') return;
@@ -761,22 +866,31 @@ function handleMsg(msg){
       showScreen('title'); renderTitleBg(); renderScoreList('title-scores',msg.scores||[]); break;
     case 'launching':
     case 'playing':
+    case 'booster_docking':
     case 'docking':
       showScreen('playing'); renderGame(msg);
       if(msg.event && msg.event!==lastEvent){
         if(msg.event==='damage')  showGm(pick(t('gm_hit')));
         if(msg.event==='delivery')showGm(pick(t('gm_ok')));
+        if(msg.event==='booster_call') showGm(pick(t('gm_booster')));
+        if(msg.event==='booster_attach') showGm(pick(t('gm_booster_ok')));
         if(msg.event==='mineral_gold'){ showGm(lang==='ja'?'金鉱石ゲット！':'Gold ore get!'); beep(1040,0.07,'square',0.05); }
         if(msg.event==='mineral_rare'){ showGm(lang==='ja'?'レアメタルきた！':'Rare metal!'); beep(1320,0.09,'triangle',0.06); }
       }
       // On first tick of docking phase
+      if(msg.phase==='booster_docking' && prevPhase!=='booster_docking') showGm(pick(t('gm_booster')));
       if(msg.phase==='docking' && prevPhase!=='docking') showGm(pick(t('gm_dock')));
+      if(msg.fast_scroll && !lastFastScroll) showGm(pick(t('gm_fast')));
       lastEvent=msg.event; prevPhase=msg.phase;
+      lastFastScroll=!!msg.fast_scroll;
       break;
     case 'stage_clear':
       showScreen('playing'); renderGame(msg);
-      showClear(t('clear_title')(msg.from,msg.to), t('score_lbl')+(msg.score||0).toLocaleString());
-      showGm(pick(t('gm_ok'))); prevPhase=msg.phase; break;
+      showClear(
+        t('clear_title')(msg.from,msg.to),
+        msg.next_stage_booster ? t('clear_booster_notice') : t('score_lbl')+(msg.score||0).toLocaleString()
+      );
+      showGm(msg.next_stage_booster ? t('clear_booster_notice') : pick(t('gm_ok'))); prevPhase=msg.phase; break;
     case 'lap_clear':
       showScreen('playing'); renderGame(msg);
       showClear(t('lap_title'),t('lap_sub')(msg.round));
@@ -792,12 +906,22 @@ function handleMsg(msg){
 function showClear(title,sub){
   document.getElementById('cl-title').textContent=title;
   document.getElementById('cl-sub').textContent=sub;
+  const isBoosterNotice = sub === t('clear_booster_notice');
+  const isLap = title === t('lap_title');
+  document.getElementById('clear-girl-line').innerHTML =
+    `<strong>${lang==='ja'?'ミサキ':'Misaki'}</strong>` +
+    (isBoosterNotice ? t('clear_booster_girl') : isLap ? t('clear_lap_girl') : t('clear_girl'));
+  document.getElementById('clear-man-line').innerHTML =
+    `<strong>${lang==='ja'?'シノヤマ':'Shinoyama'}</strong>` +
+    (isBoosterNotice ? t('clear_booster_man') : isLap ? (I18N[lang].clear_man_lap || t('clear_man')) : t('clear_man'));
   document.getElementById('screen-clear').style.display='flex';
+  document.getElementById('btn-continue').style.display='inline-block';
 }
 function showScreen(name){
   document.getElementById('screen-title').style.display   =name==='title'   ?'flex':'none';
   document.getElementById('screen-gameover').style.display=name==='gameover'?'flex':'none';
   document.getElementById('screen-clear').style.display   ='none';
+  document.getElementById('btn-continue').style.display   ='none';
   const showTopButtons = name !== 'playing';
   document.getElementById('btn-back').style.display = showTopButtons ? '' : 'none';
   document.getElementById('btn-lang').style.display = showTopButtons ? '' : 'none';
@@ -821,7 +945,7 @@ function renderScoreList(id,scores){
 // ── Main render ───────────────────────────────────────────────────────────────
 function renderGame(s){
   const tick=s.tick||0;
-  renderBg(tick, s.ship ? s.ship.y : undefined);
+  renderBg(tick, s.ship ? s.ship.y : undefined, !!s.fast_scroll);
   drawProgressBar(s.progress, s.phase);
 
   const pulse=0.5+0.5*Math.sin(tick*0.1);
@@ -853,6 +977,11 @@ function renderGame(s){
     }
   }
 
+  // ── Booster relay ─────────────────────────────────────────────────────────
+  if(s.phase==='booster_docking' || (s.booster_enabled && s.booster_attached && (s.progress||0)<40)){
+    drawStation(270, BOOSTER_Y, '', '', true, s.booster_x, pulse, 'booster');
+  }
+
   // ── Destination station (top) — appears when progress >= 80% or docking ──
   if(s.phase==='docking' || (s.progress||0)>=78){
     const stationX=270, stationY=30;
@@ -862,7 +991,7 @@ function renderGame(s){
   drawAsteroids(s.asteroids);
   drawMinerals(s.minerals);
   drawManipulator(s.ship, s.manip_len);
-  drawTruck(s.ship.x, s.ship.y, s.ship.vx, s.ship.vy, s.ship.invincible, tick);
+  drawTruck(s.ship.x, s.ship.y, s.ship.vx, s.ship.vy, s.ship.invincible, tick, s.booster_attached);
   drawHUD(s);
 }
 
@@ -895,6 +1024,7 @@ document.getElementById('name-input').addEventListener('keydown',e=>{
   if(e.key==='Enter'){document.getElementById('btn-start').click();e.preventDefault();}
 });
 document.getElementById('btn-restart').addEventListener('click',()=>send({type:'restart'}));
+document.getElementById('btn-continue').addEventListener('click',()=>send({type:'continue'}));
 
 // ── Virtual stick ─────────────────────────────────────────────────────────────
 const vstickArea=document.getElementById('vstick-area');
