@@ -7,61 +7,36 @@ use tokio::time::{interval, Duration, MissedTickBehavior};
 use crate::scores::ScoreBoard;
 
 const TICK_MS: u64 = 33;
-const CANVAS: f32 = 540.0;
-const CENTER: f32 = 270.0;
-const STATION_R: f32 = 210.0;
+const W: f32 = 540.0;
+const H: f32 = 540.0;
 const SHIP_R: f32 = 12.0;
-const DOCK_R: f32 = 34.0;
-const MAX_SPEED: f32 = 5.0;
-const ACCEL: f32 = 0.35;
-const DRAG: f32 = 0.94;
+const SHIP_MAX_SPEED: f32 = 4.5;
+const SHIP_ACCEL: f32 = 0.32;
+const SHIP_DRAG: f32 = 0.90;
+const SHIP_START_Y: f32 = 80.0;
+const DEST_Y: f32 = 460.0;
+const DEST_R: f32 = 36.0;
 const INVINCIBLE_TICKS: u32 = 60;
 const SHIP_HP: u8 = 3;
 const SCORE_DELIVERY: u32 = 500;
 const SCORE_HP_BONUS: u32 = 200;
+const TOTAL_STATIONS: usize = 12;
 
-// 12 zodiac stations: (name_ja, name_en, symbol, angle_deg)
-// angle_deg: standard math angle (0=right, 90=top, CCW)
-// screen y is flipped, so y = CENTER - R*sin(angle)
-const STATIONS: [(&str, &str, &str, f32); 12] = [
-    ("おひつじ", "Aries",       "♈",  90.0),
-    ("おうし",   "Taurus",      "♉",  60.0),
-    ("ふたご",   "Gemini",      "♊",  30.0),
-    ("かに",     "Cancer",      "♋",   0.0),
-    ("しし",     "Leo",         "♌", 330.0),
-    ("おとめ",   "Virgo",       "♍", 300.0),
-    ("てんびん", "Libra",       "♎", 270.0),
-    ("さそり",   "Scorpio",     "♏", 240.0),
-    ("いて",     "Sagittarius", "♐", 210.0),
-    ("やぎ",     "Capricorn",   "♑", 180.0),
-    ("みずがめ", "Aquarius",    "♒", 150.0),
-    ("うお",     "Pisces",      "♓", 120.0),
+// 12 zodiac stations
+const STATIONS: [(&str, &str, &str); 12] = [
+    ("おひつじ", "Aries",       "♈"),
+    ("おうし",   "Taurus",      "♉"),
+    ("ふたご",   "Gemini",      "♊"),
+    ("かに",     "Cancer",      "♋"),
+    ("しし",     "Leo",         "♌"),
+    ("おとめ",   "Virgo",       "♍"),
+    ("てんびん", "Libra",       "♎"),
+    ("さそり",   "Scorpio",     "♏"),
+    ("いて",     "Sagittarius", "♐"),
+    ("やぎ",     "Capricorn",   "♑"),
+    ("みずがめ", "Aquarius",    "♒"),
+    ("うお",     "Pisces",      "♓"),
 ];
-
-fn station_pos(angle_deg: f32) -> (f32, f32) {
-    let r = angle_deg.to_radians();
-    (CENTER + STATION_R * r.cos(), CENTER - STATION_R * r.sin())
-}
-
-fn asteroid_count(round: u32) -> usize {
-    match round { 1 => 6, 2 => 9, 3 => 12, _ => 15 }
-}
-
-fn asteroid_speed_scale(round: u32) -> f32 {
-    1.0 + (round.saturating_sub(1) as f32) * 0.2
-}
-
-fn asteroid_max_radius(round: u32) -> f32 {
-    (22.0 + (round.saturating_sub(1) as f32) * 2.0).min(30.0)
-}
-
-fn lcg(seed: u32) -> u32 {
-    seed.wrapping_mul(1664525).wrapping_add(1013904223)
-}
-
-fn lcg_f(seed: u32) -> f32 {
-    lcg(seed) as f32 / u32::MAX as f32
-}
 
 struct PlayerCountGuard(Arc<AtomicUsize>);
 impl PlayerCountGuard {
@@ -71,157 +46,167 @@ impl Drop for PlayerCountGuard {
     fn drop(&mut self) { self.0.fetch_sub(1, Ordering::Relaxed); }
 }
 
-// ── Asteroid ─────────────────────────────────────────────────────────────────
+// ── Asteroid ──────────────────────────────────────────────────────────────────
 
 struct Asteroid {
-    x: f32, y: f32,
-    vx: f32, vy: f32,
+    x: f32,
+    y: f32,
+    vx: f32,
+    vy: f32,
     radius: f32,
-    seed: u32,
+    seed: u32, // for visual rendering variety
 }
 
-fn spawn_asteroids(count: usize, round: u32, base_seed: u32, ship_x: f32, ship_y: f32) -> Vec<Asteroid> {
-    let spd = asteroid_speed_scale(round);
-    let max_r = asteroid_max_radius(round);
-    let mut v = Vec::with_capacity(count);
-    let mut seed = base_seed;
+fn lcg(s: u32) -> u32 { s.wrapping_mul(1664525).wrapping_add(1013904223) }
+fn lcgf(s: u32) -> f32 { lcg(s) as f32 / u32::MAX as f32 }
 
-    for _ in 0..count {
-        seed = lcg(seed);
-        let x = lcg_f(seed) * CANVAS;
-        seed = lcg(seed);
-        let y = lcg_f(seed) * CANVAS;
-        seed = lcg(seed);
-        let angle = lcg_f(seed) * std::f32::consts::TAU;
-        seed = lcg(seed);
-        let speed_t = lcg_f(seed); // 0..1
-        seed = lcg(seed);
-        let radius_t = lcg_f(seed);
-        seed = lcg(seed);
-        let vis_seed = seed;
+fn make_asteroid(tick: u64, i: usize, round: u32) -> Asteroid {
+    let seed0 = lcg((tick as u32).wrapping_add(i as u32 * 7919).wrapping_add(round * 31337));
+    let seed1 = lcg(seed0);
+    let seed2 = lcg(seed1);
+    let seed3 = lcg(seed2);
+    let seed4 = lcg(seed3);
 
-        // keep away from ship spawn
-        let dx = x - ship_x;
-        let dy = y - ship_y;
-        let d = (dx*dx + dy*dy).sqrt();
-        let (ax, ay) = if d < 70.0 {
-            // place on opposite side
-            let ox = ship_x + (if x < CENTER { -120.0 } else { 120.0 });
-            let oy = ship_y + (if y < CENTER { -120.0 } else { 120.0 });
-            (ox.clamp(20.0, CANVAS - 20.0), oy.clamp(20.0, CANVAS - 20.0))
-        } else {
-            (x, y)
-        };
+    let x = 20.0 + lcgf(seed0) * (W - 40.0);
+    // horizontal drift: slight, centered near 0
+    let vx = (lcgf(seed1) - 0.5) * 1.4 * speed_scale(round);
+    let base_vy = 1.2 + lcgf(seed2) * 1.8;
+    let vy = base_vy * speed_scale(round);
+    let radius = 8.0 + lcgf(seed3) * max_radius_extra(round);
 
-        let spd_actual = (0.5 + speed_t * 1.5) * spd;
-        let vx = angle.cos() * spd_actual;
-        let vy = angle.sin() * spd_actual;
-        let radius = 8.0 + radius_t * (max_r - 8.0);
-
-        v.push(Asteroid { x: ax, y: ay, vx, vy, radius, seed: vis_seed });
-    }
-    v
+    Asteroid { x, y: -radius - 4.0, vx, vy, radius, seed: seed4 }
 }
 
-// ── Game struct ───────────────────────────────────────────────────────────────
+fn speed_scale(round: u32) -> f32 {
+    1.0 + (round.saturating_sub(1) as f32) * 0.18
+}
 
-#[derive(PartialEq)]
-enum Phase { Playing, LapClear, GameOver }
+fn max_radius_extra(round: u32) -> f32 {
+    // extra radius beyond base 8px: grows with round, capped
+    (14.0 + round.saturating_sub(1) as f32 * 2.0).min(22.0)
+}
+
+// ticks between asteroid spawns (decreases with round)
+fn spawn_interval(round: u32) -> u64 {
+    let base = 28u64;
+    let reduce = (round.saturating_sub(1) as u64) * 3;
+    base.saturating_sub(reduce).max(10)
+}
+
+// ── Phase ─────────────────────────────────────────────────────────────────────
+
+#[derive(PartialEq, Clone, Copy)]
+enum Phase {
+    Playing,
+    StageClear,  // brief pause between stages
+    LapClear,    // 12 deliveries done
+    GameOver,
+}
+
+// ── Game ──────────────────────────────────────────────────────────────────────
 
 struct Game {
-    ship_x: f32, ship_y: f32,
-    ship_vx: f32, ship_vy: f32,
-    ship_angle: f32,
+    // ship
+    sx: f32, sy: f32,
+    svx: f32, svy: f32,
+    sangle: f32,
     hp: u8,
     invincible: u32,
+    // destination x (randomised slightly each stage, but always at DEST_Y)
+    dest_x: f32,
+    // game state
     score: u32,
     round: u32,
-    // current delivery target index (0..11)
-    target_idx: usize,
+    stage: usize,        // 0..11, which delivery leg within the current LAP
+    lap: u32,
     asteroids: Vec<Asteroid>,
     tick: u64,
     phase: Phase,
     event: Option<&'static str>,
+    phase_timer: u32,    // ticks remaining in StageClear / LapClear pause
+    // input
     keys_up: bool, keys_down: bool, keys_left: bool, keys_right: bool,
 }
 
 impl Game {
     fn new() -> Self {
-        let (sx, sy) = station_pos(90.0); // Aries
         let mut g = Game {
-            ship_x: sx, ship_y: sy,
-            ship_vx: 0.0, ship_vy: 0.0,
-            ship_angle: 0.0,
-            hp: SHIP_HP,
-            invincible: 0,
-            score: 0,
-            round: 1,
-            target_idx: 1, // first target is Taurus (index 1)
+            sx: W / 2.0, sy: SHIP_START_Y,
+            svx: 0.0, svy: 0.0, sangle: std::f32::consts::FRAC_PI_2, // facing down
+            hp: SHIP_HP, invincible: 0,
+            dest_x: W / 2.0,
+            score: 0, round: 1, stage: 0, lap: 1,
             asteroids: Vec::new(),
-            tick: 0,
-            phase: Phase::Playing,
-            event: None,
+            tick: 0, phase: Phase::Playing, event: None, phase_timer: 0,
             keys_up: false, keys_down: false, keys_left: false, keys_right: false,
         };
-        g.asteroids = spawn_asteroids(asteroid_count(1), 1, 42, sx, sy);
+        g.dest_x = stage_dest_x(0, 1);
         g
-    }
-
-    fn next_round(&mut self) {
-        self.round += 1;
-        self.hp = SHIP_HP; // full HP recovery
-        self.target_idx = 1; // restart from Taurus
-        let (sx, sy) = station_pos(90.0);
-        self.ship_x = sx;
-        self.ship_y = sy;
-        self.ship_vx = 0.0;
-        self.ship_vy = 0.0;
-        self.asteroids = spawn_asteroids(
-            asteroid_count(self.round),
-            self.round,
-            self.tick as u32,
-            sx, sy,
-        );
     }
 
     fn tick(&mut self) {
         self.tick += 1;
-        if self.phase != Phase::Playing { return; }
         self.event = None;
+
+        match self.phase {
+            Phase::StageClear | Phase::LapClear => {
+                if self.phase_timer > 0 { self.phase_timer -= 1; }
+                else { self.begin_next_stage(); }
+                return;
+            }
+            Phase::GameOver => return,
+            Phase::Playing => {}
+        }
+
         if self.invincible > 0 { self.invincible -= 1; }
 
-        // Ship physics
-        let ax = if self.keys_right { ACCEL } else if self.keys_left { -ACCEL } else { 0.0 };
-        let ay = if self.keys_down  { ACCEL } else if self.keys_up   { -ACCEL } else { 0.0 };
-        self.ship_vx = (self.ship_vx + ax) * DRAG;
-        self.ship_vy = (self.ship_vy + ay) * DRAG;
-        // clamp speed
-        let spd = (self.ship_vx*self.ship_vx + self.ship_vy*self.ship_vy).sqrt();
-        if spd > MAX_SPEED {
-            self.ship_vx = self.ship_vx / spd * MAX_SPEED;
-            self.ship_vy = self.ship_vy / spd * MAX_SPEED;
-        }
-        self.ship_x = (self.ship_x + self.ship_vx).rem_euclid(CANVAS);
-        self.ship_y = (self.ship_y + self.ship_vy).rem_euclid(CANVAS);
+        // ── Ship movement ──
+        let ax = if self.keys_right { SHIP_ACCEL } else if self.keys_left { -SHIP_ACCEL } else { 0.0 };
+        let ay = if self.keys_down  { SHIP_ACCEL } else if self.keys_up   { -SHIP_ACCEL } else { 0.0 };
+        self.svx = (self.svx + ax) * SHIP_DRAG;
+        self.svy = (self.svy + ay) * SHIP_DRAG;
 
-        // Update visual angle
+        let spd = (self.svx * self.svx + self.svy * self.svy).sqrt();
+        if spd > SHIP_MAX_SPEED {
+            self.svx = self.svx / spd * SHIP_MAX_SPEED;
+            self.svy = self.svy / spd * SHIP_MAX_SPEED;
+        }
+        self.sx = (self.sx + self.svx).clamp(SHIP_R, W - SHIP_R);
+        self.sy = (self.sy + self.svy).clamp(SHIP_R, H - SHIP_R);
+
+        // Visual angle: tilt toward velocity direction
         if spd > 0.3 {
-            self.ship_angle = self.ship_vy.atan2(self.ship_vx);
+            self.sangle = self.svy.atan2(self.svx);
         }
 
-        // Move asteroids (wrap-around)
-        for a in &mut self.asteroids {
-            a.x = (a.x + a.vx).rem_euclid(CANVAS);
-            a.y = (a.y + a.vy).rem_euclid(CANVAS);
+        // ── Spawn asteroids ──
+        if self.tick % spawn_interval(self.round) == 0 {
+            self.asteroids.push(make_asteroid(self.tick, self.asteroids.len(), self.round));
         }
 
-        // Asteroid collision (toroidal distance)
+        // ── Move asteroids, remove off-screen ──
+        let mut i = 0;
+        while i < self.asteroids.len() {
+            let a = &mut self.asteroids[i];
+            a.x += a.vx;
+            a.y += a.vy;
+            // Wrap horizontally
+            if a.x < -a.radius { a.x = W + a.radius; }
+            if a.x > W + a.radius { a.x = -a.radius; }
+            // Remove when past bottom
+            if a.y > H + a.radius + 20.0 {
+                self.asteroids.swap_remove(i);
+            } else {
+                i += 1;
+            }
+        }
+
+        // ── Collision ──
         if self.invincible == 0 {
             for a in &self.asteroids {
-                let dx = toroidal_diff(self.ship_x, a.x, CANVAS);
-                let dy = toroidal_diff(self.ship_y, a.y, CANVAS);
-                let dist = (dx*dx + dy*dy).sqrt();
-                if dist < SHIP_R + a.radius {
+                let dx = self.sx - a.x;
+                let dy = self.sy - a.y;
+                if (dx * dx + dy * dy).sqrt() < SHIP_R + a.radius {
                     self.hp -= 1;
                     self.invincible = INVINCIBLE_TICKS;
                     self.event = Some("damage");
@@ -235,107 +220,88 @@ impl Game {
             }
         }
 
-        // Check station arrival
-        let (tx, ty) = station_pos(STATIONS[self.target_idx].3);
-        let dx = self.ship_x - tx;
-        let dy = self.ship_y - ty;
-        let dist = (dx*dx + dy*dy).sqrt();
-        if dist < DOCK_R {
+        // ── Check destination ──
+        let dx = self.sx - self.dest_x;
+        let dy = self.sy - DEST_Y;
+        if (dx * dx + dy * dy).sqrt() < DEST_R {
             // Delivery!
-            let delivery_score = SCORE_DELIVERY * self.round;
-            self.score += delivery_score;
+            let pts = SCORE_DELIVERY * self.round;
+            self.score += pts;
             self.event = Some("delivery");
 
-            self.target_idx += 1;
-            if self.target_idx >= 12 {
-                // LAP CLEAR — need to return to station 0 (Aries) first
-                // Actually: after delivering to station 11 (Pisces, idx 11),
-                // next target_idx would be 12 which means return to Aries (idx 0)
-                // But plan says: deliver to all 12, then return to Aries = clear
-                // We treat target_idx 12 as "return to Aries"
-                // Actually let's make it: after station[11], target becomes 0 (Aries) for the return
-                // and when they reach Aries again, it's LAP CLEAR
-                self.target_idx = 12; // special value: return to Aries
-            }
-        }
-
-        // Check return to Aries (lap clear)
-        if self.target_idx == 12 {
-            let (ax2, ay2) = station_pos(90.0); // Aries
-            let dx = self.ship_x - ax2;
-            let dy = self.ship_y - ay2;
-            let dist = (dx*dx + dy*dy).sqrt();
-            if dist < DOCK_R {
+            let next_stage = self.stage + 1;
+            if next_stage >= TOTAL_STATIONS {
                 // LAP CLEAR
                 let hp_bonus = self.hp as u32 * SCORE_HP_BONUS * self.round;
                 self.score += hp_bonus;
                 self.event = Some("lap_clear");
                 self.phase = Phase::LapClear;
+                self.phase_timer = 120; // ~4 seconds
+            } else {
+                self.phase = Phase::StageClear;
+                self.phase_timer = 60; // ~2 seconds
             }
         }
     }
 
+    fn begin_next_stage(&mut self) {
+        let was_lap = self.stage + 1 >= TOTAL_STATIONS;
+        if was_lap {
+            self.round += 1;
+            self.stage = 0;
+            self.lap += 1;
+            self.hp = SHIP_HP; // full HP recovery
+        } else {
+            self.stage += 1;
+        }
+        // Reset ship to top
+        self.sx = W / 2.0;
+        self.sy = SHIP_START_Y;
+        self.svx = 0.0;
+        self.svy = 0.0;
+        self.sangle = std::f32::consts::FRAC_PI_2;
+        self.dest_x = stage_dest_x(self.stage, self.round);
+        // Clear asteroids
+        self.asteroids.clear();
+        self.invincible = 0;
+        self.phase = Phase::Playing;
+        self.event = None;
+    }
+
     fn to_json(&self) -> String {
         let phase_str = match self.phase {
-            Phase::Playing  => "playing",
-            Phase::LapClear => "lap_clear",
-            Phase::GameOver => "gameover",
-        };
-
-        let target_display = if self.target_idx < 12 {
-            let s = &STATIONS[self.target_idx];
-            serde_json::json!({
-                "idx": self.target_idx,
-                "name_ja": s.0,
-                "name_en": s.1,
-                "symbol": s.2,
-                "x": station_pos(s.3).0,
-                "y": station_pos(s.3).1,
-            })
-        } else {
-            // returning to Aries
-            let s = &STATIONS[0];
-            serde_json::json!({
-                "idx": 0,
-                "name_ja": s.0,
-                "name_en": s.1,
-                "symbol": s.2,
-                "x": station_pos(s.3).0,
-                "y": station_pos(s.3).1,
-                "return": true,
-            })
+            Phase::Playing    => "playing",
+            Phase::StageClear => "stage_clear",
+            Phase::LapClear   => "lap_clear",
+            Phase::GameOver   => "gameover",
         };
 
         let asteroids: Vec<_> = self.asteroids.iter().map(|a| {
-            serde_json::json!({
-                "x": a.x, "y": a.y,
-                "r": a.radius,
-                "seed": a.seed,
-            })
+            serde_json::json!({ "x": a.x, "y": a.y, "r": a.radius, "seed": a.seed })
         }).collect();
 
-        let stations_json: Vec<_> = STATIONS.iter().enumerate().map(|(i, s)| {
-            let (x, y) = station_pos(s.3);
-            serde_json::json!({
-                "idx": i, "name_ja": s.0, "name_en": s.1, "symbol": s.2,
-                "x": x, "y": y,
-            })
-        }).collect();
+        let from_idx = self.stage % TOTAL_STATIONS;
+        let to_idx   = (self.stage + 1) % TOTAL_STATIONS;
+        let from_st  = &STATIONS[from_idx];
+        let to_st    = &STATIONS[to_idx];
 
         serde_json::json!({
             "type": "state",
             "phase": phase_str,
             "ship": {
-                "x": self.ship_x, "y": self.ship_y,
-                "vx": self.ship_vx, "vy": self.ship_vy,
-                "angle": self.ship_angle,
+                "x": self.sx, "y": self.sy,
+                "vx": self.svx, "vy": self.svy,
+                "angle": self.sangle,
                 "invincible": self.invincible > 0,
             },
+            "dest_x": self.dest_x,
             "hp": self.hp,
             "score": self.score,
             "round": self.round,
-            "target": target_display,
-            "stations": stations_json,
+            "stage": self.stage,
+            "lap": self.lap,
+            "from": { "name_ja": from_st.0, "name_en": from_st.1, "symbol": from_st.2 },
+            "to":   { "name_ja": to_st.0,   "name_en": to_st.1,   "symbol": to_st.2 },
             "asteroids": asteroids,
             "event": self.event,
             "tick": self.tick,
@@ -343,11 +309,10 @@ impl Game {
     }
 }
 
-fn toroidal_diff(a: f32, b: f32, size: f32) -> f32 {
-    let d = a - b;
-    if d > size * 0.5 { d - size }
-    else if d < -size * 0.5 { d + size }
-    else { d }
+/// Destination x varies per stage/round to add variety
+fn stage_dest_x(stage: usize, round: u32) -> f32 {
+    let seed = lcg((stage as u32).wrapping_mul(1009).wrapping_add(round * 997));
+    100.0 + lcgf(seed) * (W - 200.0)
 }
 
 // ── Input ─────────────────────────────────────────────────────────────────────
@@ -366,7 +331,6 @@ enum ClientMsg {
     Input { keys: Keys },
     Start { #[serde(default)] name: String },
     Restart,
-    NextRound,
 }
 
 fn get_score_list(scores: &Arc<Mutex<ScoreBoard>>) -> serde_json::Value {
@@ -383,22 +347,22 @@ pub async fn run(
 ) {
     let _guard = PlayerCountGuard::new(players);
 
-    // Send title state
+    // Title
     let _ = socket.send(Message::Text(
         serde_json::json!({
-            "type": "state",
-            "phase": "title",
+            "type": "state", "phase": "title",
             "scores": get_score_list(&scores),
         }).to_string().into()
     )).await;
 
     loop {
-        // Wait for Start message at title
+        // Wait for Start
         let player_name = loop {
             match socket.recv().await {
                 Some(Ok(Message::Text(txt))) => {
                     if let Ok(ClientMsg::Start { name }) = serde_json::from_str(&txt) {
-                        break if name.trim().is_empty() { "???".to_string() } else { name.chars().take(20).collect() };
+                        break if name.trim().is_empty() { "野郎".to_string() }
+                             else { name.chars().take(20).collect() };
                     }
                 }
                 None | Some(Err(_)) | Some(Ok(Message::Close(_))) => return,
@@ -406,10 +370,8 @@ pub async fn run(
             }
         };
 
-        // Run game session
         let disconnected = game_session(&mut socket, &scores, &player_name).await;
         if disconnected { return; }
-        // Otherwise loop back to title (game_session sends title state before returning)
     }
 }
 
@@ -426,61 +388,44 @@ async fn game_session(
         tokio::select! {
             _ = ticker.tick() => {
                 game.tick();
-                let json = game.to_json();
-                if socket.send(Message::Text(json.into())).await.is_err() {
-                    return true; // disconnected
+                if socket.send(Message::Text(game.to_json().into())).await.is_err() {
+                    return true;
                 }
+                if game.phase == Phase::GameOver {
+                    // Submit score
+                    let rank = {
+                        let mut sb = scores.lock().unwrap();
+                        sb.add(player_name.to_string(), game.score)
+                    };
+                    let _ = socket.send(Message::Text(
+                        serde_json::json!({
+                            "type": "state", "phase": "gameover",
+                            "score": game.score, "round": game.round, "lap": game.lap,
+                            "rank": rank,
+                            "scores": get_score_list(scores),
+                        }).to_string().into()
+                    )).await;
 
-                match game.phase {
-                    Phase::LapClear => {
-                        // Brief pause, then next round
-                        tokio::time::sleep(Duration::from_millis(2000)).await;
-                        game.next_round();
-                        game.phase = Phase::Playing;
-                    }
-                    Phase::GameOver => {
-                        // Submit score
-                        let rank = {
-                            let mut sb = scores.lock().unwrap();
-                            sb.add(player_name.to_string(), game.score)
-                        };
-                        let score_list = get_score_list(scores);
-                        let _ = socket.send(Message::Text(
-                            serde_json::json!({
-                                "type": "state",
-                                "phase": "gameover",
-                                "score": game.score,
-                                "round": game.round,
-                                "rank": rank,
-                                "scores": score_list,
-                            }).to_string().into()
-                        )).await;
-
-                        // Wait for restart or disconnect
-                        loop {
-                            match socket.recv().await {
-                                Some(Ok(Message::Text(txt))) => {
-                                    if let Ok(ClientMsg::Restart) = serde_json::from_str(&txt) {
-                                        // Send title
-                                        let _ = socket.send(Message::Text(
-                                            serde_json::json!({
-                                                "type": "state",
-                                                "phase": "title",
-                                                "scores": get_score_list(scores),
-                                            }).to_string().into()
-                                        )).await;
-                                        return false; // go back to title loop
-                                    }
+                    // Wait for restart
+                    loop {
+                        match socket.recv().await {
+                            Some(Ok(Message::Text(txt))) => {
+                                if let Ok(ClientMsg::Restart) = serde_json::from_str(&txt) {
+                                    let _ = socket.send(Message::Text(
+                                        serde_json::json!({
+                                            "type": "state", "phase": "title",
+                                            "scores": get_score_list(scores),
+                                        }).to_string().into()
+                                    )).await;
+                                    return false;
                                 }
-                                None | Some(Err(_)) | Some(Ok(Message::Close(_))) => return true,
-                                _ => {}
                             }
+                            None | Some(Err(_)) | Some(Ok(Message::Close(_))) => return true,
+                            _ => {}
                         }
                     }
-                    Phase::Playing => {}
                 }
             }
-
             msg = socket.recv() => {
                 match msg {
                     Some(Ok(Message::Text(txt))) => {
