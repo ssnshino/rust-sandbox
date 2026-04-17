@@ -14,7 +14,7 @@
       font-family:'DotGothic16',monospace; color:#e2e8f0;
       user-select:none; overflow:hidden;
     }
-    canvas { display:block; image-rendering:pixelated; }
+    canvas { display:block; image-rendering:pixelated; max-width:100%; height:auto; }
     #wrap { position:relative; width:540px; max-width:100vw; }
 
     .overlay {
@@ -65,7 +65,7 @@
       position:absolute; bottom:50px; right:12px;
       font-size:0.75rem; color:#f9a8d4;
       text-shadow:0 0 8px #ec4899;
-      pointer-events:none; z-index:6;
+      pointer-events:none; z-index:15;  /* overlayより上 */
       transition:opacity .3s; opacity:0;
       max-width:180px; text-align:right;
     }
@@ -340,14 +340,17 @@ function drawDepartStation(cx, sy, symbol, name, departX){
   ctx.strokeStyle='rgba(134,239,172,0.5)'; ctx.lineWidth=1.5; ctx.stroke();
 }
 
-// ── Ship drawing (upward-facing van/truck rectangle) ──────────────────────────
+// ── Ship drawing (upward-facing van/truck with directional thrusters) ─────────
 function drawTruck(x, y, vx, vy, invincible, tick){
   if(invincible && Math.floor(tick/4)%2===1) return;
 
   ctx.save();
   ctx.translate(x,y);
 
-  const tw=14, th=28; // truck width, height
+  const tw=14, th=28;
+
+  // ── Thrusters (drawn BEHIND ship body, in opposite direction of velocity) ──
+  drawThrusters(tw, th, vx||0, vy||0);
 
   // Body (vertical rectangle, facing up)
   ctx.fillStyle='#2563eb';
@@ -362,43 +365,80 @@ function drawTruck(x, y, vx, vy, invincible, tick){
   ctx.beginPath(); ctx.moveTo(-tw/2+4,-th/2+4); ctx.lineTo(-tw/2+4,-th/2+10); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(-tw/2+8,-th/2+4); ctx.lineTo(-tw/2+8,-th/2+10); ctx.stroke();
 
-  // Side body stripe
-  ctx.fillStyle='#1d4ed8';
-  ctx.fillRect(-tw/2,-th/2+13, tw, 4);
-
-  // Cargo section (lower half)
+  // Cargo section (lower)
   ctx.fillStyle='#1e3a8a';
-  ctx.fillRect(-tw/2,-th/2+18, tw, th/2-2);
+  ctx.fillRect(-tw/2,-th/2+13, tw, th/2+2);
+
+  // Stripe between cab and cargo
+  ctx.fillStyle='#1d4ed8';
+  ctx.fillRect(-tw/2,-th/2+12, tw, 2);
 
   // Outline
   ctx.strokeStyle='#93c5fd'; ctx.lineWidth=1.5;
   ctx.strokeRect(-tw/2,-th/2, tw, th);
 
-  // Lights on front corners
+  // Front lights
   ctx.fillStyle='#fde68a';
   ctx.fillRect(-tw/2+1,-th/2+1, 3,3);
   ctx.fillRect(tw/2-4,-th/2+1, 3,3);
 
-  // Brake lights at rear (bottom)
+  // Rear lights
   ctx.fillStyle='#ef4444';
   ctx.fillRect(-tw/2+1, th/2-4, 3,3);
   ctx.fillRect(tw/2-4,  th/2-4, 3,3);
 
-  // Engine exhaust / thrust flames at bottom
-  const thrusting=Math.abs(vx||0)>0.3||Math.abs(vy||0)>0.3;
-  if(thrusting){
-    const fl=10+Math.random()*10;
-    const fw=4+Math.random()*3;
+  ctx.restore();
+}
+
+function drawThrusters(tw, th, vx, vy){
+  const MAIN_COLOR  = 'rgba(251,191,36,'; // メインエンジン: 黄炎
+  const SIDE_COLOR  = 'rgba(147,197,253,'; // サイドスラスター: 青白
+
+  // 移動方向と逆方向に噴射
+  // 上に動いている(vy<0): 下(メインエンジン)
+  if(vy < -0.3){
+    const fl=10+Math.random()*12, fw=4+Math.random()*3;
     ctx.beginPath();
     ctx.moveTo(-fw/2, th/2);
     ctx.lineTo((Math.random()-0.5)*4, th/2+fl);
-    ctx.lineTo(fw/2, th/2);
+    ctx.lineTo( fw/2, th/2);
     ctx.closePath();
-    ctx.fillStyle=`rgba(251,191,36,${0.7+Math.random()*0.3})`;
+    ctx.fillStyle=MAIN_COLOR+(0.7+Math.random()*0.3)+')';
     ctx.fill();
   }
-
-  ctx.restore();
+  // 下に動いている(vy>0): 上(リトロスラスター)
+  if(vy > 0.3){
+    const fl=5+Math.random()*7;
+    ctx.beginPath();
+    ctx.moveTo(-3, -th/2);
+    ctx.lineTo((Math.random()-0.5)*3, -th/2-fl);
+    ctx.lineTo( 3, -th/2);
+    ctx.closePath();
+    ctx.fillStyle=SIDE_COLOR+(0.55+Math.random()*0.3)+')';
+    ctx.fill();
+  }
+  // 右に動いている(vx>0): 左からサイドスラスター噴射
+  if(vx > 0.3){
+    const fl=4+Math.random()*6;
+    ctx.beginPath();
+    ctx.moveTo(-tw/2, -4);
+    ctx.lineTo(-tw/2-fl, (Math.random()-0.5)*4);
+    ctx.lineTo(-tw/2,  4);
+    ctx.closePath();
+    ctx.fillStyle=SIDE_COLOR+(0.5+Math.random()*0.3)+')';
+    ctx.fill();
+  }
+  // 左に動いている(vx<0): 右からサイドスラスター噴射
+  if(vx < -0.3){
+    const fl=4+Math.random()*6;
+    ctx.beginPath();
+    ctx.moveTo(tw/2, -4);
+    ctx.lineTo(tw/2+fl, (Math.random()-0.5)*4);
+    ctx.lineTo(tw/2,  4);
+    ctx.closePath();
+    ctx.fillStyle=SIDE_COLOR+(0.5+Math.random()*0.3)+')';
+    ctx.fill();
+  }
 }
 
 // ── Asteroid drawing (color-coded by speed tier) ─────────────────────────────

@@ -12,8 +12,9 @@ const H: f32 = 540.0;
 
 const SHIP_MAX_SPEED: f32 = 5.5;
 const SHIP_ACCEL: f32 = 0.35;
-const SHIP_DRAG: f32 = 0.96;  // 宇宙っぽい高慣性
+const SHIP_DRAG: f32 = 0.975;  // 宇宙っぽい超高慣性
 const SHIP_R: f32 = 10.0;
+const LAUNCH_TARGET_Y: f32 = H * 0.67; // 発射後の停止位置（下から1/3）
 
 // Stage: launch phase, then cruise, then docking
 const LAUNCH_TICKS: u64 = 90;   // エアロック発射演出
@@ -166,20 +167,35 @@ impl Game {
         self.stage_tick += 1;
         if self.invincible > 0 { self.invincible -= 1; }
 
-        // ── Launching phase: ship auto-rises from airlock ──
+        // ── Launching phase: ship auto-rises, stops at LAUNCH_TARGET_Y ──
         if self.phase == Phase::Launching {
-            // Auto-thrust upward
-            self.svy -= SHIP_ACCEL * 0.8;
-            self.svx *= SHIP_DRAG;
+            let dist = self.sy - LAUNCH_TARGET_Y; // positive = still above target
+            if dist > 5.0 {
+                // 目標まで上に向かって加速
+                self.svy -= SHIP_ACCEL * 0.6;
+            } else {
+                // 目標到達後は速度を穏やかに0へ
+                self.svy *= 0.80;
+            }
+            self.svx *= 0.85; // 横流れ解消
             self.svy *= SHIP_DRAG;
+
             let spd = (self.svx*self.svx + self.svy*self.svy).sqrt();
             if spd > SHIP_MAX_SPEED { self.svy = -SHIP_MAX_SPEED; self.svx = 0.0; }
+
             self.sx = (self.sx + self.svx).clamp(SHIP_R, W - SHIP_R);
-            self.sy = (self.sy + self.svy).clamp(SHIP_R, H - SHIP_R);
+            // 目標より上に行かないようにクランプ
+            let new_sy = self.sy + self.svy;
+            if new_sy < LAUNCH_TARGET_Y {
+                self.sy = LAUNCH_TARGET_Y;
+                self.svy = 0.0;
+            } else {
+                self.sy = new_sy.clamp(SHIP_R, H - SHIP_R);
+            }
 
             if self.stage_tick >= LAUNCH_TICKS {
                 self.phase = Phase::Playing;
-                // keep some upward velocity for a smooth transition
+                self.svy = 0.0; // 残留速度クリア
             }
             return;
         }
