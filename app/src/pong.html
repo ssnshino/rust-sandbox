@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Pong — Rust Sandbox</title>
+  <title>Pong — Game Center Shinomiya</title>
   <style>
     * {
       margin: 0; padding: 0; box-sizing: border-box;
@@ -99,29 +99,29 @@
   </style>
 </head>
 <body>
-  <a class="back" href="/">← メニュー</a>
+  <a class="back" href="/">← Menu</a>
 
   <div class="canvas-wrap">
     <canvas id="c" width="800" height="600"></canvas>
-    <div class="slide-hint">↕ スライドでパドル操作</div>
+    <div class="slide-hint">↕ Slide to move paddle</div>
 
     <div class="overlay" id="ov-gameover">
       <h2 id="ov-title"></h2>
       <div class="sub" id="ov-sub"></div>
-      <div class="hint" id="ov-hint">START で次のゲームへ</div>
+      <div class="hint" id="ov-hint">Press START for next game</div>
     </div>
     <div class="overlay" id="ov-pause">
       <h2>⏸ PAUSE</h2>
-      <div class="hint">PAUSE で再開</div>
+      <div class="hint">Press PAUSE to resume</div>
     </div>
     <div class="overlay" id="ov-waiting">
       <h2>⏳ Waiting...</h2>
-      <div class="sub">対戦相手を待っています</div>
+      <div class="sub">Waiting for opponent...</div>
     </div>
     <div class="overlay" id="ov-disconnected">
       <h2>⚡ Disconnected</h2>
-      <div class="sub">対戦相手が切断しました</div>
-      <div class="hint">ページをリロードして再挑戦</div>
+      <div class="sub">Opponent disconnected</div>
+      <div class="hint">Reload the page to try again</div>
     </div>
   </div>
 
@@ -133,7 +133,7 @@
   </div>
 
   <div class="controls">
-    <kbd>↑</kbd><kbd>↓</kbd> 移動 &nbsp;|&nbsp; <kbd>P</kbd> ポーズ &nbsp;|&nbsp; <kbd>Space</kbd> リスタート
+    <kbd>↑</kbd><kbd>↓</kbd> Move &nbsp;|&nbsp; <kbd>P</kbd> Pause &nbsp;|&nbsp; <kbd>Space</kbd> Restart
   </div>
 
   <script>
@@ -204,13 +204,13 @@
         if (is2P) {
           const iWon = next.winner === myRole;
           document.getElementById('ov-title').textContent = iWon ? '🎾 You Win!' : '💀 You Lose...';
-          document.getElementById('ov-sub').textContent   = next.winner === 'p1' ? 'P1 の勝ち！' : 'P2 の勝ち！';
-          document.getElementById('ov-hint').textContent  = 'どちらかが START で次のゲームへ';
+          document.getElementById('ov-sub').textContent   = next.winner === 'p1' ? 'P1 wins!' : 'P2 wins!';
+          document.getElementById('ov-hint').textContent  = 'どちらかが Press START for next game';
         } else {
           const won = next.winner === 'player';
           document.getElementById('ov-title').textContent = won ? '🎾 Game!' : '💀 Game...';
-          document.getElementById('ov-sub').textContent   = won ? 'あなたの勝ち！' : 'CPU の勝ち';
-          document.getElementById('ov-hint').textContent  = 'START で次のゲームへ';
+          document.getElementById('ov-sub').textContent   = won ? 'You win!' : 'CPU wins';
+          document.getElementById('ov-hint').textContent  = 'Press START for next game';
         }
       }
 

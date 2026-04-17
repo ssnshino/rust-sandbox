@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Breakout — Rust Sandbox</title>
+  <title>Breakout — Game Center Shinomiya</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     html, body { overflow: hidden; height: 100%; }
@@ -219,7 +219,7 @@
 </head>
 <body>
   <header>
-    <a href="/">← メニュー</a>
+    <a href="/">← Menu</a>
     <h1>Breakout</h1>
   </header>
 
@@ -233,7 +233,7 @@
   <div id="msg">Space / Tap to launch</div>
 
   <div id="ctrl">
-    <div class="slide-hint">← スライドでパドル操作 / タップで発射 →</div>
+    <div class="slide-hint">← Slide to move / Tap to launch →</div>
   </div>
 
   <!-- ゲーム終了オーバーレイ -->
@@ -241,18 +241,18 @@
     <div id="hs-box">
       <div id="hs-phase">GAME OVER</div>
       <div id="hs-score-disp">SCORE: 0</div>
-      <div id="hs-badge">🏆 ハイスコア！</div>
+      <div id="hs-badge">🏆 High Score!</div>
 
       <div id="hs-input-area">
-        <input id="hs-name" type="text" maxlength="20" placeholder="なまえを入れてね（20文字まで）">
-        <button id="hs-submit">登録する</button>
+        <input id="hs-name" type="text" maxlength="20" placeholder="Enter your name (up to 20 chars)">
+        <button id="hs-submit">Submit</button>
       </div>
       <div id="hs-rank-msg"></div>
 
       <div class="hs-section-label">RANKING</div>
       <div id="hs-table"></div>
 
-      <div id="hs-again">Space / タップでもう一度</div>
+      <div id="hs-again">Space / Tap to play again</div>
     </div>
   </div>
 
@@ -286,7 +286,7 @@
     let launched = false;
 
     ws.onmessage = e => { state = JSON.parse(e.data); };
-    ws.onclose   = () => { document.getElementById('msg').textContent = '接続が切れました。再読込してください。'; };
+    ws.onclose   = () => { document.getElementById('msg').textContent = 'Connection lost. Please reload.'; };
 
     // ── 入力送信 ──
     const sendInput = () => {
@@ -407,7 +407,7 @@
     function renderTable(scores, highlightScore) {
       const el = document.getElementById('hs-table');
       if (!scores || scores.length === 0) {
-        el.innerHTML = '<div class="hs-empty">まだ記録なし</div>';
+        el.innerHTML = '<div class="hs-empty">No records yet</div>';
         return;
       }
       el.innerHTML = scores.map((s, i) => {
@@ -431,8 +431,8 @@
       document.getElementById('hs-badge').classList.remove('show');
       document.getElementById('hs-input-area').classList.remove('show');
       document.getElementById('hs-rank-msg').textContent = '';
-      document.getElementById('hs-again').textContent = 'ゲームを始める';
-      document.getElementById('hs-table').innerHTML = '<div class="hs-empty">読み込み中...</div>';
+      document.getElementById('hs-again').textContent = 'Start Game';
+      document.getElementById('hs-table').innerHTML = '<div class="hs-empty">Loading...</div>';
       document.getElementById('hs-overlay').classList.add('show');
     }
 
@@ -448,7 +448,7 @@
     async function showEndOverlay(phase, score) {
       scoreSubmitted = false;
       document.getElementById('hs-score-disp').style.display = '';
-      document.getElementById('hs-again').textContent = 'Space / タップでもう一度';
+      document.getElementById('hs-again').textContent = 'Space / Tap to play again';
       const data = await fetchScores();
       const scores = data ? data.scores : [];
       updateHiVal(scores);
@@ -495,11 +495,11 @@
         document.getElementById('hs-input-area').classList.remove('show');
         if (data.rank !== null) {
           document.getElementById('hs-rank-msg').textContent =
-            `${data.rank}位 で登録したよ！`;
+            `Registered at #${data.rank}!`;
         }
         renderTable(data.scores, score);
       } catch (e) {
-        document.getElementById('hs-rank-msg').textContent = '登録に失敗した…';
+        document.getElementById('hs-rank-msg').textContent = 'Registration failed...';
       }
     });
 
@@ -596,7 +596,7 @@
         ctx.fillStyle = '#475569';
         ctx.font = '18px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('接続中...', W / 2, H / 2);
+        ctx.fillText('Connecting...', W / 2, H / 2);
         ctx.textAlign = 'left';
         return;
       }
@@ -635,7 +635,7 @@
       const msg = document.getElementById('msg');
       if (!overlayVisible()) {
         if (state.phase === 'ready') {
-          msg.textContent = 'Space / クリック / タップで発射';
+          msg.textContent = 'Space / Click / Tap to launch';
         } else if (state.phase === 'playing') {
           msg.textContent = '';
         } else if (state.phase === 'game_over') {

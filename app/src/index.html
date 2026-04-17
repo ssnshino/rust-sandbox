@@ -3,125 +3,231 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rust Sandbox</title>
+  <title>ゲームセンターしのみ屋</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: sans-serif;
-      background: linear-gradient(135deg, #0f0f1a, #1a0f1a);
+      font-family: 'DotGothic16', sans-serif;
+      background: #060612;
       color: #e2e8f0;
       min-height: 100vh;
       display: grid;
       place-items: center;
+      overflow-x: hidden;
+    }
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.08) 2px, rgba(0,0,0,.08) 4px);
+      pointer-events: none; z-index: 100;
     }
     .container { max-width: 640px; width: 100%; padding: 40px 24px; }
-    h1 { font-size: 2rem; font-weight: 700; color: #f8f8f8; margin-bottom: 8px; }
-    .subtitle { color: #94a3b8; font-size: 0.95rem; margin-bottom: 40px; }
-    h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: #64748b; margin-bottom: 16px; }
-    .cards { display: grid; gap: 12px; }
+
+    .header { text-align: center; margin-bottom: 40px; position: relative; }
+    .neon-title {
+      font-size: 2rem; font-weight: 700; letter-spacing: .08em;
+      color: #fff;
+      text-shadow: 0 0 6px #fff, 0 0 14px #f0abfc, 0 0 32px #a855f7, 0 0 60px #7c3aed;
+      margin-bottom: 6px;
+      animation: flicker 8s infinite;
+    }
+    @keyframes flicker {
+      0%,95%,100%{ opacity:1; } 96%{ opacity:.7; } 97%{ opacity:1; } 98%{ opacity:.5; } 99%{ opacity:1; }
+    }
+    .subtitle { color: #7c6f9a; font-size: 0.82rem; letter-spacing: .06em; }
+    .insert-coin {
+      margin-top: 10px; font-size: 0.78rem;
+      color: #f59e0b; text-shadow: 0 0 8px #f59e0b;
+      animation: blink 1.2s step-end infinite;
+    }
+    @keyframes blink { 50%{ opacity: 0; } }
+
+    /* ── 言語トグル ── */
+    #btn-lang {
+      position: fixed; top: 12px; right: 16px; z-index: 200;
+      background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15);
+      color: #9ca3af; font-size: 0.7rem; padding: 4px 10px;
+      border-radius: 20px; cursor: pointer;
+      font-family: 'DotGothic16', sans-serif;
+      transition: background .15s, color .15s;
+    }
+    #btn-lang:hover { background: rgba(255,255,255,.13); color: #e5e7eb; }
+
+    h2 {
+      font-size: 0.7rem; letter-spacing: 0.18em;
+      color: #4ade80; text-shadow: 0 0 8px #4ade80;
+      margin-bottom: 14px;
+    }
+    .cards { display: grid; gap: 10px; }
     .card {
       display: flex; align-items: center; gap: 16px;
-      background: rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 14px; padding: 20px 24px;
+      border-radius: 10px; padding: 18px 20px;
       text-decoration: none; color: inherit;
-      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s;
     }
-    .card:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.16); transform: translateY(-1px); }
-    .card-icon { font-size: 2rem; line-height: 1; }
-    .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
-    .card-desc  { font-size: 0.85rem; color: #94a3b8; }
+    .card:hover {
+      background: rgba(168,85,247,0.08);
+      border-color: rgba(168,85,247,0.35);
+      box-shadow: 0 0 16px rgba(168,85,247,0.2);
+      transform: translateY(-2px);
+    }
+    .card-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+    .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 4px; letter-spacing: .03em; }
+    .card-desc  { font-size: 0.78rem; color: #7c6f9a; line-height: 1.5; }
     .badge {
-      margin-left: auto; font-size: 0.7rem; padding: 3px 8px; border-radius: 99px;
-      background: rgba(99,102,241,0.2); color: #a5b4fc;
-      border: 1px solid rgba(99,102,241,0.3); white-space: nowrap;
+      margin-left: auto; font-size: 0.68rem; padding: 3px 8px; border-radius: 99px;
+      background: rgba(99,102,241,0.18); color: #a5b4fc;
+      border: 1px solid rgba(99,102,241,0.3); white-space: nowrap; flex-shrink: 0;
     }
-    .badge.new {
-      background: rgba(124,58,237,0.3); color: #c4b5fd;
-      border-color: rgba(124,58,237,0.5);
-    }
-    .badge.live {
-      background: rgba(34,197,94,0.16); color: #bbf7d0;
-      border-color: rgba(34,197,94,0.28);
-    }
-    .badge.waiting {
-      background: rgba(251,191,36,0.18); color: #fde68a;
-      border-color: rgba(251,191,36,0.34);
-    }
-    footer { margin-top: 40px; font-size: 0.8rem; color: #475569; }
-    code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; }
+    .badge.new  { background: rgba(124,58,237,0.28); color: #c4b5fd; border-color: rgba(124,58,237,0.5); }
+    .badge.live { background: rgba(34,197,94,0.14);  color: #86efac;  border-color: rgba(34,197,94,0.25); }
+    .badge.waiting { background: rgba(251,191,36,0.18); color: #fde68a; border-color: rgba(251,191,36,0.35); }
+
+    footer { margin-top: 36px; text-align: center; font-size: 0.72rem; color: #3d3554; letter-spacing: .05em; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Rust Sandbox</h1>
-    <p class="subtitle">ayano-lab の Rust 実験場。axum + WebSocket ベース。</p>
+    <div class="header">
+      <div class="neon-title">🕹️ ゲームセンター しのみ屋 🕹️</div>
+      <div class="subtitle" data-i18n="subtitle">レトロ風オンラインゲームセンター</div>
+      <div class="insert-coin" data-i18n="insert_coin">▶ INSERT COIN ◀</div>
+    </div>
 
-    <h2>実験一覧</h2>
+    <h2 data-i18n="game_select">── GAME SELECT ──</h2>
     <div class="cards">
       <a class="card" href="/pong">
         <span class="card-icon">🏓</span>
         <div>
-          <div class="card-title">Pong — シングル</div>
-          <div class="card-desc">WebSocket でサーバー同期する CPU 対戦 Pong</div>
+          <div class="card-title" data-i18n="pong1p_title">Pong — シングル</div>
+          <div class="card-desc"  data-i18n="pong1p_desc">WebSocket でサーバー同期する CPU 対戦 Pong</div>
         </div>
-        <span class="badge live" data-count-key="pong_single">1P • --人</span>
+        <span class="badge live" data-count-key="pong_single">1P • --</span>
       </a>
       <a class="card" href="/pong?mode=2p">
         <span class="card-icon">⚔️</span>
         <div>
-          <div class="card-title">Pong — 2P 対戦</div>
-          <div class="card-desc">別の端末・別タブで同時接続してリアルタイム対戦</div>
+          <div class="card-title" data-i18n="pong2p_title">Pong — 2P 対戦</div>
+          <div class="card-desc"  data-i18n="pong2p_desc">別の端末・別タブで同時接続してリアルタイム対戦</div>
         </div>
-        <span class="badge live" data-count-key="pong_2p" data-waiting-key="pong_2p_waiting">2P • --人</span>
+        <span class="badge live" data-count-key="pong_2p" data-waiting-key="pong_2p_waiting">2P • --</span>
       </a>
       <a class="card" href="/breakout">
         <span class="card-icon">🧱</span>
         <div>
-          <div class="card-title">Breakout</div>
-          <div class="card-desc">サーバーサイド物理演算のブロック崩し。マウス / キー / タッチ対応</div>
+          <div class="card-title" data-i18n="breakout_title">Breakout</div>
+          <div class="card-desc"  data-i18n="breakout_desc">サーバーサイド物理演算のブロック崩し。マウス / キー / タッチ対応</div>
         </div>
-        <span class="badge live" data-count-key="breakout">1P • --人</span>
+        <span class="badge live" data-count-key="breakout">1P • --</span>
       </a>
       <a class="card" href="/dungeon">
         <span class="card-icon">🏯</span>
         <div>
-          <div class="card-title">あやかダンジョン</div>
-          <div class="card-desc">平安京エイリアン × あやかダンジョン。穴を掘ってエイリアンを倒せ！最大4人対応</div>
+          <div class="card-title" data-i18n="dungeon_title">あやかダンジョン</div>
+          <div class="card-desc"  data-i18n="dungeon_desc">平安京エイリアン × あやかダンジョン。穴を掘ってエイリアンを倒せ！最大4人対応</div>
         </div>
-        <span class="badge live" data-count-key="dungeon">--人</span>
+        <span class="badge live" data-count-key="dungeon">--</span>
       </a>
       <a class="card" href="/fighting">
         <span class="card-icon">🥊</span>
         <div>
-          <div class="card-title">あやかファイティング</div>
-          <div class="card-desc">イーアルカンフー風格闘ゲーム。5ステージCPU戦、ガード・斜めジャンプあり</div>
+          <div class="card-title" data-i18n="fighting_title">あやかファイティング</div>
+          <div class="card-desc"  data-i18n="fighting_desc">イーアルカンフー風格闘ゲーム。5ステージCPU戦、ガード・斜めジャンプ・2P対戦あり</div>
         </div>
-        <span class="badge new live" data-count-key="fighting">NEW • --人</span>
+        <span class="badge new live" data-count-key="fighting" data-waiting-key="fighting_2p_waiting">NEW • --</span>
       </a>
     </div>
 
-    <footer>
-      <code>ayano-lab/docker/rust-sandbox</code>
-    </footer>
+    <footer data-i18n="footer">ゲームセンター しのみ屋 ©2026 &nbsp;|&nbsp; Powered by Rust + axum + WebSocket</footer>
   </div>
+  <button id="btn-lang">🇯🇵 / 🇬🇧</button>
 <script>
-(async()=>{
-  const labels = {pong_single:"1P", pong_2p:"2P", breakout:"1P", dungeon:"", fighting:"NEW"};
+const I18N = {
+  ja: {
+    subtitle:       'レトロ風オンラインゲームセンター',
+    insert_coin:    '▶ INSERT COIN ◀',
+    game_select:    '── GAME SELECT ──',
+    pong1p_title:   'Pong — シングル',
+    pong1p_desc:    'WebSocket でサーバー同期する CPU 対戦 Pong',
+    pong2p_title:   'Pong — 2P 対戦',
+    pong2p_desc:    '別の端末・別タブで同時接続してリアルタイム対戦',
+    breakout_title: 'Breakout',
+    breakout_desc:  'サーバーサイド物理演算のブロック崩し。マウス / キー / タッチ対応',
+    dungeon_title:  'あやかダンジョン',
+    dungeon_desc:   '平安京エイリアン × あやかダンジョン。穴を掘ってエイリアンを倒せ！最大4人対応',
+    fighting_title: 'あやかファイティング',
+    fighting_desc:  'イーアルカンフー風格闘ゲーム。5ステージCPU戦、ガード・斜めジャンプ・2P対戦あり',
+    waiting:        '待ちあり',
+    footer:         'ゲームセンター しのみ屋 ©2026 \u00a0|\u00a0 Powered by Rust + axum + WebSocket',
+  },
+  en: {
+    subtitle:       'Retro-style Online Game Center',
+    insert_coin:    '▶ INSERT COIN ◀',
+    game_select:    '── GAME SELECT ──',
+    pong1p_title:   'Pong — Single',
+    pong1p_desc:    'Server-synced Pong vs CPU via WebSocket',
+    pong2p_title:   'Pong — 2P Battle',
+    pong2p_desc:    'Real-time multiplayer Pong from any device or tab',
+    breakout_title: 'Breakout',
+    breakout_desc:  'Server-side physics brick breaker. Mouse / keyboard / touch',
+    dungeon_title:  'Ayaka Dungeon',
+    dungeon_desc:   'Heian-kyo Alien × Ayaka Dungeon. Dig holes and trap aliens! Up to 4 players',
+    fighting_title: 'Ayaka Fighting',
+    fighting_desc:  'Ee-Ar Kung Fu style fighter. 5-stage CPU mode, guard, diagonal jump, 2P battle',
+    waiting:        'Waiting',
+    footer:         'Game Center Shinomiya ©2026 \u00a0|\u00a0 Powered by Rust + axum + WebSocket',
+  }
+};
+
+let lang = localStorage.getItem('gc_lang') || 'ja';
+
+function t(k){ return I18N[lang][k] ?? k; }
+
+function applyLang(){
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.getElementById('btn-lang').textContent = lang === 'ja' ? '🇯🇵 / 🇬🇧' : '🇬🇧 / 🇯🇵';
+  document.documentElement.lang = lang;
+}
+
+document.getElementById('btn-lang').addEventListener('click', () => {
+  lang = lang === 'ja' ? 'en' : 'ja';
+  localStorage.setItem('gc_lang', lang);
+  applyLang();
+  // バッジテキストも再描画
+  updateBadges(lastStatus);
+});
+
+// ── プレイヤー数バッジ ──
+const labels = { pong_single:'1P', pong_2p:'2P', breakout:'1P', dungeon:'', fighting:'NEW' };
+let lastStatus = {};
+
+function updateBadges(data){
+  lastStatus = data;
+  document.querySelectorAll('[data-count-key]').forEach(el => {
+    const key = el.dataset.countKey;
+    const count   = Number(data[key] ?? 0);
+    const wKey    = el.dataset.waitingKey;
+    const waiting = wKey ? Number(data[wKey] ?? 0) : 0;
+    el.classList.toggle('waiting', waiting > 0);
+    const prefix = labels[key] ? labels[key] + ' • ' : '';
+    el.textContent = waiting > 0
+      ? `${prefix}${t('waiting')}`
+      : `${prefix}${count}`;
+  });
+}
+
+(async () => {
+  applyLang();
   async function refresh(){
     try{
-      const res = await fetch("/api/status", {cache:"no-store"});
+      const res = await fetch('/api/status', {cache:'no-store'});
       if(!res.ok) return;
-      const data = await res.json();
-      document.querySelectorAll("[data-count-key]").forEach(el=>{
-        const key = el.dataset.countKey;
-        const count = Number(data[key] ?? 0);
-        const waitingKey = el.dataset.waitingKey;
-        const waiting = waitingKey ? Number(data[waitingKey] ?? 0) : 0;
-        el.classList.toggle("waiting", waiting > 0);
-        const prefix = labels[key] ? labels[key] + " • " : "";
-        el.textContent = waiting > 0 ? `${prefix}待ちあり` : `${prefix}${count}人`;
-      });
+      updateBadges(await res.json());
     }catch(_){}
   }
   await refresh();
