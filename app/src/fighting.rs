@@ -201,6 +201,24 @@ fn rects_overlap(ax: f32, ay: f32, aw: f32, ah: f32, bx: f32, by: f32, bw: f32, 
     ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by
 }
 
+fn hit_score(attacker: &Fighter, defender: &Fighter, ay: f32, ah: f32) -> u32 {
+    let top = defender.hitbox_cy();
+    let h = defender.hitbox_h();
+    let center_y = ay + ah * 0.5;
+    let body_ratio = if h > 0.0 { ((center_y - top) / h).clamp(0.0, 1.0) } else { 0.5 };
+    let base = if !defender.on_ground() {
+        140
+    } else if body_ratio < 0.30 {
+        120
+    } else if body_ratio < 0.72 {
+        80
+    } else {
+        60
+    };
+    let jump_bonus = if matches!(attacker.state, FightState::JumpPunch | FightState::JumpKick) { 20 } else { 0 };
+    base + jump_bonus
+}
+
 fn resolve_ground_overlap(a: &mut Fighter, b: &mut Fighter) {
     if !a.on_ground() || !b.on_ground() { return; }
     let dx = b.x - a.x;
@@ -485,6 +503,8 @@ struct FightGame {
     tick: u64,
     score: u32,
     event: Option<&'static str>,
+    hit_fx: Option<(i32, i32, u32)>,
+    damage_fx: Option<(i32, i32, u8)>,
     player: Fighter,
     cpu: Fighter,
     cpu_ai: CpuAI,
@@ -495,7 +515,7 @@ impl FightGame {
     fn new() -> Self {
         let cfg = stage_cfg(1);
         FightGame {
-            phase: Phase::Title, stage: 1, tick: 0, score: 0, event: None,
+            phase: Phase::Title, stage: 1, tick: 0, score: 0, event: None, hit_fx: None, damage_fx: None,
             player: Fighter::new(100.0,  1, P_MAX_HP, BodyType::Normal),
             cpu:    Fighter::new(420.0, -1, cfg.cpu_hp, cfg.body_type),
             cpu_ai: CpuAI::new(cfg.kind),
@@ -523,6 +543,8 @@ impl FightGame {
         if self.phase != Phase::Playing { return; }
         self.tick += 1;
         self.event = None;
+        self.hit_fx = None;
+        self.damage_fx = None;
 
         // CPU AI
         let px = self.player.x;
@@ -555,7 +577,9 @@ impl FightGame {
                     self.cpu.hp = self.cpu.hp.saturating_sub(dmg);
                     self.cpu.invincible = INVINCIBLE_TICKS;
                     self.cpu_ai.pressure = (self.cpu_ai.pressure + 14).min(40);
-                    self.score += 50;
+                    let gain = hit_score(&self.player, &self.cpu, ay, ah);
+                    self.score += gain;
+                    self.hit_fx = Some((self.cpu.x as i32, (ay + ah * 0.5) as i32, gain));
                     if self.cpu.hp == 0 {
                         self.cpu.state = FightState::Dead;
                     } else {
@@ -585,6 +609,7 @@ impl FightGame {
                 let dmg = self.cpu.attack_damage();
                 self.player.hp = self.player.hp.saturating_sub(dmg);
                 self.player.invincible = INVINCIBLE_TICKS;
+                self.damage_fx = Some((self.player.x as i32, (by + bh * 0.35) as i32, dmg));
                 if self.player.hp == 0 {
                     self.player.state = FightState::Dead;
                     self.event = Some("player_dead");
@@ -684,6 +709,8 @@ impl FightGame {
             },
             "stage": self.stage, "score": self.score, "tick": self.tick,
             "event": self.event,
+            "hit_fx": self.hit_fx.map(|(x,y,score)| serde_json::json!({"x":x,"y":y,"score":score})),
+            "damage_fx": self.damage_fx.map(|(x,y,damage)| serde_json::json!({"x":x,"y":y,"damage":damage})),
             "cpu_name": cfg.name, "cpu_name_en": cfg.name_en,
             "player": {
                 "x": self.player.x as i32, "y": self.player.y as i32,
