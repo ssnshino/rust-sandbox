@@ -11,20 +11,17 @@
       background:#050510;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
       min-height:100vh;
-      font-family:'DotGothic16',monospace;
-      color:#e2e8f0;
+      font-family:'DotGothic16',monospace; color:#e2e8f0;
       user-select:none; overflow:hidden;
     }
     canvas { display:block; image-rendering:pixelated; }
     #wrap { position:relative; width:540px; max-width:100vw; }
 
-    /* ── Overlays ── */
     .overlay {
       position:absolute; inset:0;
       display:flex; flex-direction:column;
       align-items:center; justify-content:center;
-      background:rgba(5,5,20,.88);
-      gap:14px; z-index:10;
+      background:rgba(5,5,20,.88); gap:14px; z-index:10;
     }
     .overlay h1 {
       font-size:1.5rem; letter-spacing:.08em; color:#fff;
@@ -56,7 +53,6 @@
     }
     #btn-lang:hover { background:rgba(255,255,255,.1); color:#e2e8f0; }
 
-    /* ── Score list ── */
     .score-list { width:260px; }
     .score-list table { width:100%; border-collapse:collapse; font-size:0.75rem; }
     .score-list td { padding:3px 6px; color:#94a3b8; }
@@ -65,7 +61,6 @@
     .score-list tr:nth-child(3) td { color:#fdba74; }
     .score-list .rank { color:#6b7280; width:24px; }
 
-    /* ── GM Comment ── */
     #gm-comment {
       position:absolute; bottom:50px; right:12px;
       font-size:0.75rem; color:#f9a8d4;
@@ -76,7 +71,6 @@
     }
     #gm-comment.show { opacity:1; }
 
-    /* ── Virtual stick ── */
     #vstick-area {
       position:absolute; bottom:16px; left:16px;
       width:120px; height:120px;
@@ -103,7 +97,7 @@
       <input id="name-input" type="text" maxlength="16"
         style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);
                border-radius:6px;padding:8px 12px;color:#e2e8f0;font-family:inherit;font-size:0.85rem;width:160px;"
-        data-i18n-placeholder="name_ph">
+        data-i18n-ph="name_ph">
       <button class="btn" id="btn-start" data-i18n="btn_start">スタート！</button>
     </div>
     <div id="title-scores" class="score-list"></div>
@@ -121,7 +115,7 @@
 
   <!-- Stage/Lap clear flash -->
   <div id="screen-clear" class="overlay" style="display:none;background:rgba(5,5,20,.55);">
-    <h1 id="cl-title" style="font-size:2rem;"></h1>
+    <h1 id="cl-title" style="font-size:1.8rem;"></h1>
     <h2 id="cl-sub"></h2>
   </div>
 
@@ -145,15 +139,18 @@ const I18N = {
     score_lbl:'スコア: ',
     round_lbl:'ROUND ',
     lap_lbl:  'LAP ',
-    dest_lbl: (to) => `目的地: ${to.symbol} ${to.name_ja}`,
-    clear_title: (from,to) => `${from.symbol}→${to.symbol} 配達完了！`,
+    dest_lbl: (to) => `→ ${to.symbol} ${to.name_ja} へ配達中`,
+    dock_lbl: (to) => `▲ ${to.symbol} ${to.name_ja} のエアロックへ！`,
+    clear_title:(from,to) => `${from.symbol}→${to.symbol} 配達完了！`,
     lap_title:'1 LAP クリア！！',
     lap_sub:  (r) => `ROUND ${r} へ突入！難易度UP！`,
     rank_msg: (r) => `${r}位にランクイン！`,
     no_rank:  'ランク外',
+    launch_txt:(from) => `${from.symbol} ${from.name_ja} を出発！`,
     gm_ok:    ['届いたよっ！','ナイスドライブ！','よっしゃ！','グッジョブ！'],
     gm_hit:   ['いたっ！','こわれちゃう！','きをつけて！','うわあっ！'],
     gm_lap:   ['いっしゅうしたよ！！','さすがトラック野郎！','やったぁ！'],
+    gm_dock:  ['エアロックへ！','もうすぐだよ！','狙いをさだめて！'],
   },
   en: {
     title:    '🚛 Space Truckers 🚛',
@@ -167,15 +164,18 @@ const I18N = {
     score_lbl:'SCORE: ',
     round_lbl:'ROUND ',
     lap_lbl:  'LAP ',
-    dest_lbl: (to) => `Heading to: ${to.symbol} ${to.name_en}`,
+    dest_lbl: (to) => `→ En route to ${to.symbol} ${to.name_en}`,
+    dock_lbl: (to) => `▲ Enter airlock: ${to.symbol} ${to.name_en}!`,
     clear_title:(from,to) => `${from.symbol}→${to.symbol} Delivered!`,
     lap_title:'1 LAP CLEAR!!',
     lap_sub:  (r) => `Entering ROUND ${r}! Difficulty UP!`,
     rank_msg: (r) => `Ranked #${r}!`,
     no_rank:  'Not ranked',
+    launch_txt:(from) => `Departing ${from.symbol} ${from.name_en}!`,
     gm_ok:    ['Delivered!','Nice drive!','Yeah!','Good job!'],
     gm_hit:   ['Ouch!','Watch out!','Take care!','Whoa!'],
     gm_lap:   ['One lap done!!','That\'s a trucker!','Woohoo!'],
+    gm_dock:  ['Head to airlock!','Almost there!','Line it up!'],
   },
 };
 
@@ -183,328 +183,427 @@ let lang = localStorage.getItem('gc_lang') || 'ja';
 const t = k => I18N[lang][k] ?? k;
 
 function applyLang(){
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const v = t(el.dataset.i18n);
-    if(typeof v === 'string') el.textContent = v;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const v=t(el.dataset.i18n); if(typeof v==='string') el.textContent=v;
   });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const v = t(el.dataset.i18nPlaceholder);
-    if(typeof v === 'string') el.placeholder = v;
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
+    const v=t(el.dataset.i18nPh); if(typeof v==='string') el.placeholder=v;
   });
-  document.getElementById('btn-lang').textContent = lang==='ja' ? '🇯🇵 / 🇬🇧' : '🇬🇧 / 🇯🇵';
-  document.documentElement.lang = lang;
+  document.getElementById('btn-lang').textContent=lang==='ja'?'🇯🇵 / 🇬🇧':'🇬🇧 / 🇯🇵';
+  document.documentElement.lang=lang;
 }
-document.getElementById('btn-lang').addEventListener('click', () => {
-  lang = lang==='ja' ? 'en' : 'ja';
-  localStorage.setItem('gc_lang', lang);
-  applyLang();
+document.getElementById('btn-lang').addEventListener('click',()=>{
+  lang=lang==='ja'?'en':'ja'; localStorage.setItem('gc_lang',lang); applyLang();
 });
 applyLang();
 
 // ── Canvas ────────────────────────────────────────────────────────────────────
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const W = 540, H = 540;
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const W=540, H=540;
 
-// ── Stars (two layers, parallax scroll downward) ──────────────────────────────
 function lcg(s){ return ((s>>>0)*1664525+1013904223)>>>0; }
 function lcgf(s){ return (lcg(s)>>>0)/4294967295; }
 
-// layer 1: slow/small   layer 2: fast/bigger
-const STAR_LAYERS = [
-  Array.from({length:70},(_,i)=>{ const s=lcg(i*1009+1); return {x:lcgf(s)*W, y:lcgf(lcg(s))*H, r:0.6, speed:0.6}; }),
-  Array.from({length:35},(_,i)=>{ const s=lcg(i*7919+2); return {x:lcgf(s)*W, y:lcgf(lcg(s))*H, r:1.1, speed:1.2}; }),
+// ── Star layers (parallax, scroll downward) ───────────────────────────────────
+const STAR_LAYERS=[
+  Array.from({length:80},(_,i)=>{const s=lcg(i*1009+1);return{x:lcgf(s)*W,y:lcgf(lcg(s))*H,r:0.55,spd:0.55};}),
+  Array.from({length:40},(_,i)=>{const s=lcg(i*7919+2);return{x:lcgf(s)*W,y:lcgf(lcg(s))*H,r:1.0, spd:1.1};}),
 ];
-// Nebula blobs (decorative, scroll slowly)
-const NEBULAS = Array.from({length:5},(_,i)=>{
+const NEBULAS=Array.from({length:6},(_,i)=>{
   const s=lcg(i*31337+3);
-  return {x:lcgf(s)*W, y:lcgf(lcg(s))*H, r:60+lcgf(lcg(s))*80,
-          hue:200+lcgf(lcg(lcg(s)))*60, speed:0.25};
+  return{x:lcgf(s)*W,y:lcgf(lcg(s))*H,r:55+lcgf(lcg(s))*90,hue:200+lcgf(lcg(lcg(s)))*70,spd:0.2};
 });
-
-// Scroll offsets are computed from tick so server is the source of truth
-function scrollOffset(tick, speed){ return (tick * speed) % H; }
 
 function renderBg(tick){
-  ctx.fillStyle = '#050510';
-  ctx.fillRect(0,0,W,H);
-
-  // Nebulas
+  ctx.fillStyle='#050510'; ctx.fillRect(0,0,W,H);
   for(const n of NEBULAS){
-    const yo = ((n.y + scrollOffset(tick, n.speed)) % H + H) % H;
-    const grd = ctx.createRadialGradient(n.x,yo,0,n.x,yo,n.r);
-    grd.addColorStop(0,`hsla(${n.hue},60%,25%,0.07)`);
-    grd.addColorStop(1,'transparent');
-    ctx.beginPath(); ctx.arc(n.x,yo,n.r,0,Math.PI*2);
-    ctx.fillStyle=grd; ctx.fill();
-    // wrap at edges
-    if(yo < n.r){
-      const grd2=ctx.createRadialGradient(n.x,yo+H,0,n.x,yo+H,n.r);
-      grd2.addColorStop(0,`hsla(${n.hue},60%,25%,0.07)`);
-      grd2.addColorStop(1,'transparent');
-      ctx.beginPath(); ctx.arc(n.x,yo+H,n.r,0,Math.PI*2);
-      ctx.fillStyle=grd2; ctx.fill();
-    }
+    const yo=((n.y+tick*n.spd)%H+H)%H;
+    drawNebula(n.x,yo,n.r,n.hue);
+    if(yo<n.r) drawNebula(n.x,yo+H,n.r,n.hue);
+    if(yo>H-n.r) drawNebula(n.x,yo-H,n.r,n.hue);
   }
-
-  // Stars (two layers, scroll down = ship moves up)
   for(const layer of STAR_LAYERS){
     for(const st of layer){
-      const yo = ((st.y + scrollOffset(tick, st.speed)) % H + H) % H;
-      const flicker = 0.35 + 0.25*Math.sin(tick*0.04 + st.x*0.1);
+      const yo=((st.y+tick*st.spd)%H+H)%H;
+      const a=0.3+0.25*Math.sin(tick*0.04+st.x*0.1);
       ctx.beginPath(); ctx.arc(st.x,yo,st.r,0,Math.PI*2);
-      ctx.fillStyle=`rgba(210,225,255,${flicker.toFixed(2)})`; ctx.fill();
-      // wrap
-      if(yo > H - 4){ ctx.beginPath(); ctx.arc(st.x,yo-H,st.r,0,Math.PI*2); ctx.fill(); }
-      if(yo < 4)    { ctx.beginPath(); ctx.arc(st.x,yo+H,st.r,0,Math.PI*2); ctx.fill(); }
+      ctx.fillStyle=`rgba(210,225,255,${a.toFixed(2)})`; ctx.fill();
+      if(yo>H-3){ ctx.beginPath(); ctx.arc(st.x,yo-H,st.r,0,Math.PI*2); ctx.fill(); }
+      if(yo<3)  { ctx.beginPath(); ctx.arc(st.x,yo+H,st.r,0,Math.PI*2); ctx.fill(); }
     }
   }
 }
-
-// ── WebSocket ─────────────────────────────────────────────────────────────────
-let ws = null;
-function connect(){
-  const proto = location.protocol==='https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${proto}://${location.host}/ws/truckers`);
-  ws.onmessage = e => handleMsg(JSON.parse(e.data));
-  ws.onclose = () => { ws=null; setTimeout(connect,2000); };
+function drawNebula(x,y,r,hue){
+  const g=ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0,`hsla(${hue},55%,22%,0.07)`);
+  g.addColorStop(1,'transparent');
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
 }
-function send(obj){ if(ws && ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify(obj)); }
 
-// ── Input ─────────────────────────────────────────────────────────────────────
-const keys = {up:false,down:false,left:false,right:false};
-document.addEventListener('keydown', e => {
-  if(applyKey(e.code,true)) sendKeys();
-  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
-});
-document.addEventListener('keyup', e => { if(applyKey(e.code,false)) sendKeys(); });
-function applyKey(code,val){
-  const map={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
-  const k=map[code];
-  if(k && keys[k]!==val){ keys[k]=val; return true; } return false;
-}
-function sendKeys(){ send({type:'input',keys:{...keys}}); }
+// ── Station drawing helpers ───────────────────────────────────────────────────
+// Draw a space station: body + solar panels + airlock
+function drawStation(cx, cy, symbol, name, isDestination, airlockX, pulse){
+  // Main body
+  ctx.save();
+  ctx.translate(cx,cy);
 
-// ── Message handler ───────────────────────────────────────────────────────────
-let gmTimeout = null;
-let lastEvent = null;
+  // Core ring
+  ctx.beginPath(); ctx.arc(0,0,24,0,Math.PI*2);
+  ctx.strokeStyle=isDestination?`rgba(251,191,36,${0.5+0.4*pulse})`:'rgba(99,102,241,0.5)';
+  ctx.lineWidth=3; ctx.stroke();
+  ctx.beginPath(); ctx.arc(0,0,24,0,Math.PI*2);
+  ctx.fillStyle=isDestination?'rgba(45,30,10,0.8)':'rgba(20,20,40,0.8)';
+  ctx.fill();
 
-function handleMsg(msg){
-  if(msg.type!=='state') return;
+  // Solar panels
+  ctx.fillStyle=isDestination?'rgba(251,191,36,0.35)':'rgba(99,102,241,0.3)';
+  ctx.fillRect(-52,-6,24,12);  // left panel
+  ctx.fillRect(28,-6,24,12);   // right panel
+  ctx.strokeStyle=isDestination?'rgba(251,191,36,0.5)':'rgba(99,102,241,0.4)';
+  ctx.lineWidth=1;
+  ctx.strokeRect(-52,-6,24,12);
+  ctx.strokeRect(28,-6,24,12);
+  // Panel struts
+  ctx.beginPath(); ctx.moveTo(-24,0); ctx.lineTo(-28,0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(24,0);  ctx.lineTo(28,0);  ctx.stroke();
 
-  switch(msg.phase){
-    case 'title':
-      showScreen('title');
-      renderTitleBg();
-      renderScoreList('title-scores', msg.scores||[]);
-      break;
-    case 'playing':
-      showScreen('playing');
-      render(msg);
-      if(msg.event && msg.event!==lastEvent){
-        if(msg.event==='damage')  showGm(pick(t('gm_hit')));
-        if(msg.event==='delivery')showGm(pick(t('gm_ok')));
-      }
-      lastEvent = msg.event;
-      break;
-    case 'stage_clear':
-      showScreen('playing');
-      render(msg);
-      showClear(t('clear_title')(msg.from,msg.to), t('score_lbl')+(msg.score||0).toLocaleString());
-      if(msg.event==='delivery') showGm(pick(t('gm_ok')));
-      break;
-    case 'lap_clear':
-      showScreen('playing');
-      render(msg);
-      showClear(t('lap_title'), t('lap_sub')(msg.round));
-      showGm(pick(t('gm_lap')));
-      break;
-    case 'gameover':
-      showScreen('gameover');
-      document.getElementById('go-score').textContent = t('score_lbl')+(msg.score||0).toLocaleString();
-      document.getElementById('go-rank').textContent  = msg.rank ? t('rank_msg')(msg.rank) : t('no_rank');
-      renderScoreList('go-scores', msg.scores||[]);
-      break;
+  // Symbol + name
+  ctx.textAlign='center';
+  ctx.font='14px DotGothic16, monospace';
+  ctx.fillStyle=isDestination?`rgba(253,230,138,${0.7+0.3*pulse})`:'rgba(165,180,252,0.8)';
+  ctx.fillText(symbol,0,5);
+  ctx.font='9px DotGothic16, monospace';
+  ctx.fillStyle=isDestination?'rgba(253,230,138,0.6)':'rgba(148,163,184,0.5)';
+  ctx.fillText(name,0,20);
+
+  ctx.restore();
+
+  // Airlock marker (separate from station center, at airlockX)
+  if(isDestination){
+    const ax=airlockX, ay=cy;
+    // Connector tube from station to airlock
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(ax,ay);
+    ctx.strokeStyle=`rgba(251,191,36,${0.2+0.15*pulse})`; ctx.lineWidth=1;
+    ctx.setLineDash([4,6]); ctx.stroke(); ctx.setLineDash([]);
+
+    // Airlock opening (glowing)
+    const glowR=14+4*pulse;
+    const grd=ctx.createRadialGradient(ax,ay,2,ax,ay,glowR);
+    grd.addColorStop(0,`rgba(34,197,94,${0.6+0.3*pulse})`);
+    grd.addColorStop(1,'rgba(34,197,94,0)');
+    ctx.beginPath(); ctx.arc(ax,ay,glowR,0,Math.PI*2); ctx.fillStyle=grd; ctx.fill();
+
+    ctx.beginPath(); ctx.arc(ax,ay,8,0,Math.PI*2);
+    ctx.fillStyle=`rgba(34,197,94,${0.4+0.3*pulse})`; ctx.fill();
+    ctx.strokeStyle=`rgba(134,239,172,${0.7+0.3*pulse})`; ctx.lineWidth=2; ctx.stroke();
+
+    // Arrow pointing down to airlock
+    ctx.fillStyle=`rgba(134,239,172,${0.6+0.3*pulse})`;
+    ctx.textAlign='center'; ctx.font='12px sans-serif';
+    ctx.fillText('▼',ax,ay+28);
   }
 }
 
-function showClear(title, sub){
-  const el = document.getElementById('screen-clear');
-  document.getElementById('cl-title').textContent = title;
-  document.getElementById('cl-sub').textContent   = sub;
-  el.style.display = 'flex';
+// Draw departure station (at bottom)
+function drawDepartStation(cx, sy, symbol, name, departX){
+  ctx.save(); ctx.translate(cx,sy);
+  ctx.beginPath(); ctx.arc(0,0,20,0,Math.PI*2);
+  ctx.strokeStyle='rgba(99,102,241,0.4)'; ctx.lineWidth=2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(0,0,20,0,Math.PI*2);
+  ctx.fillStyle='rgba(20,20,40,0.8)'; ctx.fill();
+  // Panels
+  ctx.fillStyle='rgba(99,102,241,0.25)'; ctx.fillRect(-44,-5,20,10); ctx.fillRect(24,-5,20,10);
+  ctx.textAlign='center'; ctx.font='12px DotGothic16, monospace';
+  ctx.fillStyle='rgba(165,180,252,0.6)'; ctx.fillText(symbol,0,4);
+  ctx.restore();
+
+  // Departure airlock (green, at departX)
+  ctx.beginPath(); ctx.arc(departX,sy,7,0,Math.PI*2);
+  ctx.fillStyle='rgba(34,197,94,0.3)'; ctx.fill();
+  ctx.strokeStyle='rgba(134,239,172,0.5)'; ctx.lineWidth=1.5; ctx.stroke();
 }
 
-function showScreen(name){
-  document.getElementById('screen-title').style.display   = name==='title'    ? 'flex' : 'none';
-  document.getElementById('screen-gameover').style.display= name==='gameover' ? 'flex' : 'none';
-  document.getElementById('screen-clear').style.display   = 'none';
-}
-
-function showGm(text){
-  const el=document.getElementById('gm-comment');
-  el.textContent=text; el.classList.add('show');
-  clearTimeout(gmTimeout);
-  gmTimeout=setTimeout(()=>el.classList.remove('show'),2200);
-}
-function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-function renderScoreList(id, scores){
-  const el=document.getElementById(id);
-  if(!scores.length){ el.innerHTML=''; return; }
-  let h='<table>';
-  scores.slice(0,8).forEach((s,i)=>{
-    h+=`<tr><td class="rank">${i+1}.</td><td>${esc(s.name)}</td><td>${s.score.toLocaleString()}</td></tr>`;
-  });
-  h+='</table>'; el.innerHTML=h;
-}
-
-// ── Title background ──────────────────────────────────────────────────────────
-let titleTick = 0;
-function renderTitleBg(){
-  titleTick++;
-  renderBg(titleTick);
-  // faint zodiac symbols floating upward
-  ctx.textAlign='center';
-  const syms='♈♉♊♋♌♍♎♏♐♑♒♓';
-  ctx.font='20px DotGothic16, monospace';
-  ctx.fillStyle='rgba(165,180,252,0.2)';
-  for(let i=0;i<12;i++){
-    const x=20+i*(W/12)+10;
-    const yo=((i*44 + titleTick*0.4)%H+H)%H;
-    ctx.fillText(syms[i], x, yo);
-  }
-  requestAnimationFrame(()=>{ if(document.getElementById('screen-title').style.display!=='none') renderTitleBg(); });
-}
-
-// ── Main render ───────────────────────────────────────────────────────────────
-function render(s){
-  renderBg(s.tick);
-  renderProgressBar(s);
-  renderHUDCanvas(s);
-  renderAsteroids(s.asteroids);
-  renderShip(s.ship, s.tick);
-}
-
-// Progress bar on the right edge
-function renderProgressBar(s){
-  const bx=W-14, by=30, bh=H-60, bw=8;
-  // track
-  ctx.fillStyle='rgba(255,255,255,0.07)';
-  ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,4); ctx.fill();
-  // fill (from bottom up = ship moving toward top = progress)
-  const pct=(s.progress||0)/100;
-  const fillH=bh*pct;
-  const gradient=ctx.createLinearGradient(0,by+bh,0,by+bh-fillH);
-  gradient.addColorStop(0,'rgba(168,85,247,0.9)');
-  gradient.addColorStop(1,'rgba(251,191,36,0.9)');
-  ctx.fillStyle=gradient;
-  ctx.beginPath(); ctx.roundRect(bx,by+bh-fillH,bw,fillH,4); ctx.fill();
-  // destination icon at top of bar
-  ctx.font='12px DotGothic16, monospace';
-  ctx.fillStyle=`rgba(251,191,36,${0.6+0.4*Math.sin(s.tick*0.1)})`;
-  ctx.textAlign='center';
-  ctx.fillText(s.to.symbol, bx+bw/2, by-4);
-}
-
-// HUD drawn onto canvas
-function renderHUDCanvas(s){
-  // Score + HP + info — top left strip
-  ctx.textAlign='left';
-  ctx.font='13px DotGothic16, monospace';
-  ctx.fillStyle='rgba(5,5,20,0.6)';
-  ctx.fillRect(0,0,W-24,32);
-
-  ctx.fillStyle='#fde68a';
-  ctx.fillText(t('score_lbl')+(s.score||0).toLocaleString(), 10, 20);
-
-  const hearts='❤️'.repeat(s.hp)+'🖤'.repeat(Math.max(0,3-s.hp));
-  ctx.fillText(hearts, 180, 20);
-
-  ctx.fillStyle='#a5b4fc';
-  ctx.fillText(t('round_lbl')+s.round+'  '+t('lap_lbl')+s.lap+'  '+(s.stage+1)+'/12', 320, 20);
-
-  // Destination label at bottom
-  ctx.fillStyle='rgba(5,5,20,0.55)';
-  ctx.fillRect(0,H-26,W,26);
-  ctx.fillStyle='#7dd3fc';
-  ctx.textAlign='center';
-  ctx.font='12px DotGothic16, monospace';
-  ctx.fillText(t('dest_lbl')(s.to), W/2, H-8);
-}
-
-function renderAsteroids(asteroids){
-  if(!asteroids) return;
-  for(const a of asteroids){
-    ctx.save();
-    ctx.translate(a.x, a.y);
-    // deterministic rotation per asteroid (seed-based offset)
-    ctx.rotate(lcgf(a.seed)*Math.PI*2);
-    const r=a.r, pts=6+(lcg(a.seed)%4);
-    ctx.beginPath();
-    for(let i=0;i<pts;i++){
-      const ang=(i/pts)*Math.PI*2;
-      const jitter=0.62+lcgf(lcg(a.seed+i*31))*0.72;
-      const px=Math.cos(ang)*r*jitter, py=Math.sin(ang)*r*jitter;
-      i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
-    }
-    ctx.closePath();
-    ctx.fillStyle='rgba(105,85,65,0.88)';
-    ctx.fill();
-    ctx.strokeStyle='rgba(165,145,125,0.65)';
-    ctx.lineWidth=1; ctx.stroke();
-    ctx.restore();
-  }
-}
-
-function renderShip(ship, tick){
-  if(!ship) return;
-  // Blink during invincibility
-  if(ship.invincible && Math.floor(tick/4)%2===1) return;
+// ── Ship drawing (upward-facing van/truck rectangle) ──────────────────────────
+function drawTruck(x, y, vx, vy, invincible, tick){
+  if(invincible && Math.floor(tick/4)%2===1) return;
 
   ctx.save();
-  ctx.translate(ship.x, ship.y);
-  // Ship faces up, so rotate -PI/2 from default "right-facing" triangle
-  ctx.rotate(-Math.PI/2);
+  ctx.translate(x,y);
 
-  // Body (triangle pointing up)
-  ctx.beginPath();
-  ctx.moveTo(0,-16);
-  ctx.lineTo(10,10);
-  ctx.lineTo(0,4);
-  ctx.lineTo(-10,10);
-  ctx.closePath();
-  ctx.fillStyle='#60a5fa';
-  ctx.fill();
-  ctx.strokeStyle='#93c5fd';
-  ctx.lineWidth=1.5; ctx.stroke();
+  const tw=14, th=28; // truck width, height
 
-  // Engine exhaust (below ship = pointing down in ship-space = left in rotated space)
-  const spd=Math.sqrt((ship.vx||0)**2+(ship.vy||0)**2);
-  const thrusting = spd > 0.3 || keys.up || keys.down || keys.left || keys.right;
+  // Body (vertical rectangle, facing up)
+  ctx.fillStyle='#2563eb';
+  ctx.fillRect(-tw/2,-th/2, tw, th);
+
+  // Front (top) — cab window
+  ctx.fillStyle='#bfdbfe';
+  ctx.fillRect(-tw/2+2,-th/2+2, tw-4, 9);
+
+  // Windshield tint lines
+  ctx.strokeStyle='rgba(147,197,253,0.4)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(-tw/2+4,-th/2+4); ctx.lineTo(-tw/2+4,-th/2+10); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-tw/2+8,-th/2+4); ctx.lineTo(-tw/2+8,-th/2+10); ctx.stroke();
+
+  // Side body stripe
+  ctx.fillStyle='#1d4ed8';
+  ctx.fillRect(-tw/2,-th/2+13, tw, 4);
+
+  // Cargo section (lower half)
+  ctx.fillStyle='#1e3a8a';
+  ctx.fillRect(-tw/2,-th/2+18, tw, th/2-2);
+
+  // Outline
+  ctx.strokeStyle='#93c5fd'; ctx.lineWidth=1.5;
+  ctx.strokeRect(-tw/2,-th/2, tw, th);
+
+  // Lights on front corners
+  ctx.fillStyle='#fde68a';
+  ctx.fillRect(-tw/2+1,-th/2+1, 3,3);
+  ctx.fillRect(tw/2-4,-th/2+1, 3,3);
+
+  // Brake lights at rear (bottom)
+  ctx.fillStyle='#ef4444';
+  ctx.fillRect(-tw/2+1, th/2-4, 3,3);
+  ctx.fillRect(tw/2-4,  th/2-4, 3,3);
+
+  // Engine exhaust / thrust flames at bottom
+  const thrusting=Math.abs(vx||0)>0.3||Math.abs(vy||0)>0.3;
   if(thrusting){
-    const fl=8+Math.random()*8;
-    // Exhaust shoots out the bottom of the ship (positive y in ship space)
+    const fl=10+Math.random()*10;
+    const fw=4+Math.random()*3;
     ctx.beginPath();
-    ctx.moveTo(-4,10); ctx.lineTo((Math.random()-0.5)*6,10+fl); ctx.lineTo(4,10);
+    ctx.moveTo(-fw/2, th/2);
+    ctx.lineTo((Math.random()-0.5)*4, th/2+fl);
+    ctx.lineTo(fw/2, th/2);
     ctx.closePath();
-    ctx.fillStyle=`rgba(251,191,36,${(0.6+Math.random()*0.4).toFixed(2)})`;
+    ctx.fillStyle=`rgba(251,191,36,${0.7+Math.random()*0.3})`;
     ctx.fill();
   }
 
   ctx.restore();
 }
 
+// ── Asteroid drawing ──────────────────────────────────────────────────────────
+function drawAsteroids(asteroids){
+  if(!asteroids) return;
+  for(const a of asteroids){
+    ctx.save(); ctx.translate(a.x,a.y);
+    ctx.rotate(lcgf(a.seed)*Math.PI*2);
+    const r=a.r, pts=6+(lcg(a.seed)%4);
+    ctx.beginPath();
+    for(let i=0;i<pts;i++){
+      const ang=(i/pts)*Math.PI*2;
+      const j=0.60+lcgf(lcg(a.seed+i*31))*0.75;
+      const px=Math.cos(ang)*r*j, py=Math.sin(ang)*r*j;
+      i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.fillStyle='rgba(105,85,60,0.88)'; ctx.fill();
+    ctx.strokeStyle='rgba(165,145,120,0.65)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ── Progress bar ──────────────────────────────────────────────────────────────
+function drawProgressBar(progress, phase){
+  const bx=W-14, by=40, bh=H-80, bw=8;
+  ctx.fillStyle='rgba(255,255,255,0.07)';
+  ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,4); ctx.fill();
+
+  const pct=(progress||0)/100;
+  if(pct>0){
+    const fh=bh*pct;
+    const g=ctx.createLinearGradient(0,by+bh,0,by+bh-fh);
+    g.addColorStop(0,'rgba(168,85,247,0.9)');
+    g.addColorStop(0.8,'rgba(251,191,36,0.9)');
+    g.addColorStop(1,'rgba(34,197,94,0.9)');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.roundRect(bx,by+bh-fh,bw,fh,4); ctx.fill();
+  }
+  // Docking zone marker at top
+  const dockZoneY=by + bh*(1-0.80) - 3;
+  ctx.strokeStyle='rgba(34,197,94,0.5)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(bx-4,dockZoneY); ctx.lineTo(bx+bw+4,dockZoneY); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// ── HUD ───────────────────────────────────────────────────────────────────────
+function drawHUD(s){
+  ctx.fillStyle='rgba(5,5,20,0.6)'; ctx.fillRect(0,0,W-24,30);
+  ctx.textAlign='left'; ctx.font='13px DotGothic16, monospace';
+  ctx.fillStyle='#fde68a';
+  ctx.fillText(t('score_lbl')+(s.score||0).toLocaleString(), 10, 20);
+  const hearts='❤️'.repeat(s.hp)+'🖤'.repeat(Math.max(0,3-s.hp));
+  ctx.fillText(hearts, 175, 20);
+  ctx.fillStyle='#a5b4fc';
+  ctx.fillText(t('round_lbl')+s.round+'  '+t('lap_lbl')+s.lap+'  '+(s.stage+1)+'/12', 315, 20);
+
+  // Bottom bar
+  ctx.fillStyle='rgba(5,5,20,0.55)'; ctx.fillRect(0,H-26,W,26);
+  ctx.textAlign='center'; ctx.font='12px DotGothic16, monospace';
+  const isDocking = s.phase==='docking';
+  ctx.fillStyle = isDocking ? '#86efac' : '#7dd3fc';
+  const label = isDocking ? t('dock_lbl')(s.to) : t('dest_lbl')(s.to);
+  ctx.fillText(label, W/2, H-8);
+}
+
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+let ws=null;
+function connect(){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  ws=new WebSocket(`${proto}://${location.host}/ws/truckers`);
+  ws.onmessage=e=>handleMsg(JSON.parse(e.data));
+  ws.onclose=()=>{ ws=null; setTimeout(connect,2000); };
+}
+function send(obj){ if(ws&&ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify(obj)); }
+
+// ── Input ─────────────────────────────────────────────────────────────────────
+const keys={up:false,down:false,left:false,right:false};
+document.addEventListener('keydown',e=>{
+  if(applyKey(e.code,true)) sendKeys();
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+});
+document.addEventListener('keyup',e=>{ if(applyKey(e.code,false)) sendKeys(); });
+function applyKey(code,val){
+  const m={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+  const k=m[code]; if(k&&keys[k]!==val){keys[k]=val;return true;} return false;
+}
+function sendKeys(){ send({type:'input',keys:{...keys}}); }
+
+// ── Message handler ───────────────────────────────────────────────────────────
+let gmTimeout=null, lastEvent=null, prevPhase=null;
+
+function handleMsg(msg){
+  if(msg.type!=='state') return;
+  switch(msg.phase){
+    case 'title':
+      showScreen('title'); renderTitleBg(); renderScoreList('title-scores',msg.scores||[]); break;
+    case 'launching':
+    case 'playing':
+    case 'docking':
+      showScreen('playing'); renderGame(msg);
+      if(msg.event && msg.event!==lastEvent){
+        if(msg.event==='damage')  showGm(pick(t('gm_hit')));
+        if(msg.event==='delivery')showGm(pick(t('gm_ok')));
+      }
+      // On first tick of docking phase
+      if(msg.phase==='docking' && prevPhase!=='docking') showGm(pick(t('gm_dock')));
+      lastEvent=msg.event; prevPhase=msg.phase;
+      break;
+    case 'stage_clear':
+      showScreen('playing'); renderGame(msg);
+      showClear(t('clear_title')(msg.from,msg.to), t('score_lbl')+(msg.score||0).toLocaleString());
+      showGm(pick(t('gm_ok'))); prevPhase=msg.phase; break;
+    case 'lap_clear':
+      showScreen('playing'); renderGame(msg);
+      showClear(t('lap_title'),t('lap_sub')(msg.round));
+      showGm(pick(t('gm_lap'))); prevPhase=msg.phase; break;
+    case 'gameover':
+      showScreen('gameover');
+      document.getElementById('go-score').textContent=t('score_lbl')+(msg.score||0).toLocaleString();
+      document.getElementById('go-rank').textContent=msg.rank?t('rank_msg')(msg.rank):t('no_rank');
+      renderScoreList('go-scores',msg.scores||[]); break;
+  }
+}
+
+function showClear(title,sub){
+  document.getElementById('cl-title').textContent=title;
+  document.getElementById('cl-sub').textContent=sub;
+  document.getElementById('screen-clear').style.display='flex';
+}
+function showScreen(name){
+  document.getElementById('screen-title').style.display   =name==='title'   ?'flex':'none';
+  document.getElementById('screen-gameover').style.display=name==='gameover'?'flex':'none';
+  document.getElementById('screen-clear').style.display   ='none';
+}
+function showGm(text){
+  const el=document.getElementById('gm-comment');
+  el.textContent=text; el.classList.add('show');
+  clearTimeout(gmTimeout); gmTimeout=setTimeout(()=>el.classList.remove('show'),2200);
+}
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderScoreList(id,scores){
+  const el=document.getElementById(id); if(!scores.length){el.innerHTML='';return;}
+  let h='<table>';
+  scores.slice(0,8).forEach((s,i)=>{h+=`<tr><td class="rank">${i+1}.</td><td>${esc(s.name)}</td><td>${s.score.toLocaleString()}</td></tr>`;});
+  h+='</table>'; el.innerHTML=h;
+}
+
+// ── Main render ───────────────────────────────────────────────────────────────
+function renderGame(s){
+  const tick=s.tick||0;
+  renderBg(tick);
+  drawProgressBar(s.progress, s.phase);
+
+  const pulse=0.5+0.5*Math.sin(tick*0.1);
+  const name = lang==='ja' ? s.to.name_ja : s.to.name_en;
+
+  // ── Departure station (bottom) — visible during launch ──
+  if(s.phase==='launching' || s.stage_tick < 120){
+    const fromName=lang==='ja'?s.from.name_ja:s.from.name_en;
+    const alpha=s.stage_tick<90?1.0:Math.max(0,1-(s.stage_tick-90)/30);
+    if(alpha>0){
+      ctx.globalAlpha=alpha;
+      // Station body slightly below screen bottom, airlock at depart_x
+      const stationY=H+20;  // mostly off-screen
+      const airlockY=H-40;
+      // Draw airlock at bottom
+      const grd=ctx.createRadialGradient(s.depart_x,airlockY,2,s.depart_x,airlockY,18);
+      grd.addColorStop(0,'rgba(99,102,241,0.6)');
+      grd.addColorStop(1,'rgba(99,102,241,0)');
+      ctx.beginPath(); ctx.arc(s.depart_x,airlockY,18,0,Math.PI*2);
+      ctx.fillStyle=grd; ctx.fill();
+      ctx.beginPath(); ctx.arc(s.depart_x,airlockY,7,0,Math.PI*2);
+      ctx.fillStyle='rgba(99,102,241,0.5)'; ctx.fill();
+      ctx.strokeStyle='rgba(165,180,252,0.7)'; ctx.lineWidth=2; ctx.stroke();
+      // "LAUNCH" text
+      ctx.textAlign='center'; ctx.font='10px DotGothic16, monospace';
+      ctx.fillStyle='rgba(165,180,252,0.7)';
+      ctx.fillText(t('launch_txt')(s.from), s.depart_x, airlockY-24);
+      ctx.globalAlpha=1.0;
+    }
+  }
+
+  // ── Destination station (top) — appears when progress >= 80% or docking ──
+  if(s.phase==='docking' || (s.progress||0)>=78){
+    const stationX=270, stationY=30;
+    drawStation(stationX, stationY, s.to.symbol, name, true, s.airlock_x, pulse);
+  }
+
+  drawAsteroids(s.asteroids);
+  drawTruck(s.ship.x, s.ship.y, s.ship.vx, s.ship.vy, s.ship.invincible, tick);
+  drawHUD(s);
+}
+
+// ── Title background animation ────────────────────────────────────────────────
+let titleTick=0;
+function renderTitleBg(){
+  titleTick++;
+  renderBg(titleTick);
+  ctx.textAlign='center';
+  const syms='♈♉♊♋♌♍♎♏♐♑♒♓';
+  ctx.font='18px DotGothic16, monospace';
+  for(let i=0;i<12;i++){
+    const x=22+i*(W/12)+5;
+    const yo=((i*46+titleTick*0.5)%H+H)%H;
+    ctx.fillStyle=`rgba(165,180,252,${0.15+0.1*Math.sin(titleTick*0.05+i)})`;
+    ctx.fillText(syms[i],x,yo);
+  }
+  requestAnimationFrame(()=>{ if(document.getElementById('screen-title').style.display!=='none') renderTitleBg(); });
+}
+
 // ── Buttons ───────────────────────────────────────────────────────────────────
-document.getElementById('btn-start').addEventListener('click', ()=>{
-  const name=document.getElementById('name-input').value.trim()||(lang==='ja'?'野郎':'Trucker');
-  send({type:'start',name});
+document.getElementById('btn-start').addEventListener('click',()=>{
+  const n=document.getElementById('name-input').value.trim()||(lang==='ja'?'野郎':'Trucker');
+  send({type:'start',name:n});
 });
-document.getElementById('name-input').addEventListener('keydown', e=>{
-  if(e.key==='Enter'){ document.getElementById('btn-start').click(); e.preventDefault(); }
+document.getElementById('name-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){document.getElementById('btn-start').click();e.preventDefault();}
 });
-document.getElementById('btn-restart').addEventListener('click', ()=> send({type:'restart'}));
+document.getElementById('btn-restart').addEventListener('click',()=>send({type:'restart'}));
 
 // ── Virtual stick ─────────────────────────────────────────────────────────────
 const vstickArea=document.getElementById('vstick-area');
@@ -512,26 +611,24 @@ const vstickKnob=document.getElementById('vstick-knob');
 let vstickCenter={x:0,y:0};
 const STICK_MAX=44;
 if('ontouchstart' in window) vstickArea.style.display='block';
-
 vstickArea.addEventListener('touchstart',e=>{
   e.preventDefault();
   const r=vstickArea.getBoundingClientRect();
   vstickCenter={x:r.left+r.width/2,y:r.top+r.height/2};
   updateStick(e.touches[0]);
 },{passive:false});
-vstickArea.addEventListener('touchmove',e=>{ e.preventDefault(); updateStick(e.touches[0]); },{passive:false});
+vstickArea.addEventListener('touchmove',e=>{e.preventDefault();updateStick(e.touches[0]);},{passive:false});
 document.addEventListener('touchend',()=>{
   vstickKnob.style.transform='translate(-50%,-50%)';
   keys.up=keys.down=keys.left=keys.right=false; sendKeys();
 });
-function updateStick(touch){
-  const dx=touch.clientX-vstickCenter.x, dy=touch.clientY-vstickCenter.y;
-  const d=Math.sqrt(dx*dx+dy*dy), c=Math.min(d,STICK_MAX);
-  const nx=d>0?dx/d:0, ny=d>0?dy/d:0;
+function updateStick(t2){
+  const dx=t2.clientX-vstickCenter.x,dy=t2.clientY-vstickCenter.y;
+  const d=Math.sqrt(dx*dx+dy*dy),c=Math.min(d,STICK_MAX);
+  const nx=d>0?dx/d:0,ny=d>0?dy/d:0;
   vstickKnob.style.transform=`translate(calc(-50% + ${nx*c}px),calc(-50% + ${ny*c}px))`;
   const th=0.4;
-  keys.up=ny<-th; keys.down=ny>th; keys.left=nx<-th; keys.right=nx>th;
-  sendKeys();
+  keys.up=ny<-th; keys.down=ny>th; keys.left=nx<-th; keys.right=nx>th; sendKeys();
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
