@@ -10,12 +10,37 @@
     body {
       background:#050510;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
-      min-height:100vh;
+      min-height:100dvh;
       font-family:'DotGothic16',monospace; color:#e2e8f0;
-      user-select:none; overflow:hidden;
+      user-select:none; overflow-x:hidden;
+      overflow-y:hidden;
+      padding:0;
+      gap:0;
     }
     canvas { display:block; image-rendering:pixelated; max-width:100%; height:auto; }
     #wrap { position:relative; width:540px; max-width:100vw; }
+    #game-hud{
+      width:min(540px,100vw);
+      display:none;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin:0 0 8px;
+      padding:0 8px;
+      font-size:0.8rem;
+      color:#e2e8f0;
+      text-shadow:0 0 8px rgba(0,0,0,.55);
+    }
+    #game-hud .hud-block{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      min-width:0;
+      white-space:nowrap;
+    }
+    #hud-score{ color:#fde68a; }
+    #hud-life{ color:#fca5a5; }
+    #hud-round{ color:#a5b4fc; margin-left:auto; }
 
     .overlay {
       position:absolute; inset:0;
@@ -24,11 +49,20 @@
       background:rgba(5,5,20,.88); gap:14px; z-index:10;
     }
     .overlay h1 {
-      font-size:1.5rem; letter-spacing:.08em; color:#fff;
+      font-size:1.7rem; letter-spacing:.08em; color:#fff;
+      position:relative; z-index:2;
       text-shadow:0 0 8px #fff, 0 0 20px #a855f7, 0 0 40px #7c3aed;
     }
     .overlay h2 { font-size:1rem; color:#a855f7; }
-    .overlay p  { font-size:0.8rem; color:#94a3b8; line-height:1.6; text-align:center; }
+    .overlay p  { font-size:0.8rem; color:#94a3b8; line-height:1.6; text-align:center; position:relative; z-index:2; }
+    #screen-title, #screen-gameover{
+      justify-content:center;
+      padding:18px 14px 14px;
+    }
+    #screen-title h1, #screen-gameover h1, #screen-title p, #screen-gameover p{
+      transform:none;
+      margin:0;
+    }
     .btn {
       padding:10px 28px;
       background:rgba(168,85,247,.2); border:1px solid rgba(168,85,247,.5);
@@ -39,7 +73,7 @@
     .btn:hover { background:rgba(168,85,247,.35); box-shadow:0 0 12px rgba(168,85,247,.4); }
 
     #btn-back {
-      position:absolute; top:36px; left:10px; z-index:20;
+      position:fixed; top:10px; left:10px; z-index:200;
       background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
       border-radius:6px; padding:5px 12px; color:#9ca3af;
       font-family:inherit; font-size:0.7rem; cursor:pointer;
@@ -62,38 +96,88 @@
     .score-list .rank { color:#6b7280; width:24px; }
 
     #gm-comment {
-      position:absolute; bottom:50px; right:12px;
+      width:min(540px,100vw);
+      margin:8px 0 0;
+      padding:0 8px;
       font-size:0.75rem; color:#f9a8d4;
       text-shadow:0 0 8px #ec4899;
-      pointer-events:none; z-index:15;  /* overlayより上 */
+      pointer-events:none; z-index:15;
       transition:opacity .3s; opacity:0;
-      max-width:180px; text-align:right;
+      text-align:left;
+      align-self:center;
     }
     #gm-comment.show { opacity:1; }
 
+    #touch-controls {
+      position:fixed;
+      left:50%;
+      bottom:8px;
+      transform:translateX(-50%);
+      width:min(540px,100vw);
+      display:none;
+      justify-content:space-between;
+      align-items:flex-end;
+      padding:0 14px 8px;
+      gap:18px;
+      pointer-events:none;
+      z-index:40;
+    }
     #vstick-area {
-      position:absolute; bottom:16px; left:16px;
+      position:relative;
       width:120px; height:120px;
       background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
       border-radius:50%; display:none; z-index:8; touch-action:none;
+      pointer-events:auto;
+      flex:0 0 auto;
     }
     #vstick-knob {
       position:absolute; width:48px; height:48px; border-radius:50%;
       background:rgba(168,85,247,.35); border:1px solid rgba(168,85,247,.6);
       top:50%; left:50%; transform:translate(-50%,-50%);
     }
+    #action-buttons{
+      display:none;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:10px;
+      pointer-events:auto;
+      flex:0 0 auto;
+    }
+    #btn-manip{
+      width:86px; height:86px;
+      border-radius:50%;
+      border:1px solid rgba(251,191,36,.55);
+      background:radial-gradient(circle at 35% 30%, rgba(253,230,138,.4), rgba(120,53,15,.7));
+      color:#fde68a;
+      font-family:inherit;
+      font-size:.82rem;
+      letter-spacing:.05em;
+      cursor:pointer;
+      box-shadow:0 0 18px rgba(245,158,11,.18);
+    }
+    #btn-manip:active { transform:scale(.96); }
+    #touch-hint{
+      font-size:.62rem;
+      color:#7c6f9a;
+      text-align:right;
+      max-width:96px;
+    }
   </style>
 </head>
 <body>
+<div id="game-hud">
+  <div id="hud-score" class="hud-block"></div>
+  <div id="hud-life" class="hud-block"></div>
+  <div id="hud-round" class="hud-block"></div>
+</div>
 <div id="wrap">
   <canvas id="canvas" width="540" height="540"></canvas>
-  <div id="gm-comment"></div>
 
   <!-- Title -->
   <div id="screen-title" class="overlay">
     <h1 data-i18n="title">🚛 宇宙トラック野郎 🚛</h1>
     <p data-i18n="title_sub">小惑星をかきわけ、宇宙ステーションへ荷物を届けろ！</p>
-    <div style="display:flex;gap:10px;align-items:center;">
+    <div class="title-controls" style="display:flex;gap:10px;align-items:center;">
       <input id="name-input" type="text" maxlength="16"
         style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);
                border-radius:6px;padding:8px 12px;color:#e2e8f0;font-family:inherit;font-size:0.85rem;width:160px;"
@@ -101,7 +185,7 @@
       <button class="btn" id="btn-start" data-i18n="btn_start">スタート！</button>
     </div>
     <div id="title-scores" class="score-list"></div>
-    <p style="font-size:0.7rem;color:#4b5563;" data-i18n="controls">矢印キー / WASD で操作</p>
+    <p class="title-help" style="font-size:0.7rem;color:#4b5563;" data-i18n="controls">矢印キー / WASD で操作</p>
   </div>
 
   <!-- Gameover -->
@@ -121,7 +205,14 @@
 
   <button id="btn-back" onclick="location.href='/'">← <span data-i18n="back">メニュー</span></button>
   <button id="btn-lang">🇯🇵 / 🇬🇧</button>
+</div>
+<div id="gm-comment"></div>
+<div id="touch-controls">
   <div id="vstick-area"><div id="vstick-knob"></div></div>
+  <div id="action-buttons">
+    <button id="btn-manip">MAG</button>
+    <div id="touch-hint">MANIP</div>
+  </div>
 </div>
 
 <script>
@@ -181,6 +272,7 @@ const I18N = {
 
 let lang = localStorage.getItem('gc_lang') || 'ja';
 const t = k => I18N[lang][k] ?? k;
+let playerName = localStorage.getItem('truckers_player_name') || '';
 
 function applyLang(){
   document.querySelectorAll('[data-i18n]').forEach(el=>{
@@ -222,16 +314,16 @@ const SCROLL_MAX  = 3.5;
 let scrollSpeed  = BASE_SCROLL;
 let scrollOffset = 0;
 
-function updateScroll(shipVy){
-  // Moving up (vy < 0) = forward thrust = faster scroll
-  if(shipVy < -0.3)       scrollSpeed = Math.min(SCROLL_MAX, scrollSpeed + 0.030);
-  else if(shipVy > 0.3)   scrollSpeed = Math.max(SCROLL_MIN, scrollSpeed - 0.020);
-  else                     scrollSpeed += (BASE_SCROLL - scrollSpeed) * 0.008;
+function updateScroll(shipY){
+  const y = shipY ?? (H * 0.67);
+  const pct = 1 - Math.max(0, Math.min(1, y / H));
+  const target = SCROLL_MIN + pct * (SCROLL_MAX - SCROLL_MIN);
+  scrollSpeed += (target - scrollSpeed) * 0.08;
   scrollOffset += scrollSpeed;
 }
 
-function renderBg(tick, shipVy){
-  updateScroll(shipVy ?? 0);
+function renderBg(tick, shipY){
+  updateScroll(shipY);
   ctx.fillStyle='#050510'; ctx.fillRect(0,0,W,H);
   for(const n of NEBULAS){
     const yo=((n.y + scrollOffset*n.parallax)%H+H)%H;
@@ -350,7 +442,7 @@ function drawTruck(x, y, vx, vy, invincible, tick){
   const tw=14, th=28;
 
   // ── Thrusters (drawn BEHIND ship body, in opposite direction of velocity) ──
-  drawThrusters(tw, th, vx||0, vy||0);
+  drawThrusters(tw, th);
 
   // Body (vertical rectangle, facing up)
   ctx.fillStyle='#2563eb';
@@ -390,13 +482,12 @@ function drawTruck(x, y, vx, vy, invincible, tick){
   ctx.restore();
 }
 
-function drawThrusters(tw, th, vx, vy){
+function drawThrusters(tw, th){
   const MAIN_COLOR  = 'rgba(251,191,36,'; // メインエンジン: 黄炎
   const SIDE_COLOR  = 'rgba(147,197,253,'; // サイドスラスター: 青白
 
-  // 移動方向と逆方向に噴射
-  // 上に動いている(vy<0): 下(メインエンジン)
-  if(vy < -0.3){
+  // 入力中だけ噴射、慣性移動中は止める
+  if(keys.up){
     const fl=10+Math.random()*12, fw=4+Math.random()*3;
     ctx.beginPath();
     ctx.moveTo(-fw/2, th/2);
@@ -407,7 +498,7 @@ function drawThrusters(tw, th, vx, vy){
     ctx.fill();
   }
   // 下に動いている(vy>0): 上(リトロスラスター)
-  if(vy > 0.3){
+  if(keys.down){
     const fl=5+Math.random()*7;
     ctx.beginPath();
     ctx.moveTo(-3, -th/2);
@@ -418,7 +509,7 @@ function drawThrusters(tw, th, vx, vy){
     ctx.fill();
   }
   // 右に動いている(vx>0): 左からサイドスラスター噴射
-  if(vx > 0.3){
+  if(keys.right){
     const fl=4+Math.random()*6;
     ctx.beginPath();
     ctx.moveTo(-tw/2, -4);
@@ -429,7 +520,7 @@ function drawThrusters(tw, th, vx, vy){
     ctx.fill();
   }
   // 左に動いている(vx<0): 右からサイドスラスター噴射
-  if(vx < -0.3){
+  if(keys.left){
     const fl=4+Math.random()*6;
     ctx.beginPath();
     ctx.moveTo(tw/2, -4);
@@ -439,6 +530,53 @@ function drawThrusters(tw, th, vx, vy){
     ctx.fillStyle=SIDE_COLOR+(0.5+Math.random()*0.3)+')';
     ctx.fill();
   }
+}
+
+function drawMinerals(minerals){
+  if(!minerals) return;
+  for(const m of minerals){
+    const isRare = m.kind === 'rare';
+    const fill = isRare ? 'rgba(192,132,252,0.9)' : 'rgba(251,191,36,0.92)';
+    const stroke = isRare ? 'rgba(233,213,255,0.7)' : 'rgba(254,240,138,0.7)';
+    const r = 5;
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.rotate((m.seed % 628) / 100);
+    ctx.beginPath();
+    ctx.moveTo(0, -r);
+    ctx.lineTo(r, 0);
+    ctx.lineTo(0, r);
+    ctx.lineTo(-r, 0);
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawManipulator(ship, manipLen){
+  if(!ship || !manipLen || manipLen <= 0) return;
+  const x = ship.x;
+  const y1 = ship.y - 10;
+  const y2 = ship.y - 10 - manipLen;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(226,232,240,0.8)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y1);
+  ctx.lineTo(x, y2);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(148,163,184,0.65)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x - 4, y2 - 3);
+  ctx.lineTo(x, y2);
+  ctx.lineTo(x + 4, y2 - 3);
+  ctx.stroke();
+  ctx.restore();
 }
 
 // ── Asteroid drawing (color-coded by speed tier) ─────────────────────────────
@@ -507,22 +645,19 @@ function drawProgressBar(progress, phase){
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
 function drawHUD(s){
-  ctx.fillStyle='rgba(5,5,20,0.6)'; ctx.fillRect(0,0,W-24,30);
-  ctx.textAlign='left'; ctx.font='13px DotGothic16, monospace';
-  ctx.fillStyle='#fde68a';
-  ctx.fillText(t('score_lbl')+(s.score||0).toLocaleString(), 10, 20);
-  const hearts='❤️'.repeat(s.hp)+'🖤'.repeat(Math.max(0,3-s.hp));
-  ctx.fillText(hearts, 175, 20);
-  ctx.fillStyle='#a5b4fc';
-  ctx.fillText(t('round_lbl')+s.round+'  '+t('lap_lbl')+s.lap+'  '+(s.stage+1)+'/12', 315, 20);
+  document.getElementById('hud-score').textContent = t('score_lbl')+(s.score||0).toLocaleString();
+  document.getElementById('hud-life').textContent = '❤️'.repeat(s.hp)+'🖤'.repeat(Math.max(0,3-s.hp));
+  document.getElementById('hud-round').textContent = t('round_lbl')+s.round+'  '+t('lap_lbl')+s.lap+'  '+(s.stage+1)+'/12';
 
   // Bottom bar
-  ctx.fillStyle='rgba(5,5,20,0.55)'; ctx.fillRect(0,H-26,W,26);
-  ctx.textAlign='center'; ctx.font='12px DotGothic16, monospace';
+  ctx.fillStyle='rgba(5,5,20,0.55)'; ctx.fillRect(0,H-30,W,30);
+  ctx.textAlign='center';
   const isDocking = s.phase==='docking';
+  ctx.font = isDocking ? '14px DotGothic16, monospace' : '12px DotGothic16, monospace';
   ctx.fillStyle = isDocking ? '#86efac' : '#7dd3fc';
   const label = isDocking ? t('dock_lbl')(s.to) : t('dest_lbl')(s.to);
-  ctx.fillText(label, W/2, H-8);
+  ctx.fillText(label, W/2, H-9);
+  ctx.textAlign='left';
 }
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────
@@ -536,17 +671,85 @@ function connect(){
 function send(obj){ if(ws&&ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify(obj)); }
 
 // ── Input ─────────────────────────────────────────────────────────────────────
-const keys={up:false,down:false,left:false,right:false};
+const keys={up:false,down:false,left:false,right:false,manip:false};
 document.addEventListener('keydown',e=>{
-  if(applyKey(e.code,true)) sendKeys();
+  if(applyKey(e.code,true)){ updateThrusterAudio(); sendKeys(); }
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
 });
-document.addEventListener('keyup',e=>{ if(applyKey(e.code,false)) sendKeys(); });
+document.addEventListener('keyup',e=>{ if(applyKey(e.code,false)){ updateThrusterAudio(); sendKeys(); } });
 function applyKey(code,val){
-  const m={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+  const m={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',Space:'manip',KeyJ:'manip'};
   const k=m[code]; if(k&&keys[k]!==val){keys[k]=val;return true;} return false;
 }
 function sendKeys(){ send({type:'input',keys:{...keys}}); }
+
+let audioCtx = null;
+let mainEngineOsc = null;
+let mainEngineGain = null;
+let mainEngineActive = false;
+let sideThrusterLast = {left:false,right:false,down:false};
+function ensureAudio(){
+  if(audioCtx) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if(!AC) return;
+  audioCtx = new AC();
+}
+function resumeAudio(){ if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }
+function beep(freq=880, duration=0.08, type='square', gain=0.06){
+  ensureAudio(); if(!audioCtx) return;
+  resumeAudio();
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  g.gain.setValueAtTime(gain, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+  osc.connect(g).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+function noiseBurst(duration=0.06, gain=0.045){
+  ensureAudio(); if(!audioCtx) return;
+  resumeAudio();
+  const len = Math.floor(audioCtx.sampleRate * duration);
+  const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for(let i=0;i<len;i++) data[i] = (Math.random()*2-1) * (1 - i/len);
+  const src = audioCtx.createBufferSource();
+  const g = audioCtx.createGain();
+  src.buffer = buf;
+  g.gain.value = gain;
+  src.connect(g).connect(audioCtx.destination);
+  src.start();
+}
+function setMainEngine(on){
+  ensureAudio(); if(!audioCtx) return;
+  resumeAudio();
+  if(on){
+    if(!mainEngineOsc){
+      mainEngineOsc = audioCtx.createOscillator();
+      mainEngineGain = audioCtx.createGain();
+      mainEngineOsc.type = 'sawtooth';
+      mainEngineOsc.frequency.value = 92;
+      mainEngineGain.gain.value = 0.0001;
+      mainEngineOsc.connect(mainEngineGain).connect(audioCtx.destination);
+      mainEngineOsc.start();
+    }
+    mainEngineGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    mainEngineGain.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 0.05);
+  } else if(mainEngineGain){
+    mainEngineGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    mainEngineGain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08);
+  }
+  mainEngineActive = on;
+}
+function updateThrusterAudio(){
+  setMainEngine(!!keys.up);
+  for(const k of ['left','right','down']){
+    if(keys[k] && !sideThrusterLast[k]) noiseBurst();
+    sideThrusterLast[k] = !!keys[k];
+  }
+}
 
 // ── Message handler ───────────────────────────────────────────────────────────
 let gmTimeout=null, lastEvent=null, prevPhase=null;
@@ -563,6 +766,8 @@ function handleMsg(msg){
       if(msg.event && msg.event!==lastEvent){
         if(msg.event==='damage')  showGm(pick(t('gm_hit')));
         if(msg.event==='delivery')showGm(pick(t('gm_ok')));
+        if(msg.event==='mineral_gold'){ showGm(lang==='ja'?'金鉱石ゲット！':'Gold ore get!'); beep(1040,0.07,'square',0.05); }
+        if(msg.event==='mineral_rare'){ showGm(lang==='ja'?'レアメタルきた！':'Rare metal!'); beep(1320,0.09,'triangle',0.06); }
       }
       // On first tick of docking phase
       if(msg.phase==='docking' && prevPhase!=='docking') showGm(pick(t('gm_dock')));
@@ -593,6 +798,11 @@ function showScreen(name){
   document.getElementById('screen-title').style.display   =name==='title'   ?'flex':'none';
   document.getElementById('screen-gameover').style.display=name==='gameover'?'flex':'none';
   document.getElementById('screen-clear').style.display   ='none';
+  const showTopButtons = name !== 'playing';
+  document.getElementById('btn-back').style.display = showTopButtons ? '' : 'none';
+  document.getElementById('btn-lang').style.display = showTopButtons ? '' : 'none';
+  document.getElementById('game-hud').style.display = name === 'playing' ? 'flex' : 'none';
+  touchControls.style.display = (name === 'playing' && isTouchDevice) ? 'flex' : 'none';
 }
 function showGm(text){
   const el=document.getElementById('gm-comment');
@@ -604,14 +814,14 @@ function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 function renderScoreList(id,scores){
   const el=document.getElementById(id); if(!scores.length){el.innerHTML='';return;}
   let h='<table>';
-  scores.slice(0,8).forEach((s,i)=>{h+=`<tr><td class="rank">${i+1}.</td><td>${esc(s.name)}</td><td>${s.score.toLocaleString()}</td></tr>`;});
+  scores.slice(0,5).forEach((s,i)=>{h+=`<tr><td class="rank">${i+1}.</td><td>${esc(s.name)}</td><td>${s.score.toLocaleString()}</td></tr>`;});
   h+='</table>'; el.innerHTML=h;
 }
 
 // ── Main render ───────────────────────────────────────────────────────────────
 function renderGame(s){
   const tick=s.tick||0;
-  renderBg(tick, s.ship ? s.ship.vy : 0);
+  renderBg(tick, s.ship ? s.ship.y : undefined);
   drawProgressBar(s.progress, s.phase);
 
   const pulse=0.5+0.5*Math.sin(tick*0.1);
@@ -650,6 +860,8 @@ function renderGame(s){
   }
 
   drawAsteroids(s.asteroids);
+  drawMinerals(s.minerals);
+  drawManipulator(s.ship, s.manip_len);
   drawTruck(s.ship.x, s.ship.y, s.ship.vx, s.ship.vy, s.ship.invincible, tick);
   drawHUD(s);
 }
@@ -673,7 +885,10 @@ function renderTitleBg(){
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
 document.getElementById('btn-start').addEventListener('click',()=>{
+  ensureAudio(); resumeAudio();
   const n=document.getElementById('name-input').value.trim()||(lang==='ja'?'野郎':'Trucker');
+  playerName = n;
+  localStorage.setItem('truckers_player_name', playerName);
   send({type:'start',name:n});
 });
 document.getElementById('name-input').addEventListener('keydown',e=>{
@@ -684,11 +899,16 @@ document.getElementById('btn-restart').addEventListener('click',()=>send({type:'
 // ── Virtual stick ─────────────────────────────────────────────────────────────
 const vstickArea=document.getElementById('vstick-area');
 const vstickKnob=document.getElementById('vstick-knob');
+const btnManip=document.getElementById('btn-manip');
+const actionButtons=document.getElementById('action-buttons');
+const touchControls=document.getElementById('touch-controls');
+const isTouchDevice = 'ontouchstart' in window;
 let vstickCenter={x:0,y:0};
 const STICK_MAX=44;
-if('ontouchstart' in window) vstickArea.style.display='block';
+if(isTouchDevice){ vstickArea.style.display='block'; actionButtons.style.display='flex'; }
 vstickArea.addEventListener('touchstart',e=>{
   e.preventDefault();
+  ensureAudio(); resumeAudio();
   const r=vstickArea.getBoundingClientRect();
   vstickCenter={x:r.left+r.width/2,y:r.top+r.height/2};
   updateStick(e.touches[0]);
@@ -696,7 +916,7 @@ vstickArea.addEventListener('touchstart',e=>{
 vstickArea.addEventListener('touchmove',e=>{e.preventDefault();updateStick(e.touches[0]);},{passive:false});
 document.addEventListener('touchend',()=>{
   vstickKnob.style.transform='translate(-50%,-50%)';
-  keys.up=keys.down=keys.left=keys.right=false; sendKeys();
+  keys.up=keys.down=keys.left=keys.right=false; updateThrusterAudio(); sendKeys();
 });
 function updateStick(t2){
   const dx=t2.clientX-vstickCenter.x,dy=t2.clientY-vstickCenter.y;
@@ -704,11 +924,28 @@ function updateStick(t2){
   const nx=d>0?dx/d:0,ny=d>0?dy/d:0;
   vstickKnob.style.transform=`translate(calc(-50% + ${nx*c}px),calc(-50% + ${ny*c}px))`;
   const th=0.4;
-  keys.up=ny<-th; keys.down=ny>th; keys.left=nx<-th; keys.right=nx>th; sendKeys();
+  keys.up=ny<-th; keys.down=ny>th; keys.left=nx<-th; keys.right=nx>th; updateThrusterAudio(); sendKeys();
 }
+
+['touchstart','mousedown'].forEach(ev=>{
+  btnManip.addEventListener(ev,e=>{
+    e.preventDefault();
+    ensureAudio(); resumeAudio();
+    keys.manip = true;
+    sendKeys();
+  }, {passive:false});
+});
+['touchend','touchcancel','mouseup','mouseleave'].forEach(ev=>{
+  btnManip.addEventListener(ev,e=>{
+    e.preventDefault();
+    keys.manip = false;
+    sendKeys();
+  });
+});
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 showScreen('title');
+document.getElementById('name-input').value = playerName;
 renderTitleBg();
 connect();
 </script>
