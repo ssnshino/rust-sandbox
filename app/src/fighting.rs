@@ -123,10 +123,10 @@ impl Fighter {
         let t = self.state_timer;
         if t < ATTACK_HIT_START || t > ATTACK_HIT_END { return None; }
         let (fwd, cy_off, w, h) = match self.state {
-            FightState::Punch       => (56.0, -58.0, 28.0, 16.0),
-            FightState::Kick        => (66.0, -54.0, 30.0, 18.0),
-            FightState::CrouchPunch => (50.0, -18.0, 28.0, 16.0),
-            FightState::CrouchKick  => (62.0, -14.0, 30.0, 18.0),
+            FightState::Punch       => (48.0, -58.0, 36.0, 16.0),
+            FightState::Kick        => (58.0, -54.0, 40.0, 18.0),
+            FightState::CrouchPunch => (42.0, -18.0, 34.0, 16.0),
+            FightState::CrouchKick  => (52.0, -14.0, 40.0, 18.0),
             FightState::JumpPunch   => (48.0, -50.0, 28.0, 18.0),
             FightState::JumpKick    => (60.0, -38.0, 30.0, 20.0),
             _ => return None,
@@ -201,6 +201,23 @@ fn rects_overlap(ax: f32, ay: f32, aw: f32, ah: f32, bx: f32, by: f32, bw: f32, 
     ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by
 }
 
+fn resolve_ground_overlap(a: &mut Fighter, b: &mut Fighter) {
+    if !a.on_ground() || !b.on_ground() { return; }
+    let dx = b.x - a.x;
+    let min_sep = (a.hitbox_w() + b.hitbox_w()) * 0.35;
+    if dx.abs() >= min_sep { return; }
+    let center = (a.x + b.x) * 0.5;
+    if dx >= 0.0 {
+        a.x = center - min_sep * 0.5;
+        b.x = center + min_sep * 0.5;
+    } else {
+        a.x = center + min_sep * 0.5;
+        b.x = center - min_sep * 0.5;
+    }
+    a.x = a.x.clamp(30.0, STAGE_W - 30.0);
+    b.x = b.x.clamp(30.0, STAGE_W - 30.0);
+}
+
 // ── Input ─────────────────────────────────────────────────────────────────────
 #[derive(Clone, Default)]
 struct Input { left: bool, right: bool, up: bool, down: bool, punch: bool, kick: bool, guard: bool }
@@ -231,11 +248,12 @@ struct CpuAI {
     guard: bool,
     guard_timer: u32,
     jump_atk: bool,
+    pressure: u32,
 }
 
 impl CpuAI {
     fn new(kind: CpuKind) -> Self {
-        CpuAI { kind, wait: 0, guard: false, guard_timer: 0, jump_atk: false }
+        CpuAI { kind, wait: 0, guard: false, guard_timer: 0, jump_atk: false, pressure: 0 }
     }
 
     fn tick(&mut self, cpu: &mut Fighter, px: f32, py: f32, tick: u64) {
@@ -246,7 +264,36 @@ impl CpuAI {
         let dist = dx.abs();
         cpu.facing = if dx >= 0.0 { 1 } else { -1 };
 
+        if self.pressure > 0 { self.pressure -= 1; }
         if self.wait > 0 { self.wait -= 1; cpu.state = FightState::Idle; return; }
+
+        if self.pressure >= 18 && cpu.on_ground() {
+            if dist < 76.0 && tick % 26 < 8 {
+                cpu.state = FightState::Guard;
+                return;
+            }
+            if tick % 34 < 7 {
+                cpu.vy = JUMP_VY;
+                cpu.vx = -cpu.facing as f32 * (DIAG_JUMP_VX + 0.5);
+                cpu.state = FightState::Jump;
+                self.jump_atk = false;
+                self.wait = 4;
+                return;
+            }
+            if matches!(self.kind, CpuKind::Boss | CpuKind::Jumper) && tick % 28 < 6 {
+                cpu.vy = JUMP_VY;
+                cpu.vx = cpu.facing as f32 * (DIAG_JUMP_VX + 0.75);
+                cpu.state = FightState::Jump;
+                self.jump_atk = true;
+                self.wait = 3;
+                return;
+            }
+            if dist < 98.0 {
+                cpu.state = FightState::WalkB;
+                cpu.x -= cpu.facing as f32 * WALK_SPD;
+                return;
+            }
+        }
 
         match self.kind {
             CpuKind::WeakPuncher => {
@@ -489,6 +536,7 @@ impl FightGame {
         // Physics
         self.player.step_physics();
         self.cpu.step_physics();
+        resolve_ground_overlap(&mut self.player, &mut self.cpu);
 
         // Keep facing opponent (player only, when not busy)
         if !self.player.is_attacking() && self.player.state != FightState::Hurt && !self.player.is_dead() {
@@ -506,6 +554,7 @@ impl FightGame {
                     let dmg = self.player.attack_damage();
                     self.cpu.hp = self.cpu.hp.saturating_sub(dmg);
                     self.cpu.invincible = INVINCIBLE_TICKS;
+                    self.cpu_ai.pressure = (self.cpu_ai.pressure + 14).min(40);
                     self.score += 50;
                     if self.cpu.hp == 0 {
                         self.cpu.state = FightState::Dead;
@@ -514,6 +563,8 @@ impl FightGame {
                     }
                     self.event = Some("player_hit");
                     if matches!(self.cpu_ai.kind, CpuKind::Guarder) { self.cpu_ai.guard_timer = 20; }
+                } else {
+                    self.cpu_ai.pressure = (self.cpu_ai.pressure + 6).min(40);
                 }
             }
         }
@@ -826,6 +877,7 @@ async fn game_loop_2p(
 
             f1.step_physics(); f1.x = f1.x.clamp(30.0, STAGE_W - 30.0);
             f2.step_physics(); f2.x = f2.x.clamp(30.0, STAGE_W - 30.0);
+            resolve_ground_overlap(&mut f1, &mut f2);
 
             // Hit detection
             let event = check_hit_2p(&mut f1, &mut f2, event);

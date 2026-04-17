@@ -426,6 +426,8 @@ function showOverlay(kind, msg){
 
   const isWin = kind==='stageClear';
   const isAll = msg && msg.event==='all_clear';
+  const isGameOver = !isWin || isAll;
+  if(isGameOver) gameActive = false;
   document.getElementById('ov-title').textContent  = isAll ? t('allClear') : (isWin ? t('stageClear') : t('gameover'));
   document.getElementById('ov-score').textContent  = `${t('score')}: ${msg ? msg.score : ''}`;
   if(isWin && !isAll){
