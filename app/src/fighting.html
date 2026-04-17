@@ -229,9 +229,12 @@ const GROUND = 300;
 let state = null;
 let lastScores = [];
 let highScore  = 0;
-let playerName = '';
+let playerName = localStorage.getItem('fighting_player_name') || '';
 let gameActive = false;
 let animFrame  = 0;
+let floatingScores = [];
+let floatingDamages = [];
+let bloodBursts = [];
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 let ws = null;
@@ -267,6 +270,38 @@ function handleMsg(msg){
     }
     hideWaiting();
     state = msg;
+    if(msg.hit_fx){
+      floatingScores.push({
+        x: msg.hit_fx.x,
+        y: msg.hit_fx.y - 26,
+        score: msg.hit_fx.score,
+        life: 0,
+        maxLife: 84,
+      });
+    }
+    if(msg.damage_fx){
+      floatingDamages.push({
+        x: msg.damage_fx.x,
+        y: msg.damage_fx.y,
+        damage: msg.damage_fx.damage,
+        life: 0,
+        maxLife: 24,
+      });
+      const count = 8 + Math.min(6, msg.damage_fx.damage * 2);
+      for(let i=0;i<count;i++){
+        const ang = (-1.9 + Math.random()*1.1);
+        const spd = 1.2 + Math.random()*2.1;
+        bloodBursts.push({
+          x: msg.damage_fx.x + (Math.random()*8-4),
+          y: msg.damage_fx.y + (Math.random()*6-3),
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - (Math.random()*0.8),
+          r: 2 + Math.random()*3,
+          life: 0,
+          maxLife: 18 + Math.floor(Math.random()*10),
+        });
+      }
+    }
     if(msg.event) handleEvent(msg.event);
     updateHUD();
     renderFrame();
@@ -342,6 +377,7 @@ document.getElementById('btn-2p').addEventListener('click',()=>{
 function startGame(){
   const name = document.getElementById('name-input').value.trim() || 'PLAYER';
   playerName = name;
+  localStorage.setItem('fighting_player_name', playerName);
   document.getElementById('name-screen').style.display='none';
   document.getElementById('hud-name').textContent = name;
   document.getElementById('hp-p-label').textContent = name;
@@ -499,6 +535,58 @@ function renderFrame(){
     ctx.fillStyle='rgba(255,0,0,.18)';
     ctx.fillRect(0,0,W,H);
   }
+
+  for(const fx of floatingScores){
+    const t = fx.life / fx.maxLife;
+    ctx.save();
+    ctx.globalAlpha = 1 - t;
+    ctx.fillStyle = '#fde68a';
+    ctx.strokeStyle = 'rgba(30,20,10,.68)';
+    ctx.lineWidth = 4;
+    ctx.font = 'bold 28px monospace';
+    ctx.textAlign = 'center';
+    const yy = fx.y - (t * 54);
+    const txt = `+${fx.score}`;
+    ctx.strokeText(txt, fx.x, yy);
+    ctx.fillText(txt, fx.x, yy);
+    ctx.restore();
+    fx.life += 1;
+  }
+  floatingScores = floatingScores.filter(fx => fx.life < fx.maxLife);
+
+  for(const fx of floatingDamages){
+    const t = fx.life / fx.maxLife;
+    ctx.save();
+    ctx.globalAlpha = 1 - t;
+    ctx.fillStyle = '#f87171';
+    ctx.strokeStyle = 'rgba(60,0,0,.6)';
+    ctx.lineWidth = 3;
+    ctx.font = 'bold 20px monospace';
+    ctx.textAlign = 'center';
+    const yy = fx.y - 10 - (t * 26);
+    const txt = `-${fx.damage}`;
+    ctx.strokeText(txt, fx.x, yy);
+    ctx.fillText(txt, fx.x, yy);
+    ctx.restore();
+    fx.life += 1;
+  }
+  floatingDamages = floatingDamages.filter(fx => fx.life < fx.maxLife);
+
+  for(const p of bloodBursts){
+    const t = p.life / p.maxLife;
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.18;
+    ctx.save();
+    ctx.globalAlpha = 0.7 * (1 - t);
+    ctx.fillStyle = p.life < p.maxLife * 0.4 ? '#ef4444' : '#b91c1c';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, Math.max(0.8, p.r * (1 - t * 0.45)), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    p.life += 1;
+  }
+  bloodBursts = bloodBursts.filter(p => p.life < p.maxLife);
 }
 
 // ── Stick figure ──────────────────────────────────────────────────────────────
