@@ -10,9 +10,9 @@ const TICK_MS: u64 = 33;
 const W: f32 = 540.0;
 const H: f32 = 540.0;
 
-const SHIP_MAX_SPEED: f32 = 5.0;
+const SHIP_MAX_SPEED: f32 = 5.5;
 const SHIP_ACCEL: f32 = 0.35;
-const SHIP_DRAG: f32 = 0.88;
+const SHIP_DRAG: f32 = 0.96;  // 宇宙っぽい高慣性
 const SHIP_R: f32 = 10.0;
 
 // Stage: launch phase, then cruise, then docking
@@ -65,22 +65,22 @@ struct Asteroid {
     x: f32, y: f32,
     vx: f32, vy: f32,
     radius: f32,
+    speed_tier: u8,  // 0..4 — クライアント側の色付けに使う
     seed: u32,
 }
 
-fn asteroid_base_vy(round: u32) -> f32 {
-    // faster base speed, scales with round
-    (3.0 + (round.saturating_sub(1) as f32) * 0.35).min(6.5)
-}
+// 速度5段階 × サイズ5段階 を独立ランダム
+const SPEED_TIERS: [f32; 5] = [1.4, 2.4, 3.6, 5.0, 7.0];
+const SIZE_TIERS:  [f32; 5] = [5.0, 9.0, 14.0, 20.0, 27.0];
 
-fn asteroid_max_r(round: u32) -> f32 {
-    (14.0 + (round.saturating_sub(1) as f32) * 2.0).min(28.0)
+fn round_scale(round: u32) -> f32 {
+    1.0 + (round.saturating_sub(1) as f32) * 0.22
 }
 
 fn spawn_interval(round: u32, progress: f32) -> u64 {
     let base = 28u64;
-    let round_r  = (round.saturating_sub(1) as u64) * 3;
-    let prog_r   = (progress * 16.0) as u64;
+    let round_r = (round.saturating_sub(1) as u64) * 3;
+    let prog_r  = (progress * 16.0) as u64;
     base.saturating_sub(round_r + prog_r).max(8)
 }
 
@@ -88,12 +88,19 @@ fn spawn_asteroid(tick: u64, i: usize, round: u32) -> Asteroid {
     let s0 = lcg((tick as u32).wrapping_add(i as u32 * 6991).wrapping_add(round * 54321));
     let s1 = lcg(s0); let s2 = lcg(s1); let s3 = lcg(s2); let s4 = lcg(s3);
 
-    let x = 18.0 + lcgf(s0) * (W - 36.0);
-    let vx = (lcgf(s1) - 0.5) * 1.6 * (1.0 + (round as f32 - 1.0) * 0.1);
-    let vy = (0.55 + lcgf(s2) * 0.9) * asteroid_base_vy(round);
-    let radius = 8.0 + lcgf(s3) * (asteroid_max_r(round) - 8.0);
+    let x  = 18.0 + lcgf(s0) * (W - 36.0);
+    let vx = (lcgf(s1) - 0.5) * 1.8 * (1.0 + (round as f32 - 1.0) * 0.08);
 
-    Asteroid { x, y: -radius - 2.0, vx, vy, radius, seed: s4 }
+    // Speed tier: 独立ランダム (0..4)
+    let speed_tier = (lcg(s2) % 5) as usize;
+    let vy = SPEED_TIERS[speed_tier] * round_scale(round);
+
+    // Size tier: 独立ランダム (0..4)
+    let size_tier = (lcg(s3) % 5) as usize;
+    let radius = SIZE_TIERS[size_tier];
+
+    Asteroid { x, y: -radius - 2.0, vx, vy, radius,
+               speed_tier: speed_tier as u8, seed: s4 }
 }
 
 // ── Phase ─────────────────────────────────────────────────────────────────────
@@ -298,7 +305,7 @@ impl Game {
         let to_st   = &STATIONS[(self.stage + 1) % TOTAL_STATIONS];
 
         let asteroids: Vec<_> = self.asteroids.iter().map(|a|{
-            serde_json::json!({"x":a.x,"y":a.y,"r":a.radius,"seed":a.seed})
+            serde_json::json!({"x":a.x,"y":a.y,"r":a.radius,"tier":a.speed_tier,"seed":a.seed})
         }).collect();
 
         serde_json::json!({
