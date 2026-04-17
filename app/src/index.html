@@ -87,9 +87,17 @@
         <span class="card-icon">🏯</span>
         <div>
           <div class="card-title">あやかダンジョン</div>
-          <div class="card-desc">平安京エイリアン × あやかダンジョン。穴を掘ってエイリアンを倒せ！</div>
+          <div class="card-desc">平安京エイリアン × あやかダンジョン。穴を掘ってエイリアンを倒せ！最大4人対応</div>
         </div>
-        <span class="badge new live" data-count-key="dungeon">NEW • --人</span>
+        <span class="badge live" data-count-key="dungeon">--人</span>
+      </a>
+      <a class="card" href="/fighting">
+        <span class="card-icon">🥊</span>
+        <div>
+          <div class="card-title">あやかファイティング</div>
+          <div class="card-desc">イーアルカンフー風格闘ゲーム。5ステージCPU戦、ガード・斜めジャンプあり</div>
+        </div>
+        <span class="badge new live" data-count-key="fighting">NEW • --人</span>
       </a>
     </div>
 
@@ -99,7 +107,7 @@
   </div>
 <script>
 (async()=>{
-  const labels = {pong_single:"1P", pong_2p:"2P", breakout:"1P", dungeon:"NEW"};
+  const labels = {pong_single:"1P", pong_2p:"2P", breakout:"1P", dungeon:"", fighting:"NEW"};
   async function refresh(){
     try{
       const res = await fetch("/api/status", {cache:"no-store"});
@@ -111,7 +119,8 @@
         const waitingKey = el.dataset.waitingKey;
         const waiting = waitingKey ? Number(data[waitingKey] ?? 0) : 0;
         el.classList.toggle("waiting", waiting > 0);
-        el.textContent = waiting > 0 ? `${labels[key]} • 待ちあり` : `${labels[key]} • ${count}人`;
+        const prefix = labels[key] ? labels[key] + " • " : "";
+        el.textContent = waiting > 0 ? `${prefix}待ちあり` : `${prefix}${count}人`;
       });
     }catch(_){}
   }

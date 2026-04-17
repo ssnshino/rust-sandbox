@@ -75,9 +75,14 @@ canvas{display:block;width:540px;max-width:100vw;height:auto;image-rendering:pix
     <h3 id="t-hiscore">ハイスコア</h3>
     <div id="score-list"></div>
   </div>
-  <div>
+  <div style="display:flex;gap:10px;align-items:center">
     <button class="title-btn" id="btn-1p">1人プレイ</button>
+    <div style="position:relative">
+      <button class="title-btn" id="btn-2p" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">2人対戦</button>
+      <span id="waiting-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#f59e0b;color:#1a1a2e;font-size:10px;font-weight:700;padding:2px 5px;border-radius:10px;white-space:nowrap">待機中!</span>
+    </div>
   </div>
+  <a id="btn-menu" href="/" style="color:#aaa;font-size:13px;text-decoration:none;padding:6px 14px;border:1px solid rgba(255,255,255,.15);border-radius:6px;background:rgba(255,255,255,.06)">← メニューへ</a>
   <button id="btn-lang">🇯🇵 日本語 / 🇬🇧 English</button>
 </div>
 
@@ -135,7 +140,8 @@ canvas{display:block;width:540px;max-width:100vw;height:auto;image-rendering:pix
 const I18N = {
   ja: {
     title:'あやかファイティング', sub:'〜イーアル拳法〜',
-    hiscore:'ハイスコア', btn1p:'1人プレイ',
+    hiscore:'ハイスコア', btn1p:'1人プレイ', btn2p:'2人対戦',
+    waiting:'対戦相手を待っています…',
     nameLabel:'なまえをいれてね！', nameOk:'OK！',
     punch:'PUNCH', kick:'KICK',
     stage:'ステージ', score:'スコア', high:'ハイ',
@@ -144,6 +150,9 @@ const I18N = {
     retryBtn:'もう一度！', titleBtn:'タイトルへ',
     bonus:'ボーナス', ssTitle:'ハイスコア！', ssLabel:'なまえをいれてね',
     ssOk:'登録！',
+    matchWin:'WIN!!', matchLose:'LOSE...',
+    roundWin:'ラウンド勝利！', roundLose:'ラウンド敗北…',
+    menuBtn:'← メニューへ',
     hpP:'あやか', hpCPrefix:'VS',
     GM: {
       stage_start:['ファイト！','いくよっ！！','まけないよ！'],
@@ -159,7 +168,8 @@ const I18N = {
   },
   en: {
     title:'Ayaka Fighting', sub:'~Ee-Ar Kung Fu~',
-    hiscore:'HIGH SCORES', btn1p:'1 PLAYER',
+    hiscore:'HIGH SCORES', btn1p:'1 PLAYER', btn2p:'2P BATTLE',
+    waiting:'Waiting for opponent...',
     nameLabel:'Enter your name!', nameOk:'OK!',
     punch:'PUNCH', kick:'KICK',
     stage:'STAGE', score:'SCORE', high:'HIGH',
@@ -168,6 +178,9 @@ const I18N = {
     retryBtn:'RETRY', titleBtn:'TITLE',
     bonus:'BONUS', ssTitle:'HIGH SCORE!', ssLabel:'Enter your name',
     ssOk:'SUBMIT',
+    matchWin:'WIN!!', matchLose:'LOSE...',
+    roundWin:'ROUND WIN!', roundLose:'ROUND LOST...',
+    menuBtn:'← MENU',
     hpP:'AYAKA', hpCPrefix:'VS',
     GM: {
       stage_start:['FIGHT!','Let\'s go!!','I won\'t lose!'],
@@ -190,11 +203,13 @@ function applyLang(){
   document.getElementById('t-sub').textContent    = t('sub');
   document.getElementById('t-hiscore').textContent= t('hiscore');
   document.getElementById('btn-1p').textContent   = t('btn1p');
+  document.getElementById('btn-2p').textContent   = t('btn2p');
   document.getElementById('ns-label').textContent = t('nameLabel');
   document.getElementById('name-ok').textContent  = t('nameOk');
   document.getElementById('btn-punch').innerHTML  = `👊<br>${t('punch')}`;
   document.getElementById('btn-kick').innerHTML   = `🦵<br>${t('kick')}`;
   document.getElementById('hp-p-label').textContent = t('hpP');
+  document.getElementById('btn-menu').textContent = t('menuBtn');
 }
 
 document.getElementById('btn-lang').addEventListener('click',()=>{
@@ -220,11 +235,15 @@ let animFrame  = 0;
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 let ws = null;
-function connect(){
+let gameMode = '1p'; // '1p' or '2p'
+function connect(mode){
+  gameMode = mode || '1p';
   const proto = location.protocol==='https:'?'wss':'ws';
-  ws = new WebSocket(`${proto}://${location.host}/ws/fighting`);
+  const path  = gameMode === '2p' ? '/ws/fighting/2p' : '/ws/fighting';
+  if(ws) { ws.onclose = null; ws.close(); }
+  ws = new WebSocket(`${proto}://${location.host}${path}`);
   ws.onmessage = e => handleMsg(JSON.parse(e.data));
-  ws.onclose   = () => setTimeout(connect, 2000);
+  ws.onclose   = () => { if(gameMode==='1p') setTimeout(()=>connect('1p'), 2000); };
 }
 function send(obj){ if(ws && ws.readyState===1) ws.send(JSON.stringify(obj)); }
 
@@ -233,14 +252,34 @@ function handleMsg(msg){
     lastScores = msg.scores||[];
     highScore  = lastScores.length ? Math.max(...lastScores.map(s=>s.score)) : 0;
     renderScoreList(lastScores);
-    showTitle();
+    if(!gameActive) showTitle();
   } else if(msg.type==='state'){
+    if(msg.phase==='waiting'){
+      showWaiting(); return;
+    }
+    if(msg.phase==='name_input'){
+      // 2P接続直後 — 名前入力画面へ
+      return;
+    }
+    if(msg.phase==='opponent_left'){
+      setGm(lang==='ja'?'相手が切断しました…':'Opponent disconnected...');
+      showOverlay('gameover', {score:0}); return;
+    }
+    hideWaiting();
     state = msg;
     if(msg.event) handleEvent(msg.event);
     updateHUD();
     renderFrame();
-    if(msg.phase==='stage_clear') showOverlay('stageClear', msg);
-    if(msg.phase==='gameover')    showOverlay('gameover',   msg);
+    if(msg.mode==='2p'){
+      if(msg.phase==='win')              { showOverlay('match_win',  msg); gameActive=false; }
+      else if(msg.phase==='lose')        { showOverlay('match_lose', msg); gameActive=false; }
+      else if(msg.phase==='round_win')     showRoundResult(true,  msg);
+      else if(msg.phase==='round_lose')    showRoundResult(false, msg);
+      else if(msg.phase==='playing')       document.getElementById('overlay').style.display='none';
+    } else {
+      if(msg.phase==='stage_clear') showOverlay('stageClear', msg);
+      if(msg.phase==='gameover')    showOverlay('gameover',   msg);
+    }
   } else if(msg.type==='submitted'){
     lastScores = msg.scores||[];
     highScore  = lastScores.length ? Math.max(...lastScores.map(s=>s.score)) : 0;
@@ -252,10 +291,30 @@ function handleMsg(msg){
 // ── Title ─────────────────────────────────────────────────────────────────────
 function showTitle(){
   gameActive = false;
+  state = null; // 古いゲーム状態をクリア
   document.getElementById('title-screen').style.display='flex';
   document.getElementById('overlay').style.display='none';
-  document.getElementById('submit-screen').style.display='none';
+  hideWaiting();
   renderScoreList(lastScores);
+  // 2Pモード終了後は必ず 1P 接続に切り替える
+  // （サーバー側は run_2p がソケットを閉じないため readyState は OPEN のままになる）
+  if(gameMode === '2p'){
+    connect('1p'); // connect() 内で古い WS を閉じてから新規接続
+  } else if(!ws || ws.readyState !== WebSocket.OPEN){
+    connect('1p');
+  }
+}
+function showWaiting(){
+  document.getElementById('title-screen').style.display='none';
+  document.getElementById('ov-title').textContent = t('waiting');
+  document.getElementById('ov-sub').textContent   = '';
+  document.getElementById('ov-score').textContent = '';
+  document.getElementById('ov-btn').style.display = 'none';
+  document.getElementById('overlay').style.display='flex';
+}
+function hideWaiting(){
+  document.getElementById('ov-btn').style.display = '';
+  document.getElementById('overlay').style.display='none';
 }
 function renderScoreList(scores){
   const el = document.getElementById('score-list');
@@ -267,6 +326,14 @@ function renderScoreList(scores){
 
 // ── Name input ────────────────────────────────────────────────────────────────
 document.getElementById('btn-1p').addEventListener('click',()=>{
+  gameMode = '1p';
+  document.getElementById('title-screen').style.display='none';
+  document.getElementById('name-screen').style.display='flex';
+  document.getElementById('name-input').value = playerName;
+  document.getElementById('name-input').focus();
+});
+document.getElementById('btn-2p').addEventListener('click',()=>{
+  gameMode = '2p';
   document.getElementById('title-screen').style.display='none';
   document.getElementById('name-screen').style.display='flex';
   document.getElementById('name-input').value = playerName;
@@ -280,7 +347,13 @@ function startGame(){
   document.getElementById('hp-p-label').textContent = name;
   gameActive = true;
   startRenderLoop();
-  send({type:'start', profile:{name}});
+  if(gameMode === '2p'){
+    connect('2p');
+    ws.onopen = () => send({type:'start', profile:{name}});
+  } else {
+    // 既存の接続をそのまま使う（再接続すると title が来てしまう）
+    send({type:'start', profile:{name}});
+  }
 }
 document.getElementById('name-ok').addEventListener('click', startGame);
 document.getElementById('name-input').addEventListener('keydown', e=>{ if(e.key==='Enter') startGame(); });
@@ -291,17 +364,38 @@ function updateHUD(){
   const s = state;
   const hi = Math.max(highScore, s.score);
   document.getElementById('hud-score').textContent = `${t('score')} ${s.score}`;
-  document.getElementById('hud-stage').textContent = `${t('stage')} ${s.stage}`;
-  document.getElementById('hud-high').textContent  = `${t('high')} ${hi}`;
-  const cpuName = lang==='ja' ? s.cpu_name : s.cpu_name_en;
-  document.getElementById('hp-c-label').textContent = `VS ${cpuName}`;
-  if(s.player){
-    const pr = s.player.hp / s.player.max_hp * 100;
-    document.getElementById('hp-p').style.width = Math.max(0,pr).toFixed(1)+'%';
+  if(s.mode==='2p'){
+    const w = s.my_wins||0;
+    document.getElementById('hud-stage').textContent = '●'.repeat(w) + '○'.repeat(2-w);
+  } else {
+    document.getElementById('hud-stage').textContent = `${t('stage')} ${s.stage}`;
   }
-  if(s.cpu){
-    const cr = s.cpu.hp / s.cpu.max_hp * 100;
-    document.getElementById('hp-c').style.width = Math.max(0,cr).toFixed(1)+'%';
+  document.getElementById('hud-high').textContent = `${t('high')} ${hi}`;
+
+  // 2P P2: left bar = P1 (opponent), right bar = P2 (me)
+  const swapBars = s.mode==='2p' && s.role==='p2';
+  const leftFighter  = swapBars ? s.cpu    : s.player;
+  const rightFighter = swapBars ? s.player : s.cpu;
+  const leftName  = swapBars ? (s.cpu_name||'P1')  : (playerName||t('hpP'));
+  const rightName = swapBars ? (playerName||t('hpP')) : `VS ${lang==='ja'?s.cpu_name:s.cpu_name_en}`;
+
+  document.getElementById('hp-p-label').textContent = leftName;
+  document.getElementById('hp-c-label').textContent = rightName;
+  // 自分側を常に緑、相手側を常に赤にする
+  const barL = document.getElementById('hp-p');
+  const barR = document.getElementById('hp-c');
+  const leftIsMe = !swapBars;
+  barL.style.background = leftIsMe
+    ? 'linear-gradient(90deg,#22c55e,#16a34a)'
+    : 'linear-gradient(90deg,#ef4444,#dc2626)';
+  barR.style.background = leftIsMe
+    ? 'linear-gradient(90deg,#ef4444,#dc2626)'
+    : 'linear-gradient(90deg,#22c55e,#16a34a)';
+  if(leftFighter){
+    barL.style.width = Math.max(0, leftFighter.hp/leftFighter.max_hp*100).toFixed(1)+'%';
+  }
+  if(rightFighter){
+    barR.style.width = Math.max(0, rightFighter.hp/rightFighter.max_hp*100).toFixed(1)+'%';
   }
 }
 
@@ -315,21 +409,36 @@ function handleEvent(ev){
 // ── Overlay ───────────────────────────────────────────────────────────────────
 function showOverlay(kind, msg){
   const ov = document.getElementById('overlay');
+  const btn = document.getElementById('ov-btn');
+
+  // 2P match result
+  if(kind==='match_win'||kind==='match_lose'){
+    const isWin = kind==='match_win';
+    document.getElementById('ov-title').textContent = isWin ? t('matchWin') : t('matchLose');
+    document.getElementById('ov-sub').textContent   = '';
+    document.getElementById('ov-score').textContent = '';
+    btn.style.display = '';
+    btn.textContent = t('titleBtn');
+    btn.onclick = ()=>{ ov.style.display='none'; showTitle(); };
+    ov.style.display='flex';
+    return;
+  }
+
   const isWin = kind==='stageClear';
   const isAll = msg && msg.event==='all_clear';
   document.getElementById('ov-title').textContent  = isAll ? t('allClear') : (isWin ? t('stageClear') : t('gameover'));
   document.getElementById('ov-score').textContent  = `${t('score')}: ${msg ? msg.score : ''}`;
-  const btn = document.getElementById('ov-btn');
   if(isWin && !isAll){
+    btn.style.display = '';
     btn.textContent = t('nextBtn');
     btn.onclick = ()=>{ ov.style.display='none'; send({type:'next'}); };
   } else {
+    btn.style.display = '';
     btn.textContent = t('retryBtn');
     btn.onclick = ()=>{
       ov.style.display='none';
       const score = msg ? msg.score : 0;
       if(score > 0 && (lastScores.length < 5 || score > (lastScores[lastScores.length-1]?.score ?? 0))){
-        // 名前は入力済みなので自動登録
         send({type:'submit', name: playerName||'PLAYER', score});
       } else {
         send({type:'restart'});
@@ -337,6 +446,17 @@ function showOverlay(kind, msg){
     };
   }
   document.getElementById('ov-sub').textContent = '';
+  ov.style.display='flex';
+}
+
+function showRoundResult(won, msg){
+  const ov = document.getElementById('overlay');
+  document.getElementById('ov-title').textContent = won ? t('roundWin') : t('roundLose');
+  const w = msg.my_wins||0;
+  const l = msg.opp_wins||0;
+  document.getElementById('ov-sub').textContent   = '●'.repeat(w)+'○'.repeat(2-w) + '  :  ' + '●'.repeat(l)+'○'.repeat(2-l);
+  document.getElementById('ov-score').textContent = '';
+  document.getElementById('ov-btn').style.display = 'none';
   ov.style.display='flex';
 }
 
@@ -570,9 +690,26 @@ setInterval(()=>{
   send({type:'input', ...input});
 },33);
 
+// ── Waiting badge ─────────────────────────────────────────────────────────────
+function updateWaitingBadge(){
+  fetch('/api/status').then(r=>r.json()).then(d=>{
+    const badge = document.getElementById('waiting-badge');
+    if(d.fighting_2p_waiting > 0){
+      badge.textContent = lang==='ja' ? '待機中!' : 'WAITING!';
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  }).catch(()=>{});
+}
+// Poll every 3 seconds while on title
+setInterval(()=>{ if(!gameActive) updateWaitingBadge(); }, 3000);
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 applyLang();
-connect();
+updateWaitingBadge();
+// タイトルスコアを取得するため初回は1P接続で起動
+connect('1p');
 </script>
 </body>
 </html>
