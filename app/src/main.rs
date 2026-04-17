@@ -4,6 +4,7 @@ mod scores;
 mod dungeon_gen;
 mod dungeon;
 mod fighting;
+mod truckers;
 
 use axum::{
     extract::{ws::WebSocketUpgrade, State},
@@ -21,11 +22,13 @@ struct AppState {
     scores:              Arc<Mutex<scores::ScoreBoard>>,
     dungeon_scores:      Arc<Mutex<scores::ScoreBoard>>,
     fighting_scores:     Arc<Mutex<scores::ScoreBoard>>,
+    truckers_scores:     Arc<Mutex<scores::ScoreBoard>>,
     pong_single_players: Arc<AtomicUsize>,
     pong_2p_players:     Arc<AtomicUsize>,
     breakout_players:    Arc<AtomicUsize>,
     dungeon_players:     Arc<AtomicUsize>,
     fighting_players:    Arc<AtomicUsize>,
+    truckers_players:    Arc<AtomicUsize>,
     dungeon_room:        dungeon::SharedRoom,
     fight_room:          fighting::SharedFightRoom,
 }
@@ -38,11 +41,13 @@ async fn main() {
         scores:              Arc::new(Mutex::new(scores::ScoreBoard::load("breakout_scores.json"))),
         dungeon_scores:      Arc::clone(&dungeon_scores),
         fighting_scores:     Arc::new(Mutex::new(scores::ScoreBoard::load("fighting_scores.json"))),
+        truckers_scores:     Arc::new(Mutex::new(scores::ScoreBoard::load("truckers_scores.json"))),
         pong_single_players: Arc::new(AtomicUsize::new(0)),
         pong_2p_players:     Arc::new(AtomicUsize::new(0)),
         breakout_players:    Arc::new(AtomicUsize::new(0)),
         dungeon_players:     Arc::new(AtomicUsize::new(0)),
         fighting_players:    Arc::new(AtomicUsize::new(0)),
+        truckers_players:    Arc::new(AtomicUsize::new(0)),
         dungeon_room:        Arc::new(Mutex::new(dungeon::Room::new(dungeon_scores))),
         fight_room:          Arc::new(fighting::FightRoom::new()),
     };
@@ -60,6 +65,8 @@ async fn main() {
         .route("/fighting",            get(fighting_page))
         .route("/ws/fighting",         get(ws_fighting))
         .route("/ws/fighting/2p",      get(ws_fighting_2p))
+        .route("/truckers",            get(truckers_page))
+        .route("/ws/truckers",         get(ws_truckers))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -75,6 +82,7 @@ async fn dungeon_page()  -> Html<String> {
     Html(include_str!("dungeon.html").replace("__BUILD_HASH__", &build_hash))
 }
 async fn fighting_page() -> Html<&'static str> { Html(include_str!("fighting.html")) }
+async fn truckers_page() -> Html<&'static str> { Html(include_str!("truckers.html")) }
 
 async fn ws_1p(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl IntoResponse {
     ws.on_upgrade(move |socket| game::run_1p(socket, s.pong_single_players))
@@ -94,6 +102,9 @@ async fn ws_fighting(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl In
 async fn ws_fighting_2p(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl IntoResponse {
     ws.on_upgrade(move |socket| fighting::run_2p(socket, s.fighting_scores, s.fighting_players, s.fight_room))
 }
+async fn ws_truckers(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| truckers::run(socket, s.truckers_scores, s.truckers_players))
+}
 
 async fn get_status(State(s): State<AppState>) -> impl IntoResponse {
     let pong_2p_waiting  = s.pong.waiting_count().await;
@@ -106,6 +117,7 @@ async fn get_status(State(s): State<AppState>) -> impl IntoResponse {
         "dungeon":          s.dungeon_players.load(Ordering::Relaxed),
         "fighting":         s.fighting_players.load(Ordering::Relaxed),
         "fighting_2p_waiting": fight_2p_waiting,
+        "truckers":         s.truckers_players.load(Ordering::Relaxed),
     }))
 }
 
