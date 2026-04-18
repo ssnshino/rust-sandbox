@@ -18,6 +18,12 @@ const LAUNCH_TARGET_Y: f32 = H * 0.67;
 
 const LAUNCH_TICKS: u64 = 90;
 const CRUISE_TICKS: u64 = 1100;
+const BOOSTER_TRIGGER_PCT: f32 = 0.14;
+const BOOSTER_Y: f32 = 185.0;
+const BOOSTER_X_PERFECT: f32 = 6.0;
+const BOOSTER_X_GOOD: f32 = 14.0;
+const BOOSTER_X_OK: f32 = 24.0;
+const BOOSTER_SCROLL_BONUS_Y: f32 = 1.85;
 
 const DOCK_Y_R: f32 = 35.0;  // 縦方向のドッキング許容範囲
 const DOCK_X_PERFECT: f32 = 5.0;  // 完璧ドッキング
@@ -33,6 +39,9 @@ const SCORE_HP_BONUS: u32 = 200;
 const SCORE_DOCK_PERFECT: u32 = 2000;
 const SCORE_DOCK_GOOD: u32 = 1000;
 const SCORE_DOCK_OK: u32 = 400;
+const SCORE_BOOSTER_PERFECT: u32 = 1200;
+const SCORE_BOOSTER_GOOD: u32 = 700;
+const SCORE_BOOSTER_OK: u32 = 300;
 const TOTAL_STATIONS: usize = 12;
 
 // マニピュレーター
@@ -86,6 +95,10 @@ fn spawn_interval(round: u32, progress: f32) -> u64 {
     base.saturating_sub(rr + pr).max(8)
 }
 
+fn spawn_interval_boosted(round: u32, progress: f32) -> u64 {
+    spawn_interval(round, progress).saturating_sub(5).max(6)
+}
+
 fn spawn_asteroid(tick: u64, i: usize, round: u32) -> Asteroid {
     let s0 = lcg((tick as u32).wrapping_add(i as u32 * 6991).wrapping_add(round * 54321));
     let s1=lcg(s0); let s2=lcg(s1); let s3=lcg(s2); let s4=lcg(s3);
@@ -122,14 +135,14 @@ fn spawn_mineral(tick: u64, id: u32, round: u32) -> Mineral {
 
 // ── Phase ─────────────────────────────────────────────────────────────────────
 #[derive(PartialEq, Clone, Copy)]
-enum Phase { Launching, Playing, Docking, StageClear, LapClear, GameOver }
+enum Phase { Launching, Playing, BoosterDocking, Docking, StageClear, LapClear, GameOver }
 
 // ── Game ──────────────────────────────────────────────────────────────────────
 struct Game {
     sx: f32, sy: f32, svx: f32, svy: f32,
     hp: u8, invincible: u32,
     score: u32, round: u32, stage: usize, lap: u32,
-    airlock_x: f32, depart_x: f32,
+    airlock_x: f32, depart_x: f32, booster_x: f32,
     asteroids: Vec<Asteroid>,
     minerals: Vec<Mineral>,
     mineral_next_id: u32,
@@ -138,6 +151,10 @@ struct Game {
     phase: Phase, phase_timer: u32,
     event: Option<&'static str>,
     dock_precision: u8,  // 0=perfect,1=good,2=ok (StageClear後に使う)
+    booster_precision: u8,
+    booster_enabled: bool,
+    booster_attached: bool,
+    booster_done: bool,
     keys_up: bool, keys_down: bool, keys_left: bool, keys_right: bool,
     keys_manip: bool,
 }
@@ -148,12 +165,12 @@ impl Game {
             sx: W/2.0, sy: DEPART_Y, svx:0.0, svy:0.0,
             hp: SHIP_HP, invincible:0,
             score:0, round:1, stage:0, lap:1,
-            airlock_x: pick_airlock_x(0,1), depart_x: W/2.0,
+            airlock_x: pick_airlock_x(0,1), depart_x: W/2.0, booster_x: pick_booster_x(0,1),
             asteroids: Vec::new(), minerals: Vec::new(), mineral_next_id:0,
             manip_len:0.0,
             tick:0, stage_tick:0,
             phase: Phase::Launching, phase_timer:0,
-            event: None, dock_precision:2,
+            event: None, dock_precision:2, booster_precision:2, booster_enabled:false, booster_attached:false, booster_done:false,
             keys_up:false, keys_down:false, keys_left:false, keys_right:false, keys_manip:false,
         }
     }
@@ -239,7 +256,12 @@ impl Game {
 
         // ── Spawn asteroids (playing only) ──
         if self.phase == Phase::Playing {
-            if self.tick % spawn_interval(self.round, progress) == 0 {
+            let interval = if self.booster_attached {
+                spawn_interval_boosted(self.round, progress)
+            } else {
+                spawn_interval(self.round, progress)
+            };
+            if self.tick % interval == 0 {
                 self.asteroids.push(spawn_asteroid(self.tick, self.asteroids.len(), self.round));
             }
             // Spawn minerals
@@ -253,7 +275,8 @@ impl Game {
         let mut i = 0;
         while i < self.asteroids.len() {
             let a = &mut self.asteroids[i];
-            a.x += a.vx; a.y += a.vy;
+            a.x += a.vx;
+            a.y += a.vy + if self.booster_attached { BOOSTER_SCROLL_BONUS_Y } else { 0.0 };
             if a.x < -a.radius-10.0 { a.x += W+a.radius*2.0; }
             if a.x > W+a.radius+10.0 { a.x -= W+a.radius*2.0; }
             if a.y > H+a.radius+20.0 { self.asteroids.swap_remove(i); } else { i+=1; }
@@ -263,14 +286,15 @@ impl Game {
         let mut i = 0;
         while i < self.minerals.len() {
             let m = &mut self.minerals[i];
-            m.x += m.vx; m.y += m.vy;
+            m.x += m.vx;
+            m.y += m.vy + if self.booster_attached { BOOSTER_SCROLL_BONUS_Y * 0.9 } else { 0.0 };
             if m.x < -MINERAL_R-10.0 { m.x += W+MINERAL_R*2.0; }
             if m.x > W+MINERAL_R+10.0 { m.x -= W+MINERAL_R*2.0; }
             if m.y > H+MINERAL_R+20.0 { self.minerals.swap_remove(i); } else { i+=1; }
         }
 
         // ── Collision (asteroids) ──
-        if self.invincible == 0 && self.phase == Phase::Playing {
+        if self.invincible == 0 && matches!(self.phase, Phase::Playing | Phase::BoosterDocking) {
             for a in &self.asteroids {
                 let dx=self.sx-a.x; let dy=self.sy-a.y;
                 if (dx*dx+dy*dy).sqrt() < SHIP_R+a.radius {
@@ -280,6 +304,35 @@ impl Game {
                     if self.hp == 0 { self.phase=Phase::GameOver; self.event=Some("gameover"); return; }
                     break;
                 }
+            }
+        }
+
+        // ── Enter booster docking phase ──
+        if self.phase == Phase::Playing && self.booster_enabled && !self.booster_done && progress >= BOOSTER_TRIGGER_PCT {
+            self.phase = Phase::BoosterDocking;
+            self.asteroids.clear();
+            self.minerals.clear();
+            self.event = Some("booster_call");
+        }
+
+        // ── Check booster docking ──
+        if self.phase == Phase::BoosterDocking {
+            let dx = (self.sx - self.booster_x).abs();
+            let dy = (self.sy - BOOSTER_Y).abs();
+            if dy < DOCK_Y_R && dx < BOOSTER_X_OK {
+                let (bonus, precision) = if dx < BOOSTER_X_PERFECT {
+                    (SCORE_BOOSTER_PERFECT * self.round, 0u8)
+                } else if dx < BOOSTER_X_GOOD {
+                    (SCORE_BOOSTER_GOOD * self.round, 1u8)
+                } else {
+                    (SCORE_BOOSTER_OK * self.round, 2u8)
+                };
+                self.score += bonus;
+                self.booster_precision = precision;
+                self.booster_attached = true;
+                self.booster_done = true;
+                self.event = Some("booster_attach");
+                self.phase = if progress >= 0.80 { Phase::Docking } else { Phase::Playing };
             }
         }
 
@@ -309,11 +362,11 @@ impl Game {
                     self.score += hp_bonus;
                     self.event = Some("lap_clear");
                     self.phase = Phase::LapClear;
-                    self.phase_timer = 130;
+                    self.phase_timer = 300;
                 } else {
                     self.event = Some("delivery");
                     self.phase = Phase::StageClear;
-                    self.phase_timer = 70;
+                    self.phase_timer = 300;
                 }
             }
         }
@@ -327,17 +380,23 @@ impl Game {
         }
         self.depart_x  = self.airlock_x;
         self.airlock_x = pick_airlock_x(self.stage as u32, self.round);
+        self.booster_x = pick_booster_x(self.stage as u32, self.round);
         self.sx = self.depart_x; self.sy = DEPART_Y;
         self.svx = 0.0; self.svy = 0.0;
         self.asteroids.clear(); self.minerals.clear();
         self.manip_len = 0.0; self.invincible = 0; self.stage_tick = 0;
         self.phase = Phase::Launching; self.event = None;
+        self.booster_enabled = should_booster_stage(self.stage);
+        self.booster_attached = false;
+        self.booster_done = false;
+        self.booster_precision = 2;
     }
 
     fn to_json(&self) -> String {
         let phase_str = match self.phase {
             Phase::Launching  => "launching",
             Phase::Playing    => "playing",
+            Phase::BoosterDocking => "booster_docking",
             Phase::Docking    => "docking",
             Phase::StageClear => "stage_clear",
             Phase::LapClear   => "lap_clear",
@@ -347,6 +406,7 @@ impl Game {
         let progress = (ct as f32 / CRUISE_TICKS as f32 * 100.0).min(100.0);
         let from_st = &STATIONS[self.stage % TOTAL_STATIONS];
         let to_st   = &STATIONS[(self.stage + 1) % TOTAL_STATIONS];
+        let next_stage_booster = self.phase == Phase::StageClear && should_booster_stage(self.stage + 1);
 
         let asteroids: Vec<_> = self.asteroids.iter().map(|a|
             serde_json::json!({"x":a.x,"y":a.y,"r":a.radius,"tier":a.speed_tier,"seed":a.seed})
@@ -366,13 +426,19 @@ impl Game {
             "manip_len": self.manip_len,
             "hp":self.hp,"score":self.score,"round":self.round,"stage":self.stage,"lap":self.lap,
             "progress":progress,"stage_tick":self.stage_tick,
-            "airlock_x":self.airlock_x,"depart_x":self.depart_x,
+            "airlock_x":self.airlock_x,"depart_x":self.depart_x,"booster_x":self.booster_x,
             "from":{"name_ja":from_st.0,"name_en":from_st.1,"symbol":from_st.2},
             "to":  {"name_ja":to_st.0,  "name_en":to_st.1,  "symbol":to_st.2},
             "asteroids":asteroids,"minerals":minerals,
             "event":self.event,"tick":self.tick,
             "dock_precision":self.dock_precision,
+            "booster_precision":self.booster_precision,
+            "booster_enabled":self.booster_enabled,
+            "booster_attached":self.booster_attached,
+            "fast_scroll":self.booster_attached,
+            "next_stage_booster":next_stage_booster,
             "dock_x_ok": DOCK_X_OK,
+            "booster_x_ok": BOOSTER_X_OK,
         }).to_string()
     }
 }
@@ -380,6 +446,15 @@ impl Game {
 fn pick_airlock_x(stage: u32, round: u32) -> f32 {
     let seed = lcg(stage.wrapping_mul(1009).wrapping_add(round * 997));
     90.0 + lcgf(seed) * (W - 180.0)
+}
+
+fn pick_booster_x(stage: u32, round: u32) -> f32 {
+    let seed = lcg(stage.wrapping_mul(1619).wrapping_add(round * 1237).wrapping_add(77));
+    100.0 + lcgf(seed) * (W - 200.0)
+}
+
+fn should_booster_stage(stage: usize) -> bool {
+    stage > 0 && (stage + 1) % 3 == 1
 }
 
 // ── Input ─────────────────────────────────────────────────────────────────────
@@ -396,6 +471,7 @@ enum ClientMsg {
     Input { keys: Keys },
     Start { #[serde(default)] name: String },
     Restart,
+    Continue,
 }
 
 fn score_list(scores: &Arc<Mutex<ScoreBoard>>) -> serde_json::Value {
@@ -470,6 +546,11 @@ async fn game_session(socket: &mut WebSocket, scores: &Arc<Mutex<ScoreBoard>>, p
                             game.keys_left  = keys.left;
                             game.keys_right = keys.right;
                             game.keys_manip = keys.manip;
+                        }
+                        if let Ok(ClientMsg::Continue) = serde_json::from_str(&txt) {
+                            if matches!(game.phase, Phase::StageClear | Phase::LapClear) {
+                                game.phase_timer = 0;
+                            }
                         }
                     }
                     None | Some(Err(_)) | Some(Ok(Message::Close(_))) => return true,
