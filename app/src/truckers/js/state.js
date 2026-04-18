@@ -55,8 +55,11 @@ export function setPlayerName(nextName) {
 
 export const canvas = document.getElementById("canvas");
 export const ctx = canvas.getContext("2d");
-export const W = 540;
-export const H = 540;
+//export const W = 540;
+//export const H = 540;
+// @@@ 202604118 canvas size change 540 -> 360, 540 -> 600
+export const W = 360;
+export const H = 600;
 export const BOOSTER_Y = 185;
 
 export const keys = {

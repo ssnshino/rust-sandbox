@@ -12,25 +12,39 @@ function lcgf(s) {
   return (lcg(s) >>> 0) / 4294967295;
 }
 
+const BG_SEED = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+
 const STAR_LAYERS = [
   Array.from({ length: 80 }, (_, i) => {
-    const s = lcg(i * 1009 + 1);
+    const s = lcg(BG_SEED ^ (i * 1009 + 1));
     return { x: lcgf(s) * W, y: lcgf(lcg(s)) * H, r: 0.55, parallax: 0.5 };
   }),
   Array.from({ length: 40 }, (_, i) => {
-    const s = lcg(i * 7919 + 2);
+    const s = lcg(BG_SEED ^ (i * 7919 + 2));
     return { x: lcgf(s) * W, y: lcgf(lcg(s)) * H, r: 1.0, parallax: 1.0 };
   }),
 ];
 
 const NEBULAS = Array.from({ length: 6 }, (_, i) => {
-  const s = lcg(i * 31337 + 3);
+  const s = lcg(BG_SEED ^ (i * 31337 + 3));
   return {
     x: lcgf(s) * W,
     y: lcgf(lcg(s)) * H,
     r: 55 + lcgf(lcg(s)) * 90,
     hue: 200 + lcgf(lcg(lcg(s))) * 70,
     parallax: 0.18,
+  };
+});
+
+const TITLE_SYMBOLS = Array.from({ length: 12 }, (_, i) => {
+  const s = lcg(BG_SEED ^ (i * 12347 + 77));
+  return {
+    symbol: "♈♉♊♋♌♍♎♏♐♑♒♓"[i],
+    x: 24 + lcgf(s) * (W - 48),
+    y0: lcgf(lcg(s)) * H,
+    speed: 0.2 + lcgf(lcg(lcg(s))) * 0.8,
+    alphaPhase: lcgf(lcg(lcg(lcg(s)))) * Math.PI * 2,
+    size: 15 + lcgf(lcg(lcg(lcg(lcg(s))))) * 10,
   };
 });
 
@@ -565,11 +579,15 @@ export function renderGame(state) {
     state.phase === "booster_docking" ||
     (state.booster_enabled && state.booster_attached && (state.progress || 0) < 40)
   ) {
-    drawStation(270, BOOSTER_Y, "", "", true, state.booster_x, pulse, "booster");
+//    drawStation(270, BOOSTER_Y, "", "", true, state.booster_x, pulse, "booster");
+    // @@@ 20260418 size change 270->180 (canvas w540->w360)
+    drawStation(180, BOOSTER_Y, "", "", true, state.booster_x, pulse, "booster");
   }
 
   if (state.phase === "docking" || (state.progress || 0) >= 78) {
-    drawStation(270, 30, state.to.symbol, destinationName, true, state.airlock_x, pulse);
+//    drawStation(270, 30, state.to.symbol, destinationName, true, state.airlock_x, pulse);
+    // @@@ 20260418 size change 270->180 (canvas w540->w360)
+    drawStation(180, 30, state.to.symbol, destinationName, true, state.airlock_x, pulse);
   }
 
   drawAsteroids(state.asteroids);
@@ -584,13 +602,11 @@ export function renderTitleBg() {
   titleTick += 1;
   renderBg(titleTick, 0);
   ctx.textAlign = "center";
-  const symbols = "♈♉♊♋♌♍♎♏♐♑♒♓";
-  ctx.font = "18px DotGothic16, monospace";
-  for (let i = 0; i < 12; i++) {
-    const x = 22 + i * (W / 12) + 5;
-    const y = (((i * 46 + titleTick * 0.5) % H) + H) % H;
-    ctx.fillStyle = `rgba(165,180,252,${0.15 + 0.1 * Math.sin(titleTick * 0.05 + i)})`;
-    ctx.fillText(symbols[i], x, y);
+  for (const item of TITLE_SYMBOLS) {
+    const y = (((item.y0 + titleTick * item.speed) % H) + H) % H;
+    ctx.font = `${item.size.toFixed(1)}px DotGothic16, monospace`;
+    ctx.fillStyle = `rgba(165,180,252,${0.13 + 0.14 * Math.sin(titleTick * 0.05 + item.alphaPhase)})`;
+    ctx.fillText(item.symbol, item.x, y);
   }
   requestAnimationFrame(() => {
     if (ui.screen === "title") renderTitleBg();

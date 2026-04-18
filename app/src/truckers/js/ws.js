@@ -2,7 +2,7 @@ import { beep } from "./audio.js";
 import { lang } from "./state.js";
 import { renderGame, renderTitleBg } from "./render.js";
 import { getLangDict, t, tf } from "./i18n.js";
-import { showClear, showGm, showScreen, renderScoreList, updateGameoverUi } from "./ui.js";
+import { setNextRouteState, showClear, showGm, showScreen, renderScoreList, updateGameoverUi } from "./ui.js";
 
 let ws = null;
 let pendingMessages = [];
@@ -55,6 +55,9 @@ function handleMsg(msg) {
       showScreen("title");
       renderTitleBg();
       renderScoreList("title-scores", msg.scores || []);
+      prevPhase = msg.phase;
+      lastEvent = null;
+      lastFastScroll = false;
       break;
     case "launching":
     case "playing":
@@ -96,32 +99,43 @@ function handleMsg(msg) {
       lastFastScroll = !!msg.fast_scroll;
       break;
     case "stage_clear":
-      showScreen("playing");
+      if (prevPhase !== "stage_clear") {
+        showScreen("playing");
+      }
       renderGame(msg);
-      showClear(
-        tf("clear_title", {
-          from_symbol: msg.from.symbol,
-          to_symbol: msg.to.symbol,
-        }),
-        msg.next_stage_booster
-          ? t("clear_booster_notice")
-          : t("score_lbl") + (msg.score || 0).toLocaleString(),
-        getLangDict(),
-      );
-      showGm(msg.next_stage_booster ? t("clear_booster_notice") : pick(t("gm_ok")));
+      if (prevPhase !== "stage_clear") {
+        showClear(
+          tf("clear_title", {
+            from_symbol: msg.from.symbol,
+            to_symbol: msg.to.symbol,
+          }),
+          msg.next_stage_booster
+            ? t("clear_booster_notice")
+            : t("score_lbl") + (msg.score || 0).toLocaleString(),
+          getLangDict(),
+        );
+        setNextRouteState({ stage: ((msg.stage || 0) + 1) % 12 });
+      }
       prevPhase = msg.phase;
       break;
     case "lap_clear":
-      showScreen("playing");
+      if (prevPhase !== "lap_clear") {
+        showScreen("playing");
+      }
       renderGame(msg);
-      showClear(t("lap_title"), tf("lap_sub", { round: msg.round }), getLangDict());
-      showGm(pick(t("gm_lap")));
+      if (prevPhase !== "lap_clear") {
+        showClear(t("lap_title"), tf("lap_sub", { round: msg.round }), getLangDict());
+        setNextRouteState({ stage: 0 });
+      }
       prevPhase = msg.phase;
       break;
     case "gameover":
       showScreen("gameover");
       updateGameoverUi(msg);
       renderScoreList("go-scores", msg.scores || []);
+      prevPhase = msg.phase;
+      lastEvent = null;
+      lastFastScroll = false;
       break;
   }
 }
