@@ -64,12 +64,28 @@ rust-sandbox/
         ├── game.rs           # Pong
         ├── breakout.rs       # Breakout
         ├── dungeon.rs        # あやかダンジョン
-        ├── truckers.rs       # 宇宙トラック野郎
+        ├── truckers/         # 宇宙トラック野郎
         ├── dungeon_gen.rs    # 迷路生成
         ├── scores.rs         # ハイスコア共通
         ├── index.html
         ├── pong.html
         ├── breakout.html
         ├── dungeon.html
-        └── truckers.html
+        └── truckers/
+            ├── mod.rs
+            ├── truckers.html
+            ├── truckers.css
+            ├── truckers.js
+            ├── js/
+            │   ├── main.js
+            │   ├── state.js
+            │   ├── i18n.js
+            │   ├── ui.js
+            │   ├── render.js
+            │   ├── audio.js
+            │   ├── input.js
+            │   └── ws.js
+            ├── truckers.i18n.json
+            ├── truckers_man.jpg
+            └── truckers_girl.jpg
 ```

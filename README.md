@@ -33,6 +33,9 @@ Rust + axum で動く WebSocket ゲーム実験コンテナ。
 git checkout dev
 docker compose -f compose.dev.yaml up --build -d
 
+# rust 関連を修正したら以下を実行 (2026-04-18 13:35 add)
+docker compose -f compose.dev.yaml restart rust-sandbox
+
 # main にマージ → GitHub Actions が自動デプロイ
 gh pr create --base main
 ```

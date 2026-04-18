@@ -1,0 +1,175 @@
+{
+  "ja": {
+    "title": "🚛 宇宙トラック野郎 🚛",
+    "title_sub": "小惑星をかきわけ、宇宙ステーションへ荷物を届けろ！",
+    "name_ph": "なまえ",
+    "btn_start": "スタート！",
+    "btn_restart": "もう一度",
+    "btn_continue": "次のステーションへ！",
+    "btn_route_go": "出発！",
+    "controls": "矢印キー / WASD で操作",
+    "back": "メニュー",
+    "go_title": "GAME OVER",
+    "score_lbl": "スコア: ",
+    "round_lbl": "ROUND ",
+    "lap_lbl": "LAP ",
+    "dest_lbl": "→ {symbol} {name} へ配達中",
+    "booster_lbl": "▲ 中継ブースターへ接続！",
+    "dock_lbl": "▲ {symbol} {name} のエアロックへ！",
+    "clear_title": "{from_symbol}→{to_symbol} 配達完了！",
+    "lap_title": "1 LAP クリア！！",
+    "lap_sub": "ROUND {round} へ突入！難易度UP！",
+    "rank_msg": "{rank}位にランクイン！",
+    "no_rank": "ランク外",
+    "launch_txt": "{symbol} {name} を出発！",
+    "gm_ok": [
+      "届いたよっ！",
+      "ナイスドライブ！",
+      "よっしゃ！",
+      "グッジョブ！"
+    ],
+    "gm_hit": [
+      "いたっ！",
+      "こわれちゃう！",
+      "きをつけて！",
+      "うわあっ！"
+    ],
+    "gm_lap": [
+      "いっしゅうしたよ！！",
+      "さすがトラック野郎！",
+      "やったぁ！"
+    ],
+    "gm_dock": [
+      "エアロックへ！",
+      "もうすぐだよ！",
+      "狙いをさだめて！"
+    ],
+    "gm_booster": [
+      "中継ブースターだよ！",
+      "ここでつなぐよ！",
+      "ぴたっと合わせて！"
+    ],
+    "gm_booster_ok": [
+      "ブースター接続完了！",
+      "よし、後半戦いくよ！",
+      "加速の準備できた！"
+    ],
+    "gm_fast": [
+      "速いよ速いよー！",
+      "ブースター全開っ！",
+      "しっかりついてきて！"
+    ],
+    "clear_booster_notice": "次のステーションへは急ぎの荷物があるので、ブースターを装着していきましょう！",
+    "clear_girl": "配達完了だよ！ 次もよろしくねっ。",
+    "clear_man": "おう、次の荷も運んでくる。",
+    "clear_booster_girl": "急ぎ便だよっ。次はブースター付きで行こう！",
+    "clear_booster_man": "了解だ。加速便でぶっ飛ばす。",
+    "clear_lap_girl": "一周クリアだよっ！ この調子で行こう！",
+    "clear_man_lap": "まだまだ走れる。次も頼む。",
+    "clear_lap_man": "まだまだ走れる。次も頼む。",
+    "route_title": "航路マップ",
+    "route_sub": "現在地は第{current_num}宇宙ステーション {current}。次の目的地は第{next_num}宇宙ステーション {next} だ！",
+    "route_current": "現在地",
+    "route_next": "次",
+    "station_names": [
+      "おひつじ",
+      "おうし",
+      "ふたご",
+      "かに",
+      "しし",
+      "おとめ",
+      "てんびん",
+      "さそり",
+      "いて",
+      "やぎ",
+      "みずがめ",
+      "うお"
+    ]
+  },
+  "en": {
+    "title": "🚛 Space Truckers 🚛",
+    "title_sub": "Dodge the asteroids and deliver to the space station!",
+    "name_ph": "Your name",
+    "btn_start": "Start!",
+    "btn_restart": "Try Again",
+    "btn_continue": "Next Station!",
+    "btn_route_go": "Launch!",
+    "controls": "Arrow keys / WASD to move",
+    "back": "Menu",
+    "go_title": "GAME OVER",
+    "score_lbl": "SCORE: ",
+    "round_lbl": "ROUND ",
+    "lap_lbl": "LAP ",
+    "dest_lbl": "→ En route to {symbol} {name}",
+    "booster_lbl": "▲ Dock with the booster relay!",
+    "dock_lbl": "▲ Enter airlock: {symbol} {name}!",
+    "clear_title": "{from_symbol}→{to_symbol} Delivered!",
+    "lap_title": "1 LAP CLEAR!!",
+    "lap_sub": "Entering ROUND {round}! Difficulty UP!",
+    "rank_msg": "Ranked #{rank}!",
+    "no_rank": "Not ranked",
+    "launch_txt": "Departing {symbol} {name}!",
+    "gm_ok": [
+      "Delivered!",
+      "Nice drive!",
+      "Yeah!",
+      "Good job!"
+    ],
+    "gm_hit": [
+      "Ouch!",
+      "Watch out!",
+      "Take care!",
+      "Whoa!"
+    ],
+    "gm_lap": [
+      "One lap done!!",
+      "That's a trucker!",
+      "Woohoo!"
+    ],
+    "gm_dock": [
+      "Head to airlock!",
+      "Almost there!",
+      "Line it up!"
+    ],
+    "gm_booster": [
+      "Booster relay ahead!",
+      "Dock here for the booster!",
+      "Line it up nice and tight!"
+    ],
+    "gm_booster_ok": [
+      "Booster connected!",
+      "Alright, second half!",
+      "Boost package installed!"
+    ],
+    "gm_fast": [
+      "Here we go, fast lane!",
+      "Booster full throttle!",
+      "Hold it steady!"
+    ],
+    "clear_booster_notice": "Urgent cargo next run. Let's mount a booster before we go!",
+    "clear_girl": "Delivery complete! Let's keep rolling!",
+    "clear_man": "Yeah. I'll haul the next load too.",
+    "clear_booster_girl": "Urgent cargo next! Let's bolt on a booster!",
+    "clear_booster_man": "Roger that. I'll punch it hard.",
+    "clear_lap_girl": "One whole lap done! Keep it going!",
+    "clear_man_lap": "I can still run. Send the next job.",
+    "route_title": "Route Map",
+    "route_sub": "Current position: Station {current_num} {current}. Next stop: Station {next_num} {next}.",
+    "route_current": "HERE",
+    "route_next": "NEXT",
+    "station_names": [
+      "Aries",
+      "Taurus",
+      "Gemini",
+      "Cancer",
+      "Leo",
+      "Virgo",
+      "Libra",
+      "Scorpio",
+      "Sagittarius",
+      "Capricorn",
+      "Aquarius",
+      "Pisces"
+    ]
+  }
+}
