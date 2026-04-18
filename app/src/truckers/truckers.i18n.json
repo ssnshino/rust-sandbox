@@ -6,6 +6,7 @@
     "btn_start": "スタート！",
     "btn_restart": "もう一度",
     "btn_continue": "次のステーションへ！",
+    "btn_route_go": "出発！",
     "controls": "矢印キー / WASD で操作",
     "back": "メニュー",
     "go_title": "GAME OVER",
@@ -65,7 +66,25 @@
     "clear_booster_man": "了解だ。加速便でぶっ飛ばす。",
     "clear_lap_girl": "一周クリアだよっ！ この調子で行こう！",
     "clear_man_lap": "まだまだ走れる。次も頼む。",
-    "clear_lap_man": "まだまだ走れる。次も頼む。"
+    "clear_lap_man": "まだまだ走れる。次も頼む。",
+    "route_title": "航路マップ",
+    "route_sub": "現在地は第{current_num}宇宙ステーション {current}。次の目的地は第{next_num}宇宙ステーション {next} だ！",
+    "route_current": "現在地",
+    "route_next": "次",
+    "station_names": [
+      "おひつじ",
+      "おうし",
+      "ふたご",
+      "かに",
+      "しし",
+      "おとめ",
+      "てんびん",
+      "さそり",
+      "いて",
+      "やぎ",
+      "みずがめ",
+      "うお"
+    ]
   },
   "en": {
     "title": "🚛 Space Truckers 🚛",
@@ -74,6 +93,7 @@
     "btn_start": "Start!",
     "btn_restart": "Try Again",
     "btn_continue": "Next Station!",
+    "btn_route_go": "Launch!",
     "controls": "Arrow keys / WASD to move",
     "back": "Menu",
     "go_title": "GAME OVER",
@@ -132,6 +152,24 @@
     "clear_booster_girl": "Urgent cargo next! Let's bolt on a booster!",
     "clear_booster_man": "Roger that. I'll punch it hard.",
     "clear_lap_girl": "One whole lap done! Keep it going!",
-    "clear_man_lap": "I can still run. Send the next job."
+    "clear_man_lap": "I can still run. Send the next job.",
+    "route_title": "Route Map",
+    "route_sub": "Current position: Station {current_num} {current}. Next stop: Station {next_num} {next}.",
+    "route_current": "HERE",
+    "route_next": "NEXT",
+    "station_names": [
+      "Aries",
+      "Taurus",
+      "Gemini",
+      "Cancer",
+      "Leo",
+      "Virgo",
+      "Libra",
+      "Scorpio",
+      "Sagittarius",
+      "Capricorn",
+      "Aquarius",
+      "Pisces"
+    ]
   }
 }

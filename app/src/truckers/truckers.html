@@ -19,7 +19,10 @@
       </div>
 
       <div id="wrap">
+        <!--
         <canvas id="canvas" width="540" height="540"></canvas>
+      -->
+        <canvas id="canvas" width="360" height="600"></canvas>
 
         <div id="screen-title" class="overlay">
           <h1 id="title-heading"></h1>
@@ -35,6 +38,13 @@
           </div>
           <div id="title-scores" class="score-list"></div>
           <p class="title-help" id="title-help"></p>
+        </div>
+
+        <div id="screen-route" class="overlay overlay-route" style="display: none">
+          <h1 id="route-title"></h1>
+          <p id="route-sub"></p>
+          <div id="route-map" class="route-map"></div>
+          <button class="btn" id="btn-route-go"></button>
         </div>
 
         <div id="screen-gameover" class="overlay" style="display: none">

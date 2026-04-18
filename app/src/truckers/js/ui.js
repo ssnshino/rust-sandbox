@@ -3,8 +3,14 @@ import { applyLang, t, tf, toggleLang } from "./i18n.js";
 import { isTouchDevice, lang, setPlayerName, touchControls, ui } from "./state.js";
 
 let gmTimeout = null;
+let routeTimeout = null;
+let clearTimeoutId = null;
 let sendMessage = () => {};
 let fallbackBound = false;
+let routePendingAction = null;
+let routePendingState = null;
+
+const STATION_SYMBOLS = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"];
 
 function el(id) {
     return document.getElementById(id);
@@ -26,6 +32,38 @@ function html(id, value) {
     if (node) node.innerHTML = value;
 }
 
+function stationNames() {
+    return t("station_names") || [];
+}
+
+function routeStationHtml(index, currentIndex, nextIndex) {
+    const names = stationNames();
+    const classes = ["route-station"];
+    let tag = "&nbsp;";
+
+    if (index === currentIndex) {
+        classes.push("current");
+        tag = t("route_current");
+    } else if (index === nextIndex) {
+        classes.push("next");
+        tag = "";
+    }
+
+    const angle = ((index / 12) * Math.PI * 2) - Math.PI / 2;
+    const radius = 148;
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+
+    return `
+        <div class="${classes.join(" ")}" style="left: calc(50% + ${x.toFixed(1)}px); top: calc(50% + ${y.toFixed(1)}px);">
+            <div class="num">${index + 1}</div>
+            <div class="symbol">${STATION_SYMBOLS[index]}</div>
+            <div class="name">${names[index] || ""}</div>
+            <div class="tag">${tag}</div>
+        </div>
+    `;
+}
+
 function currentName() {
     const input = el("name-input");
     return ((input && input.value) || ui.playerName || "").trim() || (lang === "ja" ? "野郎" : "Trucker");
@@ -38,7 +76,39 @@ function startGameDirect() {
     setPlayerName(nextName);
     const input = el("name-input");
     if (input) input.value = nextName;
-    sendMessage({ type: "start", name: nextName });
+    routePendingState = { stage: 0 };
+    routePendingAction = () => {
+        sendMessage({ type: "start", name: nextName });
+    };
+    showRouteScreen(routePendingState);
+}
+
+function triggerContinueFlow() {
+    if (!routePendingAction) {
+        routePendingAction = () => {
+            sendMessage({ type: "continue" });
+        };
+    }
+    showRouteScreen(routePendingState || { stage: 0 });
+}
+
+function hideRouteScreen() {
+    clearTimeout(routeTimeout);
+    routeTimeout = null;
+    setVisible("screen-route", false, "flex");
+    const nextAction = routePendingAction;
+    routePendingAction = null;
+    routePendingState = null;
+    if (typeof nextAction === "function") {
+        nextAction();
+    }
+}
+
+function hideGm() {
+    clearTimeout(gmTimeout);
+    ui.gmVisible = false;
+    text("gm-comment", "");
+    el("gm-comment")?.classList.remove("show");
 }
 
 function bindFallbackDom() {
@@ -55,12 +125,25 @@ function bindFallbackDom() {
         }
         if (target.closest("#btn-restart")) {
             event.preventDefault();
+            clearTimeout(clearTimeoutId);
+            clearTimeoutId = null;
+            clearTimeout(routeTimeout);
+            routeTimeout = null;
+            routePendingAction = null;
+            routePendingState = null;
             sendMessage({ type: "restart" });
             return;
         }
         if (target.closest("#btn-continue")) {
             event.preventDefault();
-            sendMessage({ type: "continue" });
+            clearTimeout(clearTimeoutId);
+            clearTimeoutId = null;
+            triggerContinueFlow();
+            return;
+        }
+        if (target.closest("#btn-route-go")) {
+            event.preventDefault();
+            hideRouteScreen();
             return;
         }
         if (target.closest("#btn-back")) {
@@ -99,6 +182,8 @@ export function createTruckersUi() {
 }
 
 export function showClear(title, sub, i18n) {
+    hideGm();
+    clearTimeout(clearTimeoutId);
     ui.clearTitle = title;
     ui.clearSub = sub;
     const isBoosterNotice = sub === t("clear_booster_notice");
@@ -122,6 +207,53 @@ export function showClear(title, sub, i18n) {
     html("clear-man-line", ui.clearManLine);
     setVisible("btn-continue", true, "inline-flex");
     setVisible("screen-clear", true, "flex");
+    clearTimeoutId = setTimeout(() => {
+        triggerContinueFlow();
+    }, 10000);
+}
+
+export function setNextRouteState(state) {
+    routePendingState = state;
+    routePendingAction = () => {
+        sendMessage({ type: "continue" });
+    };
+}
+
+export function showRouteScreen(state) {
+    hideGm();
+    ui.clearVisible = false;
+    ui.canContinue = false;
+    const currentIndex = Number((state && state.stage) || 0) % 12;
+    const nextIndex = (currentIndex + 1) % 12;
+    const routeMap = `
+        <div class="route-core">
+            <div class="route-core-title">${lang === "ja" ? "アステロイドベルト" : "ASTEROID BELT"}</div>
+            <div class="route-core-sub">${lang === "ja" ? "12宇宙ステーション" : "12 STATIONS"}</div>
+        </div>
+        ${STATION_SYMBOLS.map((_, index) => routeStationHtml(index, currentIndex, nextIndex)).join("")}
+    `;
+
+    text("route-title", t("route_title"));
+    text(
+        "route-sub",
+        tf("route_sub", {
+            current_num: currentIndex + 1,
+            current: stationNames()[currentIndex] || "",
+            next_num: nextIndex + 1,
+            next: stationNames()[nextIndex] || "",
+        }),
+    );
+    html("route-map", routeMap);
+    text("btn-route-go", t("btn_route_go"));
+    setVisible("screen-clear", false, "flex");
+    setVisible("screen-title", false, "flex");
+    setVisible("screen-gameover", false, "flex");
+    setVisible("screen-route", true, "flex");
+
+    clearTimeout(routeTimeout);
+    routeTimeout = setTimeout(() => {
+        hideRouteScreen();
+    }, 10000);
 }
 
 export function showScreen(name) {
@@ -134,6 +266,14 @@ export function showScreen(name) {
     setVisible("screen-title", name === "title", "flex");
     setVisible("screen-gameover", name === "gameover", "flex");
     setVisible("screen-clear", false, "flex");
+    if (name !== "playing") {
+        hideGm();
+        hideRouteScreen();
+    }
+    if (name !== "playing" && clearTimeoutId) {
+        clearTimeout(clearTimeoutId);
+        clearTimeoutId = null;
+    }
     setVisible("game-hud", name === "playing", "flex");
     setVisible("btn-back", name !== "playing", "block");
     setVisible("btn-lang", name !== "playing", "block");
@@ -204,6 +344,7 @@ export function syncUiLanguage() {
     text("btn-start", t("btn_start"));
     text("btn-restart", t("btn_restart"));
     text("btn-continue", t("btn_continue"));
+    text("btn-route-go", t("btn_route_go"));
     text("btn-back", `← ${t("back")}`);
     text("btn-lang", ui.langButton);
     text("touch-hint", "MANIP");

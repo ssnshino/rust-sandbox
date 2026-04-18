@@ -3,7 +3,7 @@
 `ssnshino/rust-sandbox` で動く Rust 製縦スクロール配送ゲームの仕様まとめ。
 
 作成: 2026-04-18  
-最終更新: 2026-04-18
+最終更新: 2026-04-18 22:40 JST
 
 ---
 
@@ -117,12 +117,17 @@ app/src/
   │ 顔カットイン + クリア文言
   │ 10秒待機 or Continue ボタン
   ▼
+[RouteMap]
+  │ 12星座宇宙ステーションの円軌道表示
+  │ 10秒待機 or 出発！ボタン
+  ▼
 [次ステージ Launching]
 
 HP=0
   ▼
 [GameOver]
   │ スコア登録
+  │ Try Again で Title へ戻る
   ▼
 [Title]
 ```
@@ -183,9 +188,11 @@ sequenceDiagram
     S-->>C: state(stage_clear or lap_clear)
     Note over C: 顔カットイン + クリア文言 + Continue ボタン
     alt 手動送り
+        C->>C: route map 表示
         C->>S: {type:"continue"}
     else 10秒経過
-        Note over S: phase_timer = 0
+        C->>C: route map 表示
+        C->>S: {type:"continue"}
     end
     S-->>C: state(launching)
     S-->>C: state(playing)
@@ -318,9 +325,13 @@ sequenceDiagram
 - プレイ中
   - 外部 HUD (`SCORE / LIFE / ROUND`)
   - GM コメント
+- ルートマップ
+  - 12星座宇宙ステーションを円軌道で表示
+  - 現在地と次の目的地を強調表示
+  - 10秒自動送り or `出発！` ボタン
 - クリア
   - 顔カットイン
-  - 10秒自動進行
+  - 10秒後に route map へ
   - `次のステーションへ！` ボタン
 
 ### 言語
@@ -349,7 +360,9 @@ sequenceDiagram
 - クリアカットインの顔画像は `main.rs` から `/truckers/refs/:name` として配信
 - 画像実体は `app/src/truckers/truckers_man.jpg`, `app/src/truckers/truckers_girl.jpg`
 - クリア時は `phase_timer = 300`（約 10 秒）
-- `ClientMsg::Continue` で即時次ステージへ進める
+- `ClientMsg::Continue` は route map のあとに次ステージを開始する
+- `GameOver` の `Try Again` は route map を挟まず title へ戻す
+- タイトル背景の星座マークとゲーム中の星背景はページ読み込みごとにランダム再生成される
 
 ---
 
@@ -359,4 +372,3 @@ sequenceDiagram
 - 原作小説寄りの台詞分岐
 - ブースター便専用の背景演出
 - 宇宙珍走団 / 軽トラなどの別カテゴリ障害物
-

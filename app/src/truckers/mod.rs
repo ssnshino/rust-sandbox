@@ -7,8 +7,11 @@ use tokio::time::{interval, Duration, MissedTickBehavior};
 use crate::scores::ScoreBoard;
 
 const TICK_MS: u64 = 33;
-const W: f32 = 540.0;
-const H: f32 = 540.0;
+//const W: f32 = 540.0;
+//const H: f32 = 540.0;
+// @@@ 20260418 change.
+const W: f32 = 360.0;
+const H: f32 = 600.0;
 
 const SHIP_MAX_SPEED: f32 = 5.5;
 const SHIP_ACCEL: f32 = 0.35;
@@ -280,8 +283,6 @@ impl Game {
             Phase::StageClear | Phase::LapClear => {
                 if self.phase_timer > 0 {
                     self.phase_timer -= 1;
-                } else {
-                    self.begin_next_stage();
                 }
                 return;
             }
@@ -763,7 +764,7 @@ async fn game_session(
                         }
                         if let Ok(ClientMsg::Continue) = serde_json::from_str(&txt) {
                             if matches!(game.phase, Phase::StageClear | Phase::LapClear) {
-                                game.phase_timer = 0;
+                                game.begin_next_stage();
                             }
                         }
                     }
