@@ -40,7 +40,7 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │ Browser                                                         │
 │                                                                 │
-│  truckers.html                                                  │
+│  truckers/truckers.html + truckers/js/*.js                      │
 │  ┌──────────────┐   WS メッセージ   ┌───────────────────────┐   │
 │  │ JS Render    │ ←──────────────→ │ axum WebSocket run()  │   │
 │  │ / Input      │                  │ tokio::select!        │   │
@@ -52,12 +52,14 @@
                          ┌───────────────────────┼──────────────────────┐
                          │ axum Server           ▼                      │
                          │                                              │
-                         │ GET /truckers            → truckers.html      │
+                         │ GET /truckers            → truckers/truckers.html              │
+│ GET /truckers.js         → truckers/truckers.js                │
+│ GET /truckers/js/:name   → truckers/js/*.js                    │
                          │ GET /truckers/refs/:name → 顔画像 JPEG        │
                          │ GET /ws/truckers         → truckers::run()    │
                          │                                              │
-                         │ truckers.rs   ←→ scores.rs                   │
-                         │ main.rs       ←→ truckers.html               │
+                         │ truckers/mod.rs ←→ scores.rs                 │
+                         │ main.rs       ←→ truckers/truckers.html      │
                          │                                              │
                          │ truckers_scores.json （永続）                │
                          └──────────────────────────────────────────────┘
@@ -68,11 +70,24 @@
 ```text
 app/src/
 ├── main.rs               # ルーティング全体。truckers の画像配信ルートも持つ
-├── truckers.rs           # ゲームロジック・WebSocket ハンドラ
 ├── scores.rs             # ハイスコア管理（共通）
-├── truckers.html         # 描画・入力・UI・音
-├── truckers_man.jpg      # クリアカットイン用 主人公顔
-└── truckers_girl.jpg     # クリアカットイン用 GM 顔
+└── truckers/
+    ├── mod.rs            # ゲームロジック・WebSocket ハンドラ
+    ├── truckers.html     # 画面構造
+    ├── truckers.css      # 画面スタイル
+    ├── truckers.js       # JS module entrypoint
+    ├── js/
+    │   ├── main.js        # 初期化と依存配線
+    │   ├── state.js       # 共有 state / DOM refs / constants
+    │   ├── i18n.js        # 文言読み込みと切替
+    │   ├── ui.js          # DOM UI 管理
+    │   ├── render.js      # Canvas 描画
+    │   ├── audio.js       # 効果音・スラスター音
+    │   ├── input.js       # キー入力・ぷにこん・MANIP
+    │   └── ws.js          # WebSocket state 処理
+    ├── truckers.i18n.json # 文言定義
+    ├── truckers_man.jpg  # クリアカットイン用 主人公顔
+    └── truckers_girl.jpg # クリアカットイン用 GM 顔
 ```
 
 ### セッションモデル
@@ -288,7 +303,8 @@ sequenceDiagram
 
 ### 描画
 
-- `truckers.html` の Canvas 540x540
+- `truckers/truckers.html` の DOM UI と `truckers/js/*.js` の分割フロント実装
+- Canvas は 540x540
 - 背景は星層 + 星雲
 - ステーション、トラック、小惑星、鉱石、マニピュレーターを手描き
 
@@ -331,7 +347,7 @@ sequenceDiagram
 ## 設計メモ・既知の挙動
 
 - クリアカットインの顔画像は `main.rs` から `/truckers/refs/:name` として配信
-- 画像実体は `app/src/truckers_man.jpg`, `app/src/truckers_girl.jpg`
+- 画像実体は `app/src/truckers/truckers_man.jpg`, `app/src/truckers/truckers_girl.jpg`
 - クリア時は `phase_timer = 300`（約 10 秒）
 - `ClientMsg::Continue` で即時次ステージへ進める
 

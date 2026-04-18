@@ -67,6 +67,10 @@ async fn main() {
         .route("/ws/fighting",         get(ws_fighting))
         .route("/ws/fighting/2p",      get(ws_fighting_2p))
         .route("/truckers",            get(truckers_page))
+        .route("/truckers.css",        get(truckers_css))
+        .route("/truckers.js",         get(truckers_js))
+        .route("/truckers/js/:name",   get(truckers_js_module))
+        .route("/truckers.i18n.json",  get(truckers_i18n))
         .route("/truckers/refs/:name", get(truckers_ref))
         .route("/ws/truckers",         get(ws_truckers))
         .with_state(state);
@@ -84,11 +88,34 @@ async fn dungeon_page()  -> Html<String> {
     Html(include_str!("dungeon.html").replace("__BUILD_HASH__", &build_hash))
 }
 async fn fighting_page() -> Html<&'static str> { Html(include_str!("fighting.html")) }
-async fn truckers_page() -> Html<&'static str> { Html(include_str!("truckers.html")) }
+async fn truckers_page() -> Html<&'static str> { Html(include_str!("truckers/truckers.html")) }
+async fn truckers_css() -> impl IntoResponse {
+    ([(CONTENT_TYPE, "text/css; charset=utf-8")], include_str!("truckers/truckers.css")).into_response()
+}
+async fn truckers_js() -> impl IntoResponse {
+    ([(CONTENT_TYPE, "application/javascript; charset=utf-8")], include_str!("truckers/truckers.js")).into_response()
+}
+async fn truckers_js_module(Path(name): Path<String>) -> impl IntoResponse {
+    let source = match name.as_str() {
+        "main.js" => include_str!("truckers/js/main.js"),
+        "state.js" => include_str!("truckers/js/state.js"),
+        "i18n.js" => include_str!("truckers/js/i18n.js"),
+        "ui.js" => include_str!("truckers/js/ui.js"),
+        "render.js" => include_str!("truckers/js/render.js"),
+        "audio.js" => include_str!("truckers/js/audio.js"),
+        "input.js" => include_str!("truckers/js/input.js"),
+        "ws.js" => include_str!("truckers/js/ws.js"),
+        _ => return StatusCode::NOT_FOUND.into_response(),
+    };
+    ([(CONTENT_TYPE, "application/javascript; charset=utf-8")], source).into_response()
+}
+async fn truckers_i18n() -> impl IntoResponse {
+    ([(CONTENT_TYPE, "application/json; charset=utf-8")], include_str!("truckers/truckers.i18n.json")).into_response()
+}
 async fn truckers_ref(Path(name): Path<String>) -> impl IntoResponse {
     let bytes: &[u8] = match name.as_str() {
-        "man.jpg" => include_bytes!("truckers_man.jpg"),
-        "girl.jpg" => include_bytes!("truckers_girl.jpg"),
+        "man.jpg" => include_bytes!("truckers/truckers_man.jpg"),
+        "girl.jpg" => include_bytes!("truckers/truckers_girl.jpg"),
         _ => return StatusCode::NOT_FOUND.into_response(),
     };
     (
