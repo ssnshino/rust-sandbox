@@ -69,7 +69,8 @@ canvas {
 
 #game-hud .hud-block {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
   min-width: 0;
   white-space: nowrap;
@@ -81,6 +82,51 @@ canvas {
 
 #hud-life {
   color: #fca5a5;
+}
+
+#hud-round {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.hud-meter-line,
+.hud-speed-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.hud-meter-label {
+  color: #cbd5e1;
+}
+
+.hud-meter-bar {
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+}
+
+.hud-meter-bar.hull {
+  color: #fca5a5;
+}
+
+.hud-meter-bar.fuel {
+  color: #fde68a;
+}
+
+.hud-minerals {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+}
+
+.hud-money {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #fde68a;
 }
 
 #hud-round {
@@ -380,6 +426,41 @@ canvas {
   color: #fde68a;
   display: block;
   margin-bottom: 2px;
+}
+
+.clear-breakdown {
+  position: relative;
+  z-index: 3;
+  width: min(300px, 82%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+  font-size: 0.78rem;
+  color: #e2e8f0;
+}
+
+.clear-breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.clear-breakdown-row .label {
+  color: #cbd5e1;
+}
+
+.clear-breakdown-row .value {
+  color: #fde68a;
+}
+
+.clear-breakdown-row.negative .value {
+  color: #fca5a5;
 }
 
 /* -------------------------------------------------------------------------- */

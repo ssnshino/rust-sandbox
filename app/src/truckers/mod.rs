@@ -36,15 +36,22 @@ const AIRLOCK_Y: f32 = 50.0;
 const DEPART_Y: f32 = H - 40.0;
 
 const INVINCIBLE_TICKS: u32 = 60;
-const SHIP_HP: u8 = 3;
+const SHIP_HP_MAX: u16 = 100;
+const SHIP_FUEL_MAX: f32 = 100.0;
 const SCORE_DELIVERY: u32 = 500;
-const SCORE_HP_BONUS: u32 = 200;
+const SCORE_INTEGRITY_BONUS: u32 = 20;
 const SCORE_DOCK_PERFECT: u32 = 2000;
 const SCORE_DOCK_GOOD: u32 = 1000;
 const SCORE_DOCK_OK: u32 = 400;
 const SCORE_BOOSTER_PERFECT: u32 = 1200;
 const SCORE_BOOSTER_GOOD: u32 = 700;
 const SCORE_BOOSTER_OK: u32 = 300;
+const MONEY_GOLD: u32 = 500;
+const MONEY_RARE: u32 = 100;
+const BOOSTER_COST: u32 = 1000;
+const LATE_FINE: u32 = 200;
+const REPAIR_COST_PER_POINT: u32 = 6;
+const FUEL_COST_PER_POINT: u32 = 4;
 const TOTAL_STATIONS: usize = 12;
 
 // マニピュレーター
@@ -190,7 +197,7 @@ fn spawn_mineral(tick: u64, id: u32, round: u32) -> Mineral {
 }
 
 // ── Phase ─────────────────────────────────────────────────────────────────────
-#[derive(PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 enum Phase {
     Launching,
     Playing,
@@ -207,9 +214,11 @@ struct Game {
     sy: f32,
     svx: f32,
     svy: f32,
-    hp: u8,
+    hp: u16,
+    fuel: f32,
     invincible: u32,
     score: u32,
+    money: u32,
     round: u32,
     stage: usize,
     lap: u32,
@@ -230,6 +239,17 @@ struct Game {
     booster_enabled: bool,
     booster_attached: bool,
     booster_done: bool,
+    late_fined: bool,
+    gold_count: u32,
+    rare_count: u32,
+    last_delivery_score: u32,
+    last_dock_bonus: u32,
+    last_cargo_bonus: u32,
+    last_hp_bonus: u32,
+    last_late_fine: u32,
+    last_booster_cost: u32,
+    last_repair_cost: u32,
+    last_fuel_cost: u32,
     keys_up: bool,
     keys_down: bool,
     keys_left: bool,
@@ -238,15 +258,65 @@ struct Game {
 }
 
 impl Game {
+    fn asteroid_damage(radius: f32) -> u16 {
+        if radius <= 5.5 {
+            5
+        } else if radius <= 9.5 {
+            8
+        } else if radius <= 14.5 {
+            12
+        } else if radius <= 20.5 {
+            16
+        } else {
+            20
+        }
+    }
+
+    fn spend_fuel(&mut self) {
+        let mut use_points = 0.0f32;
+        if self.keys_up {
+            use_points += 0.5;
+        }
+        if self.keys_down {
+            use_points += 0.1;
+        }
+        if self.keys_left {
+            use_points += 0.1;
+        }
+        if self.keys_right {
+            use_points += 0.1;
+        }
+        self.fuel = (self.fuel - use_points).max(0.0);
+    }
+
+    fn apply_service_costs(&mut self) {
+        let repair_needed = SHIP_HP_MAX.saturating_sub(self.hp) as u32;
+        let fuel_needed = (SHIP_FUEL_MAX - self.fuel).max(0.0).ceil() as u32;
+
+        let repair_points = repair_needed.min(self.money / REPAIR_COST_PER_POINT);
+        let repair_cost = repair_points * REPAIR_COST_PER_POINT;
+        self.money = self.money.saturating_sub(repair_cost);
+        self.hp = (self.hp as u32 + repair_points).min(SHIP_HP_MAX as u32) as u16;
+        self.last_repair_cost = repair_cost;
+
+        let fuel_points = fuel_needed.min(self.money / FUEL_COST_PER_POINT);
+        let fuel_cost = fuel_points * FUEL_COST_PER_POINT;
+        self.money = self.money.saturating_sub(fuel_cost);
+        self.fuel = (self.fuel + fuel_points as f32).min(SHIP_FUEL_MAX);
+        self.last_fuel_cost = fuel_cost;
+    }
+
     fn new() -> Self {
         Game {
             sx: W / 2.0,
             sy: DEPART_Y,
             svx: 0.0,
             svy: 0.0,
-            hp: SHIP_HP,
+            hp: SHIP_HP_MAX,
+            fuel: SHIP_FUEL_MAX,
             invincible: 0,
             score: 0,
+            money: 0,
             round: 1,
             stage: 0,
             lap: 1,
@@ -267,6 +337,17 @@ impl Game {
             booster_enabled: false,
             booster_attached: false,
             booster_done: false,
+            late_fined: false,
+            gold_count: 0,
+            rare_count: 0,
+            last_delivery_score: 0,
+            last_dock_bonus: 0,
+            last_cargo_bonus: 0,
+            last_hp_bonus: 0,
+            last_late_fine: 0,
+            last_booster_cost: 0,
+            last_repair_cost: 0,
+            last_fuel_cost: 0,
             keys_up: false,
             keys_down: false,
             keys_left: false,
@@ -326,20 +407,24 @@ impl Game {
         }
 
         // ── Ship movement ──
-        let ax = if self.keys_right {
+        let can_thrust = self.fuel > 0.0;
+        let ax = if can_thrust && self.keys_right {
             SHIP_ACCEL
-        } else if self.keys_left {
+        } else if can_thrust && self.keys_left {
             -SHIP_ACCEL
         } else {
             0.0
         };
-        let ay = if self.keys_down {
+        let ay = if can_thrust && self.keys_down {
             SHIP_ACCEL
-        } else if self.keys_up {
+        } else if can_thrust && self.keys_up {
             -SHIP_ACCEL
         } else {
             0.0
         };
+        if can_thrust {
+            self.spend_fuel();
+        }
         self.svx = (self.svx + ax) * SHIP_DRAG;
         self.svy = (self.svy + ay) * SHIP_DRAG;
         let spd = (self.svx * self.svx + self.svy * self.svy).sqrt();
@@ -375,6 +460,16 @@ impl Game {
                         MineralKind::Rare => 700 * self.round,
                     };
                     self.score += bonus;
+                    match m.kind {
+                        MineralKind::Gold => {
+                            self.money += MONEY_GOLD;
+                            self.gold_count += 1;
+                        }
+                        MineralKind::Rare => {
+                            self.money += MONEY_RARE;
+                            self.rare_count += 1;
+                        }
+                    }
                     let ev = match m.kind {
                         MineralKind::Gold => "mineral_gold",
                         MineralKind::Rare => "mineral_rare",
@@ -460,7 +555,8 @@ impl Game {
                 let dx = self.sx - a.x;
                 let dy = self.sy - a.y;
                 if (dx * dx + dy * dy).sqrt() < SHIP_R + a.radius {
-                    self.hp -= 1;
+                    let dmg = Self::asteroid_damage(a.radius);
+                    self.hp = self.hp.saturating_sub(dmg);
                     self.invincible = INVINCIBLE_TICKS;
                     self.event = Some("damage");
                     if self.hp == 0 {
@@ -490,6 +586,17 @@ impl Game {
             let dx = (self.sx - self.booster_x).abs();
             let dy = (self.sy - BOOSTER_Y).abs();
             if dy < DOCK_Y_R && dx < BOOSTER_X_OK {
+                if self.money < BOOSTER_COST {
+                    self.event = Some("booster_fee_short");
+                    self.booster_done = true;
+                    self.booster_enabled = false;
+                    self.phase = if progress >= 0.80 {
+                        Phase::Docking
+                    } else {
+                        Phase::Playing
+                    };
+                    return;
+                }
                 let (bonus, precision) = if dx < BOOSTER_X_PERFECT {
                     (SCORE_BOOSTER_PERFECT * self.round, 0u8)
                 } else if dx < BOOSTER_X_GOOD {
@@ -498,7 +605,9 @@ impl Game {
                     (SCORE_BOOSTER_OK * self.round, 2u8)
                 };
                 self.score += bonus;
+                self.money = self.money.saturating_sub(BOOSTER_COST);
                 self.booster_precision = precision;
+                self.last_booster_cost = BOOSTER_COST;
                 self.booster_attached = true;
                 self.booster_done = true;
                 self.event = Some("booster_attach");
@@ -516,6 +625,13 @@ impl Game {
             self.asteroids.clear();
         }
 
+        if self.phase == Phase::Docking && progress >= 1.0 && !self.late_fined {
+            self.money = self.money.saturating_sub(LATE_FINE);
+            self.last_late_fine = LATE_FINE;
+            self.late_fined = true;
+            self.event = Some("late_fine");
+        }
+
         // ── Check docking ──
         if self.phase == Phase::Docking {
             let dx = (self.sx - self.airlock_x).abs();
@@ -528,11 +644,18 @@ impl Game {
                 } else {
                     (SCORE_DOCK_OK * self.round, 2u8)
                 };
-                self.score += SCORE_DELIVERY * self.round + precision_bonus;
+                let delivery_score = SCORE_DELIVERY * self.round;
+                let cargo_bonus = self.gold_count * MONEY_GOLD + self.rare_count * MONEY_RARE;
+                self.last_delivery_score = delivery_score;
+                self.last_dock_bonus = precision_bonus;
+                self.last_cargo_bonus = cargo_bonus;
                 self.dock_precision = precision;
+                self.score += delivery_score + precision_bonus + cargo_bonus;
+                self.apply_service_costs();
                 let next = self.stage + 1;
                 if next >= TOTAL_STATIONS {
-                    let hp_bonus = self.hp as u32 * SCORE_HP_BONUS * self.round;
+                    let hp_bonus = self.hp as u32 * SCORE_INTEGRITY_BONUS * self.round;
+                    self.last_hp_bonus = hp_bonus;
                     self.score += hp_bonus;
                     self.event = Some("lap_clear");
                     self.phase = Phase::LapClear;
@@ -551,7 +674,6 @@ impl Game {
             self.round += 1;
             self.stage = 0;
             self.lap += 1;
-            self.hp = SHIP_HP;
         } else {
             self.stage += 1;
         }
@@ -569,10 +691,21 @@ impl Game {
         self.stage_tick = 0;
         self.phase = Phase::Launching;
         self.event = None;
+        self.late_fined = false;
         self.booster_enabled = should_booster_stage(self.stage);
         self.booster_attached = false;
         self.booster_done = false;
         self.booster_precision = 2;
+        self.gold_count = 0;
+        self.rare_count = 0;
+        self.last_delivery_score = 0;
+        self.last_dock_bonus = 0;
+        self.last_cargo_bonus = 0;
+        self.last_hp_bonus = 0;
+        self.last_late_fine = 0;
+        self.last_booster_cost = 0;
+        self.last_repair_cost = 0;
+        self.last_fuel_cost = 0;
     }
 
     fn to_json(&self) -> String {
@@ -612,13 +745,23 @@ impl Game {
             "type":"state","phase":phase_str,
             "ship":{"x":self.sx,"y":self.sy,"vx":self.svx,"vy":self.svy,"invincible":self.invincible>0},
             "manip_len": self.manip_len,
-            "hp":self.hp,"score":self.score,"round":self.round,"stage":self.stage,"lap":self.lap,
+            "hp":self.hp,"fuel":((self.fuel * 10.0).round() / 10.0),"score":self.score,"money":self.money,"round":self.round,"stage":self.stage,"lap":self.lap,
             "progress":progress,"stage_tick":self.stage_tick,
             "airlock_x":self.airlock_x,"depart_x":self.depart_x,"booster_x":self.booster_x,
             "from":{"name_ja":from_st.0,"name_en":from_st.1,"symbol":from_st.2},
             "to":  {"name_ja":to_st.0,  "name_en":to_st.1,  "symbol":to_st.2},
             "asteroids":asteroids,"minerals":minerals,
             "event":self.event,"tick":self.tick,
+            "gold_count": self.gold_count,
+            "rare_count": self.rare_count,
+            "delivery_score": self.last_delivery_score,
+            "dock_bonus": self.last_dock_bonus,
+            "cargo_bonus": self.last_cargo_bonus,
+            "hp_bonus": self.last_hp_bonus,
+            "late_fine": self.last_late_fine,
+            "booster_cost": self.last_booster_cost,
+            "repair_cost": self.last_repair_cost,
+            "fuel_cost": self.last_fuel_cost,
             "dock_precision":self.dock_precision,
             "booster_precision":self.booster_precision,
             "booster_enabled":self.booster_enabled,
@@ -763,6 +906,11 @@ async fn game_session(
                             game.keys_manip = keys.manip;
                         }
                         if let Ok(ClientMsg::Continue) = serde_json::from_str(&txt) {
+                            if matches!(game.phase, Phase::StageClear | Phase::LapClear) {
+                                game.begin_next_stage();
+                            }
+                        }
+                        if let Ok(ClientMsg::Start { .. }) = serde_json::from_str(&txt) {
                             if matches!(game.phase, Phase::StageClear | Phase::LapClear) {
                                 game.begin_next_stage();
                             }

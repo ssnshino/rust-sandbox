@@ -7,7 +7,8 @@ let routeTimeout = null;
 let clearTimeoutId = null;
 let sendMessage = () => {};
 let fallbackBound = false;
-let routePendingAction = null;
+let routePendingMode = null;
+let routePendingName = null;
 let routePendingState = null;
 
 const STATION_SYMBOLS = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"];
@@ -69,6 +70,84 @@ function currentName() {
     return ((input && input.value) || ui.playerName || "").trim() || (lang === "ja" ? "野郎" : "Trucker");
 }
 
+function bonusRows(state) {
+    const rows = [];
+    if (!state) return rows;
+    rows.push({
+        label: t("clear_delivery_bonus"),
+        value: `+${Number(state.delivery_score || 0).toLocaleString()}`,
+    });
+    rows.push({
+        label: t("clear_dock_bonus"),
+        value: `+${Number(state.dock_bonus || 0).toLocaleString()}`,
+    });
+    rows.push({
+        label: t("clear_cargo_bonus"),
+        value: `+${Number(state.cargo_bonus || 0).toLocaleString()}`,
+    });
+    if (state.hp_bonus) {
+        rows.push({
+            label: t("clear_hp_bonus"),
+            value: `+${Number(state.hp_bonus || 0).toLocaleString()}`,
+        });
+    }
+    if (state.late_fine) {
+        rows.push({
+            label: t("clear_late_fine"),
+            value: `-${Number(state.late_fine || 0).toLocaleString()}`,
+            negative: true,
+        });
+    }
+    if (state.repair_cost) {
+        rows.push({
+            label: t("clear_repair_cost"),
+            value: `-${Number(state.repair_cost || 0).toLocaleString()}$`,
+            negative: true,
+        });
+    }
+    if (state.fuel_cost) {
+        rows.push({
+            label: t("clear_fuel_cost"),
+            value: `-${Number(state.fuel_cost || 0).toLocaleString()}$`,
+            negative: true,
+        });
+    }
+    rows.push({
+        label: t("clear_total_score"),
+        value: Number(state.score || 0).toLocaleString(),
+    });
+    return rows;
+}
+
+function meterBar(value, max = 100, cells = 10) {
+    const filled = Math.max(0, Math.min(cells, Math.round((Number(value || 0) / max) * cells)));
+    return "■".repeat(filled) + "□".repeat(cells - filled);
+}
+
+function speedKmh(state) {
+    const vy = Number(state?.ship?.vy || 0);
+    if (vy < 0) {
+        return Math.round(Math.min(120, Math.abs(vy / 5.5) * 120));
+    }
+    if (vy > 0) {
+        return Math.round(Math.min(30, Math.abs(vy / 5.5) * 30));
+    }
+    return 0;
+}
+
+function bonusHtml(state) {
+    return bonusRows(state)
+        .map(
+            (row) => `
+                <div class="clear-breakdown-row${row.negative ? " negative" : ""}">
+                    <span class="label">${row.label}</span>
+                    <span class="value">${row.value}</span>
+                </div>
+            `,
+        )
+        .join("");
+}
+
 function startGameDirect() {
     ensureAudio();
     resumeAudio();
@@ -77,31 +156,39 @@ function startGameDirect() {
     const input = el("name-input");
     if (input) input.value = nextName;
     routePendingState = { stage: 0 };
-    routePendingAction = () => {
-        sendMessage({ type: "start", name: nextName });
-    };
+    routePendingMode = "start";
+    routePendingName = nextName;
     showRouteScreen(routePendingState);
 }
 
 function triggerContinueFlow() {
-    if (!routePendingAction) {
-        routePendingAction = () => {
-            sendMessage({ type: "continue" });
-        };
+    if (!routePendingMode) {
+        routePendingMode = "continue";
     }
     showRouteScreen(routePendingState || { stage: 0 });
 }
 
-function hideRouteScreen() {
+function closeRouteScreen(sendAction = false) {
     clearTimeout(routeTimeout);
     routeTimeout = null;
     setVisible("screen-route", false, "flex");
-    const nextAction = routePendingAction;
-    routePendingAction = null;
+    const nextMode = routePendingMode;
+    const nextName = routePendingName;
+    routePendingMode = null;
+    routePendingName = null;
     routePendingState = null;
-    if (typeof nextAction === "function") {
-        nextAction();
+    if (!sendAction) {
+        return;
     }
+    if (nextMode === "start") {
+        sendMessage({ type: "start", name: nextName || currentName() });
+    } else if (nextMode === "continue") {
+        sendMessage({ type: "continue" });
+    }
+}
+
+function hideRouteScreen() {
+    closeRouteScreen(true);
 }
 
 function hideGm() {
@@ -129,7 +216,8 @@ function bindFallbackDom() {
             clearTimeoutId = null;
             clearTimeout(routeTimeout);
             routeTimeout = null;
-            routePendingAction = null;
+            routePendingMode = null;
+            routePendingName = null;
             routePendingState = null;
             sendMessage({ type: "restart" });
             return;
@@ -181,7 +269,7 @@ export function createTruckersUi() {
     syncUiLanguage();
 }
 
-export function showClear(title, sub, i18n) {
+export function showClear(title, sub, i18n, state) {
     hideGm();
     clearTimeout(clearTimeoutId);
     ui.clearTitle = title;
@@ -196,13 +284,14 @@ export function showClear(title, sub, i18n) {
         (isBoosterNotice
             ? t("clear_booster_man")
             : isLap
-                ? i18n[lang].clear_man_lap || t("clear_man")
+                ? t("clear_man_lap") || t("clear_man")
                 : t("clear_man"));
     ui.clearVisible = true;
     ui.canContinue = true;
 
     text("cl-title", ui.clearTitle);
     text("cl-sub", ui.clearSub);
+    html("cl-breakdown", bonusHtml(state));
     html("clear-girl-line", ui.clearGirlLine);
     html("clear-man-line", ui.clearManLine);
     setVisible("btn-continue", true, "inline-flex");
@@ -214,9 +303,8 @@ export function showClear(title, sub, i18n) {
 
 export function setNextRouteState(state) {
     routePendingState = state;
-    routePendingAction = () => {
-        sendMessage({ type: "continue" });
-    };
+    routePendingMode = "continue";
+    routePendingName = null;
 }
 
 export function showRouteScreen(state) {
@@ -268,7 +356,7 @@ export function showScreen(name) {
     setVisible("screen-clear", false, "flex");
     if (name !== "playing") {
         hideGm();
-        hideRouteScreen();
+        closeRouteScreen(false);
     }
     if (name !== "playing" && clearTimeoutId) {
         clearTimeout(clearTimeoutId);
@@ -322,12 +410,22 @@ export function renderScoreList(id, scores) {
 
 export function updateHudUi(state) {
     ui.hudScore = t("score_lbl") + (state.score || 0).toLocaleString();
-    ui.hudLife = "❤️".repeat(state.hp) + "🖤".repeat(Math.max(0, 3 - state.hp));
-    ui.hudRound = t("round_lbl") + state.round + "  " + t("lap_lbl") + state.lap + "  " + (state.stage + 1) + "/12";
+    ui.hudLife =
+        `<div class="hud-meter-line"><span class="hud-meter-label">${t("damage_lbl")}</span><span>${Number(state.hp || 0)}%</span></div>` +
+        `<div class="hud-meter-bar hull">${meterBar(state.hp)}</div>` +
+        `<span class="hud-minerals">` +
+        `<span>🟡x${Number(state.gold_count || 0)}</span>` +
+        `<span>🟣x${Number(state.rare_count || 0)}</span>` +
+        `<span class="hud-money">${t("money_lbl")}${Number(state.money || 0).toLocaleString()}</span>` +
+        `</span>`;
+    ui.hudRound =
+        `<div class="hud-meter-line"><span class="hud-meter-label">${t("fuel_lbl")}</span><span>F ${Number(state.fuel || 0).toFixed(2)}% E</span></div>` +
+        `<div class="hud-meter-bar fuel">${meterBar(state.fuel)}</div>` +
+        `<div class="hud-speed-line"><span>${t("speed_lbl")}${speedKmh(state)}km/h</span><span>${t("round_lbl")}${state.round} ${(state.stage + 1)}/12</span></div>`;
 
     text("hud-score", ui.hudScore);
-    text("hud-life", ui.hudLife);
-    text("hud-round", ui.hudRound);
+    html("hud-life", ui.hudLife);
+    html("hud-round", ui.hudRound);
 }
 
 export function updateGameoverUi(state) {
