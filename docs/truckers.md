@@ -387,7 +387,56 @@ dy = abs(ship.y - AIRLOCK_Y)
 
 ---
 
-## 11. スコア仕様
+## 11. 小惑星密集航路・燃料スタンド仕様
+
+火星と木星の間にあるアステロイドベルトを12分割した航路のうち、特に小惑星密度が濃い宙域を通過する便を `dense_route` として扱う。
+
+対象は「到着先」が次のステーションである航路とする。
+
+| 到着先 | 内容 |
+|---|---|
+| 第4宇宙ステーション かに | 密集航路 |
+| 第8宇宙ステーション さそり | 密集航路 |
+| 第12宇宙ステーション うお | 密集航路 |
+
+内部判定は出発ステージ番号ではなく、目的地ステーション番号を基準にする。
+
+```text
+destination_station_no = ((stage + 1) % TOTAL_STATIONS) + 1
+dense_route = destination_station_no in [4, 8, 12]
+```
+
+密集航路では小惑星スポーン間隔を通常の半分にする。これは画面内の小惑星数を概ね倍増させるための仕様であり、個々の小惑星サイズ・速度抽選は通常航路と同じルールを使う。
+
+### 11.1 燃料スタンド
+
+密集航路では中盤に燃料スタンドが出現する。進行率が `50%` に到達すると `FuelDocking` フェーズへ入り、通常の小惑星と鉱石は一度消える。
+
+燃料スタンドは通常ステーションとは別の中継設備であり、目的地到着ではない。接続後は同じ航路へ戻って航行を続ける。
+
+```text
+Playing
+  └─ dense_route && progress >= 50% && !fuel_stand_done
+      -> FuelDocking
+FuelDocking
+  └─ dy < DOCK_Y_R && dx < FUEL_STAND_X_OK
+      -> refuel attempt
+      -> Playing or Docking
+```
+
+補給費は通常ステーションの燃料補給と同じく、燃料不足分に `FUEL_COST_PER_POINT` を掛けた金額を上限にする。所持金が足りない場合は、支払える分だけ補給する。支払える金額が0の場合は補給せず航路へ戻る。
+
+燃料スタンド接続時は横方向精度に応じて小さな接続ボーナスを加算する。これは通常ドッキングの配達ボーナスとは別扱いであり、配達完了画面の通常内訳には含めない。
+
+### 11.2 表示
+
+燃料スタンドは画面中段に `FUEL` 表示の中継設備として描画する。通常の目的地ステーションとは色を変え、オレンジ系の補給設備として見分けられるようにする。
+
+ゲーム中の下部メッセージは `▲ 燃料スタンドへ接続！` とし、英語表示では `▲ Dock with fuel stand!` とする。
+
+---
+
+## 12. スコア仕様
 
 配達完了時のスコア内訳は次の通り。
 
@@ -406,7 +455,7 @@ dy = abs(ship.y - AIRLOCK_Y)
 
 ---
 
-## 12. イベント一覧
+## 13. イベント一覧
 
 サーバは `event` キーで一時イベントを送る。クライアントは GM コメント、効果音、演出に使う。
 
@@ -418,6 +467,9 @@ dy = abs(ship.y - AIRLOCK_Y)
 | `booster_call` | ブースター中継出現 | GM案内 |
 | `booster_attach` | ブースター装着成功 | 高速スクロール化 |
 | `booster_fee_short` | ブースター代不足 | GM警告 |
+| `fuel_stand_call` | 燃料スタンド出現 | GM案内 |
+| `fuel_stand_refuel` | 燃料スタンド補給成功 | GM案内 |
+| `fuel_stand_fee_short` | 燃料スタンド補給費不足 | GM警告 |
 | `late_fine` | 遅延罰金発生 | GM警告 |
 | `fuel_empty` | 燃料切れ | GAME OVER、GM警告 |
 | `mineral_gold` | 金鉱石取得 | ピコン音、GMコメント |
@@ -426,9 +478,9 @@ dy = abs(ship.y - AIRLOCK_Y)
 
 ---
 
-## 13. WebSocket メッセージ仕様
+## 14. WebSocket メッセージ仕様
 
-### 13.1 Client -> Server
+### 14.1 Client -> Server
 
 ```json
 { "type": "start", "name": "シノヤマ" }
@@ -446,7 +498,7 @@ dy = abs(ship.y - AIRLOCK_Y)
 { "type": "restart" }
 ```
 
-### 13.2 Server -> Client
+### 14.2 Server -> Client
 
 サーバは `state` を返す。
 
@@ -468,6 +520,11 @@ dy = abs(ship.y - AIRLOCK_Y)
 | `asteroids` | 小惑星配列 |
 | `minerals` | 鉱石配列 |
 | `event` | 一時イベント |
+| `dense_route` | 小惑星密集航路かどうか |
+| `fuel_stand_enabled` | 燃料スタンド対象航路かどうか |
+| `fuel_stand_done` | 当該航路で燃料スタンド処理が完了したか |
+| `fuel_stand_x` | 燃料スタンド接続位置 |
+| `fuel_stand_cost` | 燃料スタンドで支払った補給費 |
 | `booster_enabled` | ブースター便か |
 | `booster_attached` | ブースター装着済みか |
 | `fast_scroll` | 高速スクロール中か |

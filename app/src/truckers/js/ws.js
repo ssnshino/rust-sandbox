@@ -64,6 +64,7 @@ function handleMsg(msg) {
     case "launching":
     case "playing":
     case "booster_docking":
+    case "fuel_docking":
     case "docking":
       showScreen("playing");
       try {
@@ -79,6 +80,9 @@ function handleMsg(msg) {
         if (msg.event === "booster_call") showGm(pick(t("gm_booster")));
         if (msg.event === "booster_attach") showGm(pick(t("gm_booster_ok")));
         if (msg.event === "booster_fee_short") showGm(pick(t("gm_booster_fee_short")));
+        if (msg.event === "fuel_stand_call") showGm(pick(t("gm_fuel_stand")));
+        if (msg.event === "fuel_stand_refuel") showGm(pick(t("gm_fuel_stand_ok")));
+        if (msg.event === "fuel_stand_fee_short") showGm(pick(t("gm_fuel_stand_short")));
         if (msg.event === "late_fine") showGm(pick(t("gm_late_fine")));
         if (msg.event === "fuel_empty") showGm(pick(t("gm_fuel_empty")));
         if (msg.event === "mineral_gold") {
@@ -92,6 +96,9 @@ function handleMsg(msg) {
       }
       if (msg.phase === "booster_docking" && prevPhase !== "booster_docking") {
         showGm(pick(t("gm_booster")));
+      }
+      if (msg.phase === "fuel_docking" && prevPhase !== "fuel_docking") {
+        showGm(pick(t("gm_fuel_stand")));
       }
       if (msg.phase === "docking" && prevPhase !== "docking") {
         showGm(pick(t("gm_dock")));

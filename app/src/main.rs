@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 mod game;
 mod breakout;
 mod scores;
@@ -73,6 +74,7 @@ async fn main() {
         .route("/truckers.i18n.json",  get(truckers_i18n))
         .route("/truckers/refs/:name", get(truckers_ref))
         .route("/ws/truckers",         get(ws_truckers))
+        .route("/favicon.ico",         get(favicon))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -124,6 +126,16 @@ async fn truckers_ref(Path(name): Path<String>) -> impl IntoResponse {
             (CACHE_CONTROL, "public, max-age=3600"),
         ],
         bytes,
+    ).into_response()
+}
+
+async fn favicon() -> impl IntoResponse {
+    (
+        [
+            (CONTENT_TYPE, "image/x-icon"),
+            (CACHE_CONTROL, "public, max-age=86400"),
+        ],
+        include_bytes!("favicon.ico").as_slice(),
     ).into_response()
 }
 

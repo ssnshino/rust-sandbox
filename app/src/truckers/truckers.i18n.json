@@ -113,6 +113,19 @@
     "gm_fuel_empty": [
       "燃料切れだよ！宇宙でガス欠は洒落にならないよ！",
       "FUEL EMPTY！漂流コースだね……"
+    ],
+    "fuel_stand_lbl": "▲ 燃料スタンドへ接続！",
+    "gm_fuel_stand": [
+      "小惑星密集航路だよ！中間燃料スタンドに寄れるよ！",
+      "燃料スタンド発見！お金があれば補給できるよ！"
+    ],
+    "gm_fuel_stand_ok": [
+      "燃料補給完了！まだ走れるよ！",
+      "給油できたよ。ここからが勝負だね！"
+    ],
+    "gm_fuel_stand_short": [
+      "補給費用が足りない！このまま行くしかないね！",
+      "お金がないから補給なしだよ！節約航行で！"
     ]
   },
   "en": {
@@ -228,6 +241,19 @@
     "gm_fuel_empty": [
       "Fuel empty! That is not how space trucking works!",
       "FUEL EMPTY! You are drifting now..."
+    ],
+    "fuel_stand_lbl": "▲ Dock with fuel stand!",
+    "gm_fuel_stand": [
+      "Dense asteroid route ahead! A fuel stand is open mid-route!",
+      "Fuel stand detected! Dock if you can pay."
+    ],
+    "gm_fuel_stand_ok": [
+      "Refuel complete! Keep trucking!",
+      "Fuel topped up. Now punch through!"
+    ],
+    "gm_fuel_stand_short": [
+      "Not enough cash to refuel!",
+      "No money, no fuel. Coast carefully!"
     ]
   }
 }
