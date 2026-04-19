@@ -291,19 +291,33 @@ function drawDepartStation(cx, sy, symbol, departX) {
 }
 
 // Draw thrust flames only while control input is held.
-function drawThrusters(tw, th) {
+function drawThrusters(tw, th, boosterAttached) {
   const MAIN_COLOR = "rgba(251,191,36,";
   const SIDE_COLOR = "rgba(147,197,253,";
   if (keys.up) {
-    const fl = 10 + Math.random() * 12;
-    const fw = 4 + Math.random() * 3;
-    ctx.beginPath();
-    ctx.moveTo(-fw / 2, th / 2);
-    ctx.lineTo((Math.random() - 0.5) * 4, th / 2 + fl);
-    ctx.lineTo(fw / 2, th / 2);
-    ctx.closePath();
-    ctx.fillStyle = MAIN_COLOR + (0.7 + Math.random() * 0.3) + ")";
-    ctx.fill();
+    if (boosterAttached) {
+      const fl = 22 + Math.random() * 24;
+      const fw = 5 + Math.random() * 4;
+      [-4.5, 4.5].forEach((ox) => {
+        ctx.beginPath();
+        ctx.moveTo(ox - fw / 2, th / 2);
+        ctx.lineTo(ox + (Math.random() - 0.5) * 4, th / 2 + fl);
+        ctx.lineTo(ox + fw / 2, th / 2);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(248,113,113," + (0.75 + Math.random() * 0.2) + ")";
+        ctx.fill();
+      });
+    } else {
+      const fl = 10 + Math.random() * 12;
+      const fw = 4 + Math.random() * 3;
+      ctx.beginPath();
+      ctx.moveTo(-fw / 2, th / 2);
+      ctx.lineTo((Math.random() - 0.5) * 4, th / 2 + fl);
+      ctx.lineTo(fw / 2, th / 2);
+      ctx.closePath();
+      ctx.fillStyle = MAIN_COLOR + (0.7 + Math.random() * 0.3) + ")";
+      ctx.fill();
+    }
   }
   if (keys.down) {
     const fl = 5 + Math.random() * 7;
@@ -344,7 +358,7 @@ function drawTruck(x, y, invincible, tick, boosterAttached) {
   ctx.translate(x, y);
   const tw = 14;
   const th = 28;
-  drawThrusters(tw, th);
+  drawThrusters(tw, th, boosterAttached);
   ctx.fillStyle = "#2563eb";
   ctx.fillRect(-tw / 2, -th / 2, tw, th);
   ctx.fillStyle = "#bfdbfe";

@@ -76,6 +76,8 @@ function handleMsg(msg) {
         if (msg.event === "delivery") showGm(pick(t("gm_ok")));
         if (msg.event === "booster_call") showGm(pick(t("gm_booster")));
         if (msg.event === "booster_attach") showGm(pick(t("gm_booster_ok")));
+        if (msg.event === "booster_fee_short") showGm(pick(t("gm_booster_fee_short")));
+        if (msg.event === "late_fine") showGm(pick(t("gm_late_fine")));
         if (msg.event === "mineral_gold") {
           showGm(lang === "ja" ? "金鉱石ゲット！" : "Gold ore get!");
           beep(1040, 0.07, "square", 0.05);
@@ -111,8 +113,9 @@ function handleMsg(msg) {
           }),
           msg.next_stage_booster
             ? t("clear_booster_notice")
-            : t("score_lbl") + (msg.score || 0).toLocaleString(),
+            : tf("clear_score_only", { score: Number(msg.score || 0).toLocaleString() }),
           getLangDict(),
+          msg,
         );
         setNextRouteState({ stage: ((msg.stage || 0) + 1) % 12 });
       }
@@ -124,7 +127,7 @@ function handleMsg(msg) {
       }
       renderGame(msg);
       if (prevPhase !== "lap_clear") {
-        showClear(t("lap_title"), tf("lap_sub", { round: msg.round }), getLangDict());
+        showClear(t("lap_title"), tf("lap_sub", { round: msg.round }), getLangDict(), msg);
         setNextRouteState({ stage: 0 });
       }
       prevPhase = msg.phase;
