@@ -76,3 +76,4 @@ export const vstickKnob = document.getElementById("vstick-knob");
 export const btnManip = document.getElementById("btn-manip");
 export const actionButtons = document.getElementById("action-buttons");
 export const touchControls = document.getElementById("touch-controls");
+export const fpsMeter = document.getElementById("fps-meter");

@@ -109,6 +109,10 @@
       "やぎ",
       "みずがめ",
       "うお"
+    ],
+    "gm_fuel_empty": [
+      "燃料切れだよ！宇宙でガス欠は洒落にならないよ！",
+      "FUEL EMPTY！漂流コースだね……"
     ]
   },
   "en": {
@@ -220,6 +224,10 @@
       "Capricorn",
       "Aquarius",
       "Pisces"
+    ],
+    "gm_fuel_empty": [
+      "Fuel empty! That is not how space trucking works!",
+      "FUEL EMPTY! You are drifting now..."
     ]
   }
 }

@@ -424,6 +424,12 @@ impl Game {
         };
         if can_thrust {
             self.spend_fuel();
+            if self.fuel <= 0.0 {
+                self.fuel = 0.0;
+                self.phase = Phase::GameOver;
+                self.event = Some("fuel_empty");
+                return;
+            }
         }
         self.svx = (self.svx + ax) * SHIP_DRAG;
         self.svy = (self.svy + ay) * SHIP_DRAG;
