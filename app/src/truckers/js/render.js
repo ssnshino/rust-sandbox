@@ -1,4 +1,4 @@
-import { BOOSTER_Y, canvas, ctx, H, keys, lang, ui, W } from "./state.js";
+import { BOOSTER_Y, canvas, ctx, fpsMeter, H, keys, lang, ui, W } from "./state.js";
 import { localizedStationName, t, tf } from "./i18n.js";
 import { updateHudUi } from "./ui.js";
 
@@ -54,6 +54,34 @@ const SCROLL_MAX = 3.5;
 let scrollSpeed = BASE_SCROLL;
 let scrollOffset = 0;
 let titleTick = 0;
+let renderFrames = 0;
+let networkFrames = 0;
+let shownFps = 0;
+let shownNet = 0;
+let meterLastMs = performance.now();
+
+// Count one authoritative state packet received over WebSocket.
+export function recordNetworkFrame() {
+  networkFrames += 1;
+}
+
+// Update the small FPS/NET meter roughly twice per second.
+function updateFpsMeter() {
+  renderFrames += 1;
+  const now = performance.now();
+  const elapsed = now - meterLastMs;
+  if (elapsed >= 500) {
+    shownFps = Math.round((renderFrames * 1000) / elapsed);
+    shownNet = Math.round((networkFrames * 1000) / elapsed);
+    renderFrames = 0;
+    networkFrames = 0;
+    meterLastMs = now;
+  }
+  if (fpsMeter) {
+    fpsMeter.textContent = `FPS ${shownFps || "--"} / NET ${shownNet || "--"}`;
+  }
+}
+
 
 function roundedRectPath(x, y, w, h, r) {
   const radius = Math.max(0, Math.min(r, w / 2, h / 2));
@@ -548,6 +576,7 @@ function drawHUD(state) {
 
 // Render a full gameplay frame from the latest authoritative server state.
 export function renderGame(state) {
+  updateFpsMeter();
   const tick = state.tick || 0;
   renderBg(tick, state.ship ? state.ship.y : undefined, !!state.fast_scroll);
   drawProgressBar(state.progress, state.phase);

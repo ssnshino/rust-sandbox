@@ -1,5 +1,6 @@
 import { beep } from "./audio.js";
 import { lang } from "./state.js";
+import { recordNetworkFrame } from "./render.js";
 import { renderGame, renderTitleBg } from "./render.js";
 import { getLangDict, t, tf } from "./i18n.js";
 import { setNextRouteState, showClear, showGm, showScreen, renderScoreList, updateGameoverUi } from "./ui.js";
@@ -50,6 +51,7 @@ export function send(obj) {
 // Consume state packets from the server and route them to the proper screen.
 function handleMsg(msg) {
   if (msg.type !== "state") return;
+  recordNetworkFrame();
   switch (msg.phase) {
     case "title":
       showScreen("title");
@@ -78,6 +80,7 @@ function handleMsg(msg) {
         if (msg.event === "booster_attach") showGm(pick(t("gm_booster_ok")));
         if (msg.event === "booster_fee_short") showGm(pick(t("gm_booster_fee_short")));
         if (msg.event === "late_fine") showGm(pick(t("gm_late_fine")));
+        if (msg.event === "fuel_empty") showGm(pick(t("gm_fuel_empty")));
         if (msg.event === "mineral_gold") {
           showGm(lang === "ja" ? "金鉱石ゲット！" : "Gold ore get!");
           beep(1040, 0.07, "square", 0.05);
