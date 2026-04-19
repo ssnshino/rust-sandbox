@@ -10,8 +10,8 @@ const TICK_MS: u64 = 33;
 //const W: f32 = 540.0;
 //const H: f32 = 540.0;
 // @@@ 20260418 change.
-const W: f32 = 360.0;
-const H: f32 = 600.0;
+const W: f32 = 375.0;
+const H: f32 = 640.0;
 
 const SHIP_MAX_SPEED: f32 = 5.5;
 const SHIP_ACCEL: f32 = 0.35;
@@ -27,12 +27,17 @@ const BOOSTER_X_PERFECT: f32 = 6.0;
 const BOOSTER_X_GOOD: f32 = 14.0;
 const BOOSTER_X_OK: f32 = 24.0;
 const BOOSTER_SCROLL_BONUS_Y: f32 = 1.85;
+const FUEL_STAND_TRIGGER_PCT: f32 = 0.50;
+const FUEL_STAND_Y: f32 = 250.0;
+const FUEL_STAND_X_PERFECT: f32 = 7.0;
+const FUEL_STAND_X_GOOD: f32 = 16.0;
+const FUEL_STAND_X_OK: f32 = 26.0;
 
 const DOCK_Y_R: f32 = 35.0; // 縦方向のドッキング許容範囲
 const DOCK_X_PERFECT: f32 = 5.0; // 完璧ドッキング
 const DOCK_X_GOOD: f32 = 12.0;
 const DOCK_X_OK: f32 = 22.0; // これ以上離れると不可
-const AIRLOCK_Y: f32 = 50.0;
+const AIRLOCK_Y: f32 = 90.0;
 const DEPART_Y: f32 = H - 40.0;
 
 const INVINCIBLE_TICKS: u32 = 60;
@@ -202,6 +207,7 @@ enum Phase {
     Launching,
     Playing,
     BoosterDocking,
+    FuelDocking,
     Docking,
     StageClear,
     LapClear,
@@ -225,6 +231,7 @@ struct Game {
     airlock_x: f32,
     depart_x: f32,
     booster_x: f32,
+    fuel_stand_x: f32,
     asteroids: Vec<Asteroid>,
     minerals: Vec<Mineral>,
     mineral_next_id: u32,
@@ -239,6 +246,8 @@ struct Game {
     booster_enabled: bool,
     booster_attached: bool,
     booster_done: bool,
+    fuel_stand_enabled: bool,
+    fuel_stand_done: bool,
     late_fined: bool,
     gold_count: u32,
     rare_count: u32,
@@ -250,6 +259,7 @@ struct Game {
     last_booster_cost: u32,
     last_repair_cost: u32,
     last_fuel_cost: u32,
+    last_fuel_stand_cost: u32,
     keys_up: bool,
     keys_down: bool,
     keys_left: bool,
@@ -323,6 +333,7 @@ impl Game {
             airlock_x: pick_airlock_x(0, 1),
             depart_x: W / 2.0,
             booster_x: pick_booster_x(0, 1),
+            fuel_stand_x: pick_fuel_stand_x(0, 1),
             asteroids: Vec::new(),
             minerals: Vec::new(),
             mineral_next_id: 0,
@@ -337,6 +348,8 @@ impl Game {
             booster_enabled: false,
             booster_attached: false,
             booster_done: false,
+            fuel_stand_enabled: is_dense_route(0),
+            fuel_stand_done: false,
             late_fined: false,
             gold_count: 0,
             rare_count: 0,
@@ -348,6 +361,7 @@ impl Game {
             last_booster_cost: 0,
             last_repair_cost: 0,
             last_fuel_cost: 0,
+            last_fuel_stand_cost: 0,
             keys_up: false,
             keys_down: false,
             keys_left: false,
@@ -490,11 +504,14 @@ impl Game {
 
         // ── Spawn asteroids (playing only) ──
         if self.phase == Phase::Playing {
-            let interval = if self.booster_attached {
+            let mut interval = if self.booster_attached {
                 spawn_interval_boosted(self.round, progress)
             } else {
                 spawn_interval(self.round, progress)
             };
+            if self.fuel_stand_enabled {
+                interval = (interval / 2).max(4);
+            }
             if self.tick % interval == 0 {
                 self.asteroids
                     .push(spawn_asteroid(self.tick, self.asteroids.len(), self.round));
@@ -556,7 +573,12 @@ impl Game {
         }
 
         // ── Collision (asteroids) ──
-        if self.invincible == 0 && matches!(self.phase, Phase::Playing | Phase::BoosterDocking) {
+        if self.invincible == 0
+            && matches!(
+                self.phase,
+                Phase::Playing | Phase::BoosterDocking | Phase::FuelDocking
+            )
+        {
             for a in &self.asteroids {
                 let dx = self.sx - a.x;
                 let dy = self.sy - a.y;
@@ -625,6 +647,53 @@ impl Game {
             }
         }
 
+        // ── Enter fuel stand docking phase on dense asteroid routes ──
+        if self.phase == Phase::Playing
+            && self.fuel_stand_enabled
+            && !self.fuel_stand_done
+            && progress >= FUEL_STAND_TRIGGER_PCT
+        {
+            self.phase = Phase::FuelDocking;
+            self.asteroids.clear();
+            self.minerals.clear();
+            self.event = Some("fuel_stand_call");
+        }
+
+        // ── Check fuel stand docking ──
+        if self.phase == Phase::FuelDocking {
+            let dx = (self.sx - self.fuel_stand_x).abs();
+            let dy = (self.sy - FUEL_STAND_Y).abs();
+            if dy < DOCK_Y_R && dx < FUEL_STAND_X_OK {
+                let fuel_needed = (SHIP_FUEL_MAX - self.fuel).max(0.0).ceil() as u32;
+                let fuel_points = fuel_needed.min(self.money / FUEL_COST_PER_POINT);
+                if fuel_needed > 0 && fuel_points == 0 {
+                    self.event = Some("fuel_stand_fee_short");
+                    self.last_fuel_stand_cost = 0;
+                } else {
+                    let cost = fuel_points * FUEL_COST_PER_POINT;
+                    self.money = self.money.saturating_sub(cost);
+                    self.fuel = (self.fuel + fuel_points as f32).min(SHIP_FUEL_MAX);
+                    self.last_fuel_stand_cost = cost;
+                    let (bonus, _precision) = if dx < FUEL_STAND_X_PERFECT {
+                        (300 * self.round, 0u8)
+                    } else if dx < FUEL_STAND_X_GOOD {
+                        (150 * self.round, 1u8)
+                    } else {
+                        (50 * self.round, 2u8)
+                    };
+                    self.score += bonus;
+                    self.event = Some("fuel_stand_refuel");
+                }
+                self.fuel_stand_done = true;
+                self.phase = if progress >= 0.80 {
+                    Phase::Docking
+                } else {
+                    Phase::Playing
+                };
+                return;
+            }
+        }
+
         // ── Enter docking phase ──
         if self.phase == Phase::Playing && progress >= 0.80 {
             self.phase = Phase::Docking;
@@ -686,6 +755,7 @@ impl Game {
         self.depart_x = self.airlock_x;
         self.airlock_x = pick_airlock_x(self.stage as u32, self.round);
         self.booster_x = pick_booster_x(self.stage as u32, self.round);
+        self.fuel_stand_x = pick_fuel_stand_x(self.stage as u32, self.round);
         self.sx = self.depart_x;
         self.sy = DEPART_Y;
         self.svx = 0.0;
@@ -702,6 +772,8 @@ impl Game {
         self.booster_attached = false;
         self.booster_done = false;
         self.booster_precision = 2;
+        self.fuel_stand_enabled = is_dense_route(self.stage);
+        self.fuel_stand_done = false;
         self.gold_count = 0;
         self.rare_count = 0;
         self.last_delivery_score = 0;
@@ -712,6 +784,7 @@ impl Game {
         self.last_booster_cost = 0;
         self.last_repair_cost = 0;
         self.last_fuel_cost = 0;
+        self.last_fuel_stand_cost = 0;
     }
 
     fn to_json(&self) -> String {
@@ -719,6 +792,7 @@ impl Game {
             Phase::Launching => "launching",
             Phase::Playing => "playing",
             Phase::BoosterDocking => "booster_docking",
+            Phase::FuelDocking => "fuel_docking",
             Phase::Docking => "docking",
             Phase::StageClear => "stage_clear",
             Phase::LapClear => "lap_clear",
@@ -753,7 +827,7 @@ impl Game {
             "manip_len": self.manip_len,
             "hp":self.hp,"fuel":((self.fuel * 10.0).round() / 10.0),"score":self.score,"money":self.money,"round":self.round,"stage":self.stage,"lap":self.lap,
             "progress":progress,"stage_tick":self.stage_tick,
-            "airlock_x":self.airlock_x,"depart_x":self.depart_x,"booster_x":self.booster_x,
+            "airlock_x":self.airlock_x,"depart_x":self.depart_x,"booster_x":self.booster_x,"fuel_stand_x":self.fuel_stand_x,
             "from":{"name_ja":from_st.0,"name_en":from_st.1,"symbol":from_st.2},
             "to":  {"name_ja":to_st.0,  "name_en":to_st.1,  "symbol":to_st.2},
             "asteroids":asteroids,"minerals":minerals,
@@ -768,14 +842,19 @@ impl Game {
             "booster_cost": self.last_booster_cost,
             "repair_cost": self.last_repair_cost,
             "fuel_cost": self.last_fuel_cost,
+            "fuel_stand_cost": self.last_fuel_stand_cost,
             "dock_precision":self.dock_precision,
             "booster_precision":self.booster_precision,
             "booster_enabled":self.booster_enabled,
             "booster_attached":self.booster_attached,
+            "fuel_stand_enabled":self.fuel_stand_enabled,
+            "fuel_stand_done":self.fuel_stand_done,
+            "dense_route":self.fuel_stand_enabled,
             "fast_scroll":self.booster_attached,
             "next_stage_booster":next_stage_booster,
             "dock_x_ok": DOCK_X_OK,
             "booster_x_ok": BOOSTER_X_OK,
+            "fuel_stand_x_ok": FUEL_STAND_X_OK,
         }).to_string()
     }
 }
@@ -795,6 +874,19 @@ fn pick_booster_x(stage: u32, round: u32) -> f32 {
 
 fn should_booster_stage(stage: usize) -> bool {
     stage > 0 && (stage + 1) % 3 == 1
+}
+
+fn is_dense_route(stage: usize) -> bool {
+    let destination_station_no = ((stage + 1) % TOTAL_STATIONS) + 1;
+    matches!(destination_station_no, 4 | 8 | 12)
+}
+
+fn pick_fuel_stand_x(stage: u32, round: u32) -> f32 {
+    let seed = lcg(stage
+        .wrapping_mul(2179)
+        .wrapping_add(round * 1423)
+        .wrapping_add(191));
+    88.0 + lcgf(seed) * (W - 176.0)
 }
 
 // ── Input ─────────────────────────────────────────────────────────────────────

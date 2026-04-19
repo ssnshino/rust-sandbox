@@ -1,4 +1,4 @@
-import { BOOSTER_Y, canvas, ctx, fpsMeter, H, keys, lang, ui, W } from "./state.js";
+import { BOOSTER_Y, canvas, ctx, fpsMeter, FUEL_STAND_Y, H, keys, lang, ui, W } from "./state.js";
 import { localizedStationName, t, tf } from "./i18n.js";
 import { updateHudUi } from "./ui.js";
 
@@ -169,33 +169,46 @@ function renderBg(tick, shipY, fastScroll) {
 // Draw a station body, labels and optional destination or booster airlock.
 function drawStation(cx, cy, symbol, name, isDestination, airlockX, pulse, mode = "destination") {
   const isBooster = mode === "booster";
-  const ringStroke = isBooster
+  const isFuel = mode === "fuel";
+  const ringStroke = isFuel
+    ? `rgba(251,146,60,${0.45 + 0.4 * pulse})`
+    : isBooster
     ? `rgba(34,197,94,${0.45 + 0.4 * pulse})`
     : isDestination
       ? `rgba(251,191,36,${0.5 + 0.4 * pulse})`
       : "rgba(99,102,241,0.5)";
-  const bodyFill = isBooster
-    ? "rgba(8,28,18,0.88)"
+  const bodyFill = isFuel
+    ? "rgba(36,18,6,0.9)"
+    : isBooster
+      ? "rgba(8,28,18,0.88)"
     : isDestination
       ? "rgba(45,30,10,0.8)"
       : "rgba(20,20,40,0.8)";
-  const panelFill = isBooster
-    ? "rgba(34,197,94,0.30)"
+  const panelFill = isFuel
+    ? "rgba(251,146,60,0.30)"
+    : isBooster
+      ? "rgba(34,197,94,0.30)"
     : isDestination
       ? "rgba(251,191,36,0.35)"
       : "rgba(99,102,241,0.3)";
-  const panelStroke = isBooster
-    ? "rgba(134,239,172,0.55)"
+  const panelStroke = isFuel
+    ? "rgba(253,186,116,0.55)"
+    : isBooster
+      ? "rgba(134,239,172,0.55)"
     : isDestination
       ? "rgba(251,191,36,0.5)"
       : "rgba(99,102,241,0.4)";
-  const labelFill = isBooster
-    ? `rgba(187,247,208,${0.75 + 0.2 * pulse})`
+  const labelFill = isFuel
+    ? `rgba(254,215,170,${0.75 + 0.2 * pulse})`
+    : isBooster
+      ? `rgba(187,247,208,${0.75 + 0.2 * pulse})`
     : isDestination
       ? `rgba(253,230,138,${0.7 + 0.3 * pulse})`
       : "rgba(165,180,252,0.8)";
-  const subFill = isBooster
-    ? "rgba(187,247,208,0.7)"
+  const subFill = isFuel
+    ? "rgba(254,215,170,0.72)"
+    : isBooster
+      ? "rgba(187,247,208,0.7)"
     : isDestination
       ? "rgba(253,230,138,0.6)"
       : "rgba(148,163,184,0.5)";
@@ -232,21 +245,23 @@ function drawStation(cx, cy, symbol, name, isDestination, airlockX, pulse, mode 
   ctx.textAlign = "center";
   ctx.font = "14px DotGothic16, monospace";
   ctx.fillStyle = labelFill;
-  ctx.fillText(isBooster ? "BOOST" : symbol, 0, 5);
+  ctx.fillText(isFuel ? "FUEL" : isBooster ? "BOOST" : symbol, 0, 5);
   ctx.font = "9px DotGothic16, monospace";
   ctx.fillStyle = subFill;
-  ctx.fillText(isBooster ? (lang === "ja" ? "中継" : "Relay") : name, 0, 20);
+  ctx.fillText(isFuel ? (lang === "ja" ? "補給" : "Refuel") : isBooster ? (lang === "ja" ? "中継" : "Relay") : name, 0, 20);
   ctx.restore();
 
-  if (isDestination || isBooster) {
+  if (isDestination || isBooster || isFuel) {
     const ax = airlockX;
     const ay = cy;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(ax, ay);
-    ctx.strokeStyle = isBooster
-      ? `rgba(34,197,94,${0.22 + 0.18 * pulse})`
-      : `rgba(251,191,36,${0.2 + 0.15 * pulse})`;
+    ctx.strokeStyle = isFuel
+      ? `rgba(251,146,60,${0.22 + 0.18 * pulse})`
+      : isBooster
+        ? `rgba(34,197,94,${0.22 + 0.18 * pulse})`
+        : `rgba(251,191,36,${0.2 + 0.15 * pulse})`;
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 6]);
     ctx.stroke();
@@ -256,11 +271,13 @@ function drawStation(cx, cy, symbol, name, isDestination, airlockX, pulse, mode 
     const gradient = ctx.createRadialGradient(ax, ay, 2, ax, ay, glowR);
     gradient.addColorStop(
       0,
-      isBooster
-        ? `rgba(96,165,250,${0.6 + 0.3 * pulse})`
-        : `rgba(34,197,94,${0.6 + 0.3 * pulse})`,
+      isFuel
+        ? `rgba(251,146,60,${0.65 + 0.25 * pulse})`
+        : isBooster
+          ? `rgba(96,165,250,${0.6 + 0.3 * pulse})`
+          : `rgba(34,197,94,${0.6 + 0.3 * pulse})`,
     );
-    gradient.addColorStop(1, isBooster ? "rgba(96,165,250,0)" : "rgba(34,197,94,0)");
+    gradient.addColorStop(1, isFuel ? "rgba(251,146,60,0)" : isBooster ? "rgba(96,165,250,0)" : "rgba(34,197,94,0)");
     ctx.beginPath();
     ctx.arc(ax, ay, glowR, 0, Math.PI * 2);
     ctx.fillStyle = gradient;
@@ -268,19 +285,25 @@ function drawStation(cx, cy, symbol, name, isDestination, airlockX, pulse, mode 
 
     ctx.beginPath();
     ctx.arc(ax, ay, 8, 0, Math.PI * 2);
-    ctx.fillStyle = isBooster
-      ? `rgba(96,165,250,${0.45 + 0.3 * pulse})`
-      : `rgba(34,197,94,${0.4 + 0.3 * pulse})`;
+    ctx.fillStyle = isFuel
+      ? `rgba(251,146,60,${0.45 + 0.3 * pulse})`
+      : isBooster
+        ? `rgba(96,165,250,${0.45 + 0.3 * pulse})`
+        : `rgba(34,197,94,${0.4 + 0.3 * pulse})`;
     ctx.fill();
-    ctx.strokeStyle = isBooster
-      ? `rgba(191,219,254,${0.7 + 0.25 * pulse})`
-      : `rgba(134,239,172,${0.7 + 0.3 * pulse})`;
+    ctx.strokeStyle = isFuel
+      ? `rgba(254,215,170,${0.7 + 0.25 * pulse})`
+      : isBooster
+        ? `rgba(191,219,254,${0.7 + 0.25 * pulse})`
+        : `rgba(134,239,172,${0.7 + 0.3 * pulse})`;
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    ctx.fillStyle = isBooster
-      ? `rgba(191,219,254,${0.65 + 0.25 * pulse})`
-      : `rgba(134,239,172,${0.6 + 0.3 * pulse})`;
+    ctx.fillStyle = isFuel
+      ? `rgba(254,215,170,${0.65 + 0.25 * pulse})`
+      : isBooster
+        ? `rgba(191,219,254,${0.65 + 0.25 * pulse})`
+        : `rgba(134,239,172,${0.6 + 0.3 * pulse})`;
     ctx.textAlign = "center";
     ctx.font = "12px sans-serif";
     ctx.fillText("▼", ax, ay + 28);
@@ -557,11 +580,14 @@ function drawHUD(state) {
   ctx.textAlign = "center";
   const isDocking = state.phase === "docking";
   const isBoosterDocking = state.phase === "booster_docking";
-  ctx.font = isDocking ? "14px DotGothic16, monospace" : "12px DotGothic16, monospace";
-  ctx.fillStyle = isBoosterDocking ? "#bfdbfe" : isDocking ? "#86efac" : "#7dd3fc";
-  const label = isBoosterDocking
-    ? t("booster_lbl")
-    : isDocking
+  const isFuelDocking = state.phase === "fuel_docking";
+  ctx.font = isDocking || isFuelDocking ? "14px DotGothic16, monospace" : "12px DotGothic16, monospace";
+  ctx.fillStyle = isFuelDocking ? "#fed7aa" : isBoosterDocking ? "#bfdbfe" : isDocking ? "#86efac" : "#7dd3fc";
+  const label = isFuelDocking
+    ? t("fuel_stand_lbl")
+    : isBoosterDocking
+      ? t("booster_lbl")
+      : isDocking
       ? tf("dock_lbl", {
           symbol: state.to.symbol,
           name: localizedStationName(state.to),
@@ -627,10 +653,17 @@ export function renderGame(state) {
     drawStation(180, BOOSTER_Y, "", "", true, state.booster_x, pulse, "booster");
   }
 
+  if (
+    state.phase === "fuel_docking" ||
+    (state.fuel_stand_enabled && !state.fuel_stand_done && (state.progress || 0) >= 45 && (state.progress || 0) <= 66)
+  ) {
+    drawStation(180, FUEL_STAND_Y, "", "", true, state.fuel_stand_x, pulse, "fuel");
+  }
+
   if (state.phase === "docking" || (state.progress || 0) >= 78) {
 //    drawStation(270, 30, state.to.symbol, destinationName, true, state.airlock_x, pulse);
     // @@@ 20260418 size change 270->180 (canvas w540->w360)
-    drawStation(180, 30, state.to.symbol, destinationName, true, state.airlock_x, pulse);
+    drawStation(180, 120, state.to.symbol, destinationName, true, state.airlock_x, pulse);
   }
 
   drawAsteroids(state.asteroids);
