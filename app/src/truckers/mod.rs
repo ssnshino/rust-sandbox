@@ -11,7 +11,7 @@ const TICK_MS: u64 = 33;
 //const H: f32 = 540.0;
 // @@@ 20260418 change.
 const W: f32 = 375.0;
-const H: f32 = 640.0;
+const H: f32 = 667.0;
 
 const SHIP_MAX_SPEED: f32 = 5.5;
 const SHIP_ACCEL: f32 = 0.35;

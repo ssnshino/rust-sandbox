@@ -222,6 +222,7 @@ function bindFallbackDom() {
             sendMessage({ type: "restart" });
             return;
         }
+        // 配達完了「次のステーションへ！」ボタン
         if (target.closest("#btn-continue")) {
             event.preventDefault();
             clearTimeout(clearTimeoutId);
@@ -229,6 +230,7 @@ function bindFallbackDom() {
             triggerContinueFlow();
             return;
         }
+        // 航路マップ「出発」ボタン
         if (target.closest("#btn-route-go")) {
             event.preventDefault();
             hideRouteScreen();
@@ -269,6 +271,9 @@ export function createTruckersUi() {
     syncUiLanguage();
 }
 
+/*
+ * ステージクリア画面
+ */
 export function showClear(title, sub, i18n, state) {
     hideGm();
     clearTimeout(clearTimeoutId);
@@ -276,6 +281,8 @@ export function showClear(title, sub, i18n, state) {
     ui.clearSub = sub;
     const isBoosterNotice = sub === t("clear_booster_notice");
     const isLap = title === t("lap_title");
+
+    // クリア時キャラセリフ表示
     ui.clearGirlLine =
         `<strong>${lang === "ja" ? "ミサキ" : "Misaki"}</strong>` +
         (isBoosterNotice ? t("clear_booster_girl") : isLap ? t("clear_lap_girl") : t("clear_girl"));
@@ -297,8 +304,9 @@ export function showClear(title, sub, i18n, state) {
     setVisible("btn-continue", true, "inline-flex");
     setVisible("screen-clear", true, "flex");
     clearTimeoutId = setTimeout(() => {
-        triggerContinueFlow();
-    }, 10000);
+        // 次ステージへのボタンクリック
+        //triggerContinueFlow();
+    }, 10000); // - 10 sec.
 }
 
 export function setNextRouteState(state) {
@@ -307,6 +315,10 @@ export function setNextRouteState(state) {
     routePendingName = null;
 }
 
+/*
+ * 現在ステージ表示画面
+ * 第一宇宙ステーションから第十二宇宙ステーションまでを円表示
+ */
 export function showRouteScreen(state) {
     hideGm();
     ui.clearVisible = false;
@@ -340,10 +352,19 @@ export function showRouteScreen(state) {
 
     clearTimeout(routeTimeout);
     routeTimeout = setTimeout(() => {
-        hideRouteScreen();
+        //hideRouteScreen();
     }, 10000);
 }
 
+/*
+ * 画面表示
+ *
+ * 1 = title スタート画面
+ * 2 = playing ゲーム画面
+ * 3 = clear ステージクリア画面
+ * 4 = gameover ゲームオーバー画面
+ *
+ */
 export function showScreen(name) {
     ui.screen = name;
     ui.clearVisible = false;
@@ -354,10 +375,13 @@ export function showScreen(name) {
     setVisible("screen-title", name === "title", "flex");
     setVisible("screen-gameover", name === "gameover", "flex");
     setVisible("screen-clear", false, "flex");
+    // ゲーム中画面
     if (name !== "playing") {
         hideGm();
+        // ルート一覧非表示
         closeRouteScreen(false);
     }
+    // ゲーム中以外画面 and クリアタイムアウト
     if (name !== "playing" && clearTimeoutId) {
         clearTimeout(clearTimeoutId);
         clearTimeoutId = null;
@@ -370,6 +394,9 @@ export function showScreen(name) {
     }
 }
 
+/*
+ * GM(game manager) コメント欄表示
+ */
 export function showGm(textValue) {
     ui.gmComment = textValue;
     ui.gmVisible = true;
