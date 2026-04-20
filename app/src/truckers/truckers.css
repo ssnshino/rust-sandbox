@@ -29,6 +29,11 @@ body {
   gap: 0;
 }
 
+#status_code {
+    display: fixed;
+    color: #ffff00;
+}
+
 canvas {
   display: block;
   image-rendering: pixelated;
@@ -199,6 +204,7 @@ canvas {
   align-items: center;
   justify-content: center;
   padding: 18px 18px 26px;
+  z-index: 100;
 }
 
 #screen-clear h1,
@@ -213,7 +219,10 @@ canvas {
   padding: 18px 18px 22px;
   justify-content: center;
   gap: 12px;
+  /* @@@ 20260420 change 12 -> 50
   z-index: 12;
+  */
+  z-index: 50;
 }
 
 #screen-route h1,
@@ -577,6 +586,9 @@ canvas {
   /* @@@ 20260418 change.
   width: min(540px, 100vw);
   */
+  position: fixed;
+  top: 64px;
+  left: 0px;
   width: min(375px, 100dvw);
   margin: 8px 0 0;
   padding: 0 8px;
@@ -723,8 +735,8 @@ canvas {
 /* Lightweight runtime meter shown during development-style play. */
 #fps-meter {
     position: fixed;
-    left: 8px;
-    top: 78px;
+    right: 6px;
+    bottom: 6px;
     z-index: 30;
     padding: 3px 6px;
     border: 1px solid rgba(148, 163, 184, 0.45);

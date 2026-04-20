@@ -54,6 +54,7 @@ function handleMsg(msg) {
   recordNetworkFrame();
   switch (msg.phase) {
     case "title":
+      // ゲームタイトル画面
       showScreen("title");
       renderTitleBg();
       renderScoreList("title-scores", msg.scores || []);
@@ -62,10 +63,15 @@ function handleMsg(msg) {
       lastFastScroll = false;
       break;
     case "launching":
+      // ステージスタート
     case "playing":
+      // ゲーム画面
     case "booster_docking":
+      // 高速ブースタードッキングステーション
     case "fuel_docking":
+      // 燃料補給ステーション
     case "docking":
+      // ゴール宇宙ステーション
       showScreen("playing");
       try {
         renderGame(msg);
@@ -111,6 +117,7 @@ function handleMsg(msg) {
       lastFastScroll = !!msg.fast_scroll;
       break;
     case "stage_clear":
+      // 宇宙ステーションとのドッキング完了「ステージクリア」
       if (prevPhase !== "stage_clear") {
         showScreen("playing");
       }
@@ -132,6 +139,7 @@ function handleMsg(msg) {
       prevPhase = msg.phase;
       break;
     case "lap_clear":
+      // 全12ステージクリア
       if (prevPhase !== "lap_clear") {
         showScreen("playing");
       }
@@ -143,6 +151,7 @@ function handleMsg(msg) {
       prevPhase = msg.phase;
       break;
     case "gameover":
+      // ゲームオーバーがm値
       showScreen("gameover");
       updateGameoverUi(msg);
       renderScoreList("go-scores", msg.scores || []);
