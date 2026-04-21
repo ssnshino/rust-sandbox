@@ -349,6 +349,13 @@ impl Game {
         self.last_fuel_cost = fuel_cost;
     }
 
+    fn reset_runtime_objects(&mut self) {
+        self.asteroids.clear();
+        self.minerals.clear();
+        self.manip_len = 0.0;
+        self.invincible = 0;
+    }
+
     fn apply_client_state(&mut self, ship: ClientShip, hp: u16, fuel: f32, manip_len: f32) {
         // Accept browser simulation only while the ship is controllable.
         // This keeps stale packets from changing title, clear or game-over state.
@@ -368,9 +375,11 @@ impl Game {
         self.manip_len = manip_len.clamp(0.0, MANIP_MAX_LEN);
 
         if self.hp == 0 {
+            self.reset_runtime_objects();
             self.phase = Phase::GameOver;
             self.event = Some("gameover");
         } else if self.fuel <= 0.0 {
+            self.reset_runtime_objects();
             self.phase = Phase::GameOver;
             self.event = Some("fuel_empty");
         }
@@ -684,6 +693,7 @@ impl Game {
                 self.dock_precision = precision;
                 self.score += delivery_score + precision_bonus + cargo_bonus;
                 self.apply_service_costs();
+                self.reset_runtime_objects();
                 let next = self.stage + 1;
                 if next >= TOTAL_STATIONS {
                     let hp_bonus = self.hp as u32 * SCORE_INTEGRITY_BONUS * self.round;
@@ -717,10 +727,7 @@ impl Game {
         self.sy = DEPART_Y;
         self.svx = 0.0;
         self.svy = 0.0;
-        self.asteroids.clear();
-        self.minerals.clear();
-        self.manip_len = 0.0;
-        self.invincible = 0;
+        self.reset_runtime_objects();
         self.stage_tick = 0;
         self.phase = Phase::Launching;
         self.event = None;
