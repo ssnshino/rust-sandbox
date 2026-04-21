@@ -29,6 +29,18 @@ const DEFAULT_ROUTE_CONFIG = {
   fuel_stand_x_ok: 26,
 };
 
+// Scene boundaries must drop every browser-owned simulation cache. Without
+// this, sparse WebSocket snapshots can leave old gameover/route objects alive
+// behind the next launch screen.
+export function resetClientGame() {
+  local = null;
+  lastFrameMs = 0;
+  eventSeq = 0;
+  asteroidPlans.clear();
+  mineralPlans.clear();
+  routeConfigs.clear();
+}
+
 function activeLocalPhase(phase) {
   return phase === "launching" || phase === "playing" || phase === "booster_docking" || phase === "fuel_docking" || phase === "docking";
 }

@@ -1,4 +1,5 @@
 import { ensureAudio, resumeAudio } from "./audio.js";
+import { resetClientGame } from "./game.js";
 import { applyLang, t, tf, toggleLang } from "./i18n.js";
 import { isTouchDevice, lang, setPlayerName, touchControls, ui } from "./state.js";
 
@@ -227,6 +228,12 @@ function bonusHtml(state) {
 function startGameDirect() {
     ensureAudio();
     resumeAudio();
+    resetClientGame();
+    clearTimeout(clearTimeoutId);
+    clearTimeoutId = null;
+    setVisible("screen-gameover", false, "flex");
+    setVisible("screen-clear", false, "flex");
+    setVisible("screen-title", false, "flex");
     routePendingState = { stage: 0 };
     routePendingMode = "start";
     routePendingName = null;
@@ -394,6 +401,7 @@ export function setNextRouteState(state) {
  */
 export function showRouteScreen(state) {
     hideGm();
+    resetClientGame();
     ui.screen = "route";
     ui.clearVisible = false;
     ui.canContinue = false;
@@ -450,6 +458,7 @@ export function showScreen(name) {
     setVisible("screen-title", name === "title", "flex");
     setVisible("screen-gameover", name === "gameover", "flex");
     setVisible("screen-clear", false, "flex");
+    setVisible("screen-route", false, "flex");
     // ゲーム中画面
     if (name !== "playing") {
         hideGm();

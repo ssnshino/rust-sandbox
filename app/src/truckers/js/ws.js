@@ -2,7 +2,7 @@ import { beep, noiseBurst } from "./audio.js";
 import { lang, ui } from "./state.js";
 import { recordNetworkFrame } from "./render.js";
 import { renderGame, renderTitleBg } from "./render.js";
-import { applyClientGame } from "./game.js";
+import { applyClientGame, resetClientGame } from "./game.js";
 import { getLangDict, t, tf } from "./i18n.js";
 import { setNextRouteState, showClear, showGm, showScreen, renderScoreList, updateGameoverUi } from "./ui.js";
 
@@ -103,6 +103,15 @@ function stopPlayLoop() {
   }
 }
 
+function resetClientScene() {
+  stopPlayLoop();
+  resetClientGame();
+  latestPlayState = null;
+  lastEvent = null;
+  prevPhase = null;
+  lastFastScroll = false;
+}
+
 function handlePlayEvents(msg, renderState) {
   const eventKey = renderState.event_token || renderState.event;
   if (renderState.event && eventKey !== lastEvent) {
@@ -162,13 +171,11 @@ function handleMsg(msg) {
       if (ui.clearVisible || ui.screen === "route") {
         break;
       }
-      stopPlayLoop();
+      resetClientScene();
       showScreen("title");
       renderTitleBg();
       renderScoreList("title-scores", msg.scores || []);
       prevPhase = msg.phase;
-      lastEvent = null;
-      lastFastScroll = false;
       break;
     case "launching":
       // ステージスタート
@@ -187,6 +194,7 @@ function handleMsg(msg) {
     case "stage_clear":
       // 宇宙ステーションとのドッキング完了「ステージクリア」
       stopPlayLoop();
+      resetClientGame();
       if (prevPhase !== "stage_clear") {
         showScreen("playing");
       }
@@ -210,6 +218,7 @@ function handleMsg(msg) {
     case "lap_clear":
       // 全12ステージクリア
       stopPlayLoop();
+      resetClientGame();
       if (prevPhase !== "lap_clear") {
         showScreen("playing");
       }
@@ -222,13 +231,11 @@ function handleMsg(msg) {
       break;
     case "gameover":
       // ゲームオーバーがm値
-      stopPlayLoop();
+      resetClientScene();
       showScreen("gameover");
       updateGameoverUi(msg);
       renderScoreList("go-scores", msg.scores || []);
       prevPhase = msg.phase;
-      lastEvent = null;
-      lastFastScroll = false;
       break;
   }
 }

@@ -114,6 +114,24 @@ WebSocket 再接続で `title` state が届いても、配達完了画面表示�
 - ランキング上位5件を表示する。
 - `Try Again` は航路マップを挟まずタイトル画面へ戻る。
 
+Game Over に入った時点で、JS 側はローカル物理状態、岩石 plan、鉱石 plan、航路設定 cache、描画 loop を破棄する。
+Rust 側も GameOver state 送信前に、岩石、鉱石、マニピュレーター、無敵時間などステージ中だけ有効な runtime object を破棄する。
+タイトル画面へ戻ったあとは、次回スタート時に必ず新しい `Game::new()` と新しい JS ローカル状態から開始する。
+
+### 2.7 シーン境界リセット
+
+シーンをまたぐときは、前シーンの移動体やタイマーが次シーンに残らないように、JS と Rust の両方でリセットを行う。
+
+| 境界 | JS 側 | Rust 側 |
+|---|---|---|
+| タイトル表示 | 描画 loop 停止、ローカル状態破棄、plan cache 破棄 | セッション待機状態。次の `start` で新規 `Game` を作成 |
+| ゲーム開始前航路マップ | ローカル状態と plan cache を破棄してから航路マップを表示 | まだ gameplay state は進めない |
+| 航路マップ `出発！` | `start` または `continue` だけ送信 | `start` は新規ゲーム、`continue` は `begin_next_stage()` |
+| ステージクリア | 描画 loop 停止、ローカル状態破棄、plan cache 破棄 | スコア計算後に runtime object を破棄し、StageClear/LapClear を返す |
+| Game Over | 描画 loop 停止、ローカル状態破棄、plan cache 破棄 | runtime object を破棄し、GameOver state を返す |
+
+runtime object には、岩石、鉱石、マニピュレーター長、無敵時間、ブラウザ側のローカル ship 状態、ローカル tick、取得済み鉱石 ID を含む。
+
 ## 3. ステーション仕様
 
 12ステーションは固定順で巡回する。
@@ -399,6 +417,8 @@ sequenceDiagram
     participant S as Server
     C->>S: dock
     S-->>C: state(stage_clear or lap_clear)
+    S->>S: runtime object reset
+    C->>C: local simulation reset
     C->>C: 配達完了画面
     C->>C: 10秒経過 or 次へボタン
     C->>C: RouteMap表示
@@ -406,10 +426,32 @@ sequenceDiagram
     S-->>C: state(launching + plans)
 ```
 
+### 12.4 Game Over から再開
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Server
+    C->>S: damage / fuel_empty event
+    S->>S: runtime object reset
+    S-->>C: state(gameover)
+    C->>C: play loop stop + local simulation reset
+    C->>C: Game Over画面で名前入力
+    C->>S: restart(name)
+    S->>S: score register
+    S-->>C: state(title + scores)
+    C->>C: title表示 + local simulation reset
+    C->>C: Start押下でRouteMap
+    C->>S: start
+    S->>S: Game::new()
+    S-->>C: state(launching + plans)
+```
+
 ## 13. 更新履歴
 
 | 日時 | 内容 |
 |---|---|
+| 2026-04-21 17:28:00 JST | シーン境界リセット仕様を追加。Game Over 後の再開時に前回の画面・物理状態・岩石/鉱石 plan が残らないよう JS/Rust 双方のリセット責務を定義 |
 | 2026-04-21 17:03:00 JST | タイトル画面の名前入力を廃止し、Game Over 画面で名前入力してからランキング登録する仕様に変更 |
 | 2026-04-21 15:19:32 JST | v2 新規作成。WebSocket常時送信廃止、クライアントシミュレーション、鉱石/隕石plan方式、画面遷移仕様を整理 |
 | 2026-04-21 15:19:32 JST | サウンド仕様を追記。鉱石取得音の二重鳴り防止、連続取得時の再生、ダメージ専用音を定義 |
