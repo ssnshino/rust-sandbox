@@ -18,12 +18,14 @@
         <div id="hud-life" class="hud-block"></div>
         <div id="hud-round" class="hud-block"></div>
       </div>
+      <div id="gm-comment"> </div>
 
       <div id="wrap">
         <!--
         <canvas id="canvas" width="540" height="540"></canvas>
-      -->
-        <canvas id="canvas" width="375" height="667"></canvas>
+        <canvas id="canvas" width="375" height="600"></canvas>
+        -->
+        <canvas id="canvas" width="375" height="500"></canvas>
 
         <div id="screen-title" class="overlay">
           <h1 id="title-heading"></h1>
@@ -79,21 +81,23 @@
 
         <button id="btn-back" type="button">← メニュー</button>
         <button id="btn-lang" type="button">🇯🇵 / 🇬🇧</button>
+
+        <div id="touch-controls" style="display: none">
+          <div id="vstick-area"><div id="vstick-knob"></div></div>
+          <div id="action-buttons">
+            <button id="btn-manip" type="button">MAG</button>
+            <div id="touch-hint">MANIP</div>
+          </div>
+        </div>
+
       </div>
 
-      <div id="gm-comment"></div>
       <div id="fps-meter">FPS -- / NET --</div>
 
-      <div id="touch-controls" style="display: none">
-        <div id="vstick-area"><div id="vstick-knob"></div></div>
-        <div id="action-buttons">
-          <button id="btn-manip" type="button">MAG</button>
-          <div id="touch-hint">MANIP</div>
-        </div>
-      </div>
     </div>
 
-    <div id="status_code">xx</div>
+    <div id="status-code">xx</div>
+    <div id="status-phase">xx</div>
 
   </body>
 </html>

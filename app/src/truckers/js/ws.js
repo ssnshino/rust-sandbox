@@ -11,6 +11,8 @@ let lastEvent = null;
 let prevPhase = null;
 let lastFastScroll = false;
 
+let statusCounter = 0;
+
 // Pick one random line from an array of GM phrases.
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -40,6 +42,13 @@ export function send(obj) {
   const payload = JSON.stringify(obj);
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(payload);
+
+    // @@@ キー入力、ボタン押下時
+//    console.log(obj);
+//    statusCodeView(payload.phase + ', cnt: ' + statusCounter);
+//    statusCounter++;
+    //
+
     return;
   }
   if (!ws || ws.readyState === WebSocket.CLOSING || ws.readyState === WebSocket.CLOSED) {
@@ -48,10 +57,29 @@ export function send(obj) {
   pendingMessages.push(payload);
 }
 
+// @@@ 20260420 add.
+function statusCodeView(code) {
+//  const msg = document.getElementById('status-code');
+  const statusCode = document.getElementById("status-code");
+  statusCode.textContent = 'DEBUG: ' + code;
+//  console.log(state.phase);
+  // @@@
+}
+function statusPhaseView(code) {
+  const statusPhase = document.getElementById("status-phase");
+  statusPhase.textContent = 'Phase: ' + code;
+}
+
 // Consume state packets from the server and route them to the proper screen.
 function handleMsg(msg) {
   if (msg.type !== "state") return;
   recordNetworkFrame();
+
+  // @@@ 202600420 add.
+  //statusCodeView(msg.phase + ', cnt: ' + statusCounter);
+  //statusCounter++;
+  statusPhaseView('[' + msg.phase + ']');
+
   switch (msg.phase) {
     case "title":
       // ゲームタイトル画面
