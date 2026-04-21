@@ -30,8 +30,16 @@ body {
 }
 
 #status_code {
-    display: fixed;
+    display: block;
+    position: fixed;
+    bottom: 6px;
     color: #ffff00;
+}
+#status_code {
+    display: block;
+    position: fixed;
+    bottom: 6px;
+    color: #008800;
 }
 
 canvas {
@@ -45,6 +53,7 @@ canvas {
   position: relative;
 /* @@@ 20260418 change.
   width: 540px;
+  width: 375px;
   */
   width: 375px;
   max-width: 100dvw;
@@ -67,7 +76,9 @@ canvas {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  /*
   margin: 0 0 8px;
+  */
   padding: 0 8px;
   font-size: 0.8rem;
   color: #e2e8f0;
@@ -203,7 +214,9 @@ canvas {
   overflow: hidden;
   align-items: center;
   justify-content: center;
+  /* @@@
   padding: 18px 18px 26px;
+  */
   z-index: 100;
 }
 
@@ -586,11 +599,14 @@ canvas {
   /* @@@ 20260418 change.
   width: min(540px, 100vw);
   */
-  position: fixed;
+  position: relative;
   top: 64px;
   left: 0px;
   width: min(375px, 100dvw);
+  height: 17.5px;
+  /* @@60420 change.
   margin: 8px 0 0;
+  */
   padding: 0 8px;
   font-size: 0.75rem;
   color: #f9a8d4;
@@ -614,14 +630,17 @@ canvas {
 /* -------------------------------------------------------------------------- */
 
 #touch-controls {
+  /* @@@ 20260420 change.
   position: fixed;
+  */
+  position: absolute;
   left: 50%;
   bottom: 8px;
   transform: translateX(-50%);
   /* @@@ 20260418 change.
   width: min(540px, 100vw);
   */
-  width: min(375px, 100vw);
+  width: min(480px, 100vw);
   display: none;
   justify-content: space-between;
   align-items: flex-end;

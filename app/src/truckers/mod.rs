@@ -9,9 +9,9 @@ use crate::scores::ScoreBoard;
 const TICK_MS: u64 = 33;
 //const W: f32 = 540.0;
 //const H: f32 = 540.0;
-// @@@ 20260418 change.
+// @@@ 20260418 change. 540 -> 667 -> 600
 const W: f32 = 375.0;
-const H: f32 = 667.0;
+const H: f32 = 500.0;
 
 const SHIP_MAX_SPEED: f32 = 5.5;
 const SHIP_ACCEL: f32 = 0.35;
@@ -103,6 +103,16 @@ fn lcgf(s: u32) -> f32 {
     lcg(s) as f32 / u32::MAX as f32
 }
 
+// 小数点一桁に丸める @@@ 20260420 add.
+fn r1(v: f32) -> f32 {
+    (v * 10.0).round() / 10.0
+}
+
+/*
+fn r1(v: f32) -> i32 {
+    (v * 10.0).round() / 10.0 as i32
+}
+*/
 // ── Asteroid ──────────────────────────────────────────────────────────────────
 
 struct Asteroid {
@@ -806,7 +816,7 @@ impl Game {
             self.phase == Phase::StageClear && should_booster_stage(self.stage + 1);
 
         let asteroids: Vec<_> = self.asteroids.iter().map(|a|
-            serde_json::json!({"x":a.x,"y":a.y,"r":a.radius,"tier":a.speed_tier,"seed":a.seed})
+            serde_json::json!({"x":r1(a.x),"y":r1(a.y),"r":a.radius,"tier":a.speed_tier,"seed":a.seed})
         ).collect();
 
         let minerals: Vec<_> = self
@@ -814,7 +824,7 @@ impl Game {
             .iter()
             .map(|m| {
                 serde_json::json!({
-                    "x":m.x,"y":m.y,
+                    "x":r1(m.x),"y":r1(m.y),
                     "kind": if m.kind==MineralKind::Gold {"gold"} else {"rare"},
                     "seed":m.seed, "id":m.id,
                 })
@@ -823,11 +833,20 @@ impl Game {
 
         serde_json::json!({
             "type":"state","phase":phase_str,
-            "ship":{"x":self.sx,"y":self.sy,"vx":self.svx,"vy":self.svy,"invincible":self.invincible>0},
+            "ship":{
+                "x":r1(self.sx),
+                "y":r1(self.sy),
+                "vx":r1(self.svx),
+                "vy":r1(self.svy),
+                "invincible":self.invincible>0
+            },
             "manip_len": self.manip_len,
             "hp":self.hp,"fuel":((self.fuel * 10.0).round() / 10.0),"score":self.score,"money":self.money,"round":self.round,"stage":self.stage,"lap":self.lap,
             "progress":progress,"stage_tick":self.stage_tick,
-            "airlock_x":self.airlock_x,"depart_x":self.depart_x,"booster_x":self.booster_x,"fuel_stand_x":self.fuel_stand_x,
+            "airlock_x":r1(self.airlock_x),
+            "depart_x":r1(self.depart_x),
+            "booster_x":r1(self.booster_x),
+            "fuel_stand_x":r1(self.fuel_stand_x),
             "from":{"name_ja":from_st.0,"name_en":from_st.1,"symbol":from_st.2},
             "to":  {"name_ja":to_st.0,  "name_en":to_st.1,  "symbol":to_st.2},
             "asteroids":asteroids,"minerals":minerals,

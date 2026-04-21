@@ -57,9 +57,9 @@ export const canvas = document.getElementById("canvas");
 export const ctx = canvas.getContext("2d");
 //export const W = 540;
 //export const H = 540;
-// @@@ 202604118 canvas size change 540 -> 360, 540 -> 600
+// @@@ 202604118 canvas size change 540 -> 360 -> 375, 540 -> 600 -> 667
 export const W = 375;
-export const H = 667;
+export const H = 500;
 export const BOOSTER_Y = 185;
 export const FUEL_STAND_Y = 250;
 

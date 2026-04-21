@@ -600,8 +600,24 @@ function drawHUD(state) {
   ctx.textAlign = "left";
 }
 
+let statusCnt = 0;
+
+// @@@ 20260420 add.
+function statusView(code) {
+  const statusCode = document.getElementById("status-code");
+  statusCode.textContent = 'DEBUG: ' + code;
+}
+
 // Render a full gameplay frame from the latest authoritative server state.
 export function renderGame(state) {
+  //
+  //
+  // @@@ 20260420 addd.
+  statusView(state.phase + ', cnt: ' + statusCnt);
+  statusCnt++;
+  //
+  //
+  //
   updateFpsMeter();
   const tick = state.tick || 0;
   renderBg(tick, state.ship ? state.ship.y : undefined, !!state.fast_scroll);
@@ -648,6 +664,7 @@ export function renderGame(state) {
     state.phase === "booster_docking" ||
     (state.booster_enabled && state.booster_attached && (state.progress || 0) < 40)
   ) {
+    // @@@ 20260420 addd.
 //    drawStation(270, BOOSTER_Y, "", "", true, state.booster_x, pulse, "booster");
     // @@@ 20260418 size change 270->180 (canvas w540->w360)
     drawStation(180, BOOSTER_Y, "", "", true, state.booster_x, pulse, "booster");
