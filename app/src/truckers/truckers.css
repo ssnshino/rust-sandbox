@@ -253,22 +253,135 @@ canvas {
 }
 
 .route-map::before {
-  content: "";
+  display: none;
+}
+
+.route-map::after {
+  display: none;
+}
+
+.orbit-ring {
   position: absolute;
-  inset: 46px;
+  left: 50%;
+  top: 50%;
   border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.earth-orbit {
+  width: 144px;
+  height: 144px;
+  border: 1px solid rgba(96, 165, 250, 0.34);
+  box-shadow: 0 0 18px rgba(96, 165, 250, 0.08);
+}
+
+.mars-orbit {
+  width: 212px;
+  height: 212px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  box-shadow: 0 0 18px rgba(248, 113, 113, 0.07);
+}
+
+.belt-orbit {
+  width: calc(100% - 92px);
+  height: calc(100% - 92px);
   border: 2px solid rgba(148, 163, 184, 0.28);
   box-shadow:
     0 0 28px rgba(96, 165, 250, 0.08),
     inset 0 0 20px rgba(96, 165, 250, 0.06);
 }
 
-.route-map::after {
-  content: "";
+.solar-center {
   position: absolute;
-  inset: 76px;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transform: translate(-50%, -50%);
+  color: rgba(253, 224, 71, 0.74);
+  font-size: 0.48rem;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.solar-dot {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  border: 1px dashed rgba(250, 204, 21, 0.18);
+  background: #fde047;
+  box-shadow:
+    0 0 10px rgba(253, 224, 71, 0.8),
+    0 0 24px rgba(253, 224, 71, 0.32);
+}
+
+.orbit-body,
+.orbit-note,
+.orbit-date {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.orbit-body {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 4;
+}
+
+.body-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.orbit-body.earth {
+  color: #60a5fa;
+}
+
+.orbit-body.earth .body-dot {
+  background: #60a5fa;
+}
+
+.orbit-body.mars {
+  color: #fb7185;
+}
+
+.orbit-body.mars .body-dot {
+  background: #fb7185;
+}
+
+.body-label {
+  font-size: 0.52rem;
+  color: rgba(226, 232, 240, 0.82);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.orbit-note {
+  min-width: 66px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.58);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  color: rgba(203, 213, 225, 0.74);
+  font-size: 0.46rem;
+  white-space: nowrap;
+  z-index: 3;
+}
+
+.orbit-date {
+  right: 8px;
+  bottom: 8px;
+  transform: none;
+  color: rgba(148, 163, 184, 0.68);
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+  z-index: 2;
 }
 
 .route-station {
@@ -286,6 +399,7 @@ canvas {
   gap: 4px;
   text-align: center;
   transform: translate(-50%, -50%);
+  z-index: 6;
 }
 
 .route-station .num {
@@ -372,6 +486,7 @@ canvas {
   justify-content: center;
   text-align: center;
   padding: 14px;
+  z-index: 2;
 }
 
 .route-core-title {
@@ -747,6 +862,25 @@ canvas {
 
   .route-core-sub {
     font-size: 0.52rem;
+  }
+
+  .earth-orbit {
+    width: 112px;
+    height: 112px;
+  }
+
+  .mars-orbit {
+    width: 164px;
+    height: 164px;
+  }
+
+  .solar-center {
+    font-size: 0.42rem;
+  }
+
+  .body-label,
+  .orbit-note {
+    font-size: 0.42rem;
   }
 }
 

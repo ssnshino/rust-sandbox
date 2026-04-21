@@ -26,7 +26,6 @@ const BOOSTER_Y: f32 = 185.0;
 const BOOSTER_X_PERFECT: f32 = 6.0;
 const BOOSTER_X_GOOD: f32 = 14.0;
 const BOOSTER_X_OK: f32 = 24.0;
-const BOOSTER_SCROLL_BONUS_Y: f32 = 1.85;
 const FUEL_STAND_TRIGGER_PCT: f32 = 0.50;
 const FUEL_STAND_Y: f32 = 250.0;
 const FUEL_STAND_X_PERFECT: f32 = 7.0;
@@ -40,7 +39,6 @@ const DOCK_X_OK: f32 = 22.0; // これ以上離れると不可
 const AIRLOCK_Y: f32 = 90.0;
 const DEPART_Y: f32 = H - 40.0;
 
-const INVINCIBLE_TICKS: u32 = 60;
 const SHIP_HP_MAX: u16 = 100;
 const SHIP_FUEL_MAX: f32 = 100.0;
 const SCORE_DELIVERY: u32 = 500;
@@ -61,8 +59,6 @@ const TOTAL_STATIONS: usize = 12;
 
 // マニピュレーター
 const MANIP_MAX_LEN: f32 = 44.0;
-const MANIP_GROW: f32 = 3.5;
-const MANIP_SHRINK: f32 = 5.5;
 
 // 鉱石スポーン間隔
 const MINERAL_INTERVAL: u64 = 60;
@@ -117,7 +113,6 @@ fn r1(v: f32) -> i32 {
 
 struct Asteroid {
     x: f32,
-    y: f32,
     vx: f32,
     vy: f32,
     radius: f32,
@@ -139,10 +134,6 @@ fn spawn_interval(round: u32, progress: f32) -> u64 {
     base.saturating_sub(rr + pr).max(8)
 }
 
-fn spawn_interval_boosted(round: u32, progress: f32) -> u64 {
-    spawn_interval(round, progress).saturating_sub(5).max(6)
-}
-
 fn spawn_asteroid(tick: u64, i: usize, round: u32) -> Asteroid {
     let s0 = lcg((tick as u32)
         .wrapping_add(i as u32 * 6991)
@@ -158,13 +149,65 @@ fn spawn_asteroid(tick: u64, i: usize, round: u32) -> Asteroid {
     let sz = (lcg(s3) % 5) as usize;
     Asteroid {
         x,
-        y: -SIZE_TIERS[sz] - 2.0,
         vx,
         vy,
         radius: SIZE_TIERS[sz],
         speed_tier: st as u8,
         seed: s4,
     }
+}
+
+fn build_asteroid_plan(stage: usize, round: u32) -> Vec<serde_json::Value> {
+    let mut route_tick = 0u64;
+    let mut index = 0usize;
+    let mut plan = Vec::new();
+    while route_tick <= CRUISE_TICKS + 120 {
+        let progress = (route_tick as f32 / CRUISE_TICKS as f32).min(1.0);
+        let mut interval = spawn_interval(round, progress);
+        if is_dense_route(stage) {
+            interval = (interval / 2).max(4);
+        }
+        route_tick += interval;
+        let seed_tick = route_tick
+            .wrapping_mul(37)
+            .wrapping_add(index as u64 * 101)
+            .wrapping_add(stage as u64 * 503);
+        let jitter = (lcg(seed_tick as u32) % interval.max(1) as u32) as u64;
+        let spawn_at = route_tick.saturating_add(jitter / 2);
+        let asteroid = spawn_asteroid(seed_tick, index, round);
+        plan.push(serde_json::json!({
+            "spawn_at": spawn_at,
+            "x": asteroid.x,
+            "vx": r1(asteroid.vx),
+            "vy": r1(asteroid.vy),
+            "r": asteroid.radius,
+            "tier": asteroid.speed_tier,
+            "seed": asteroid.seed,
+        }));
+        index += 1;
+    }
+    plan
+}
+
+fn build_mineral_plan(round: u32) -> Vec<serde_json::Value> {
+    let mut plan = Vec::new();
+    let mut route_tick = 37u64;
+    let mut id = 0u32;
+    while route_tick <= CRUISE_TICKS + 120 {
+        let mineral = spawn_mineral(route_tick, id, round);
+        plan.push(serde_json::json!({
+            "spawn_at": route_tick,
+            "x": mineral.x,
+            "vx": r1(mineral.vx),
+            "vy": r1(mineral.vy),
+            "kind": if mineral.kind==MineralKind::Gold {"gold"} else {"rare"},
+            "seed": mineral.seed,
+            "id": id,
+        }));
+        route_tick += MINERAL_INTERVAL;
+        id = id.wrapping_add(1);
+    }
+    plan
 }
 
 // ── Mineral ───────────────────────────────────────────────────────────────────
@@ -224,6 +267,21 @@ enum Phase {
     GameOver,
 }
 
+impl Phase {
+    fn as_str(self) -> &'static str {
+        match self {
+            Phase::Launching => "launching",
+            Phase::Playing => "playing",
+            Phase::BoosterDocking => "booster_docking",
+            Phase::FuelDocking => "fuel_docking",
+            Phase::Docking => "docking",
+            Phase::StageClear => "stage_clear",
+            Phase::LapClear => "lap_clear",
+            Phase::GameOver => "gameover",
+        }
+    }
+}
+
 // ── Game ──────────────────────────────────────────────────────────────────────
 struct Game {
     sx: f32,
@@ -244,7 +302,6 @@ struct Game {
     fuel_stand_x: f32,
     asteroids: Vec<Asteroid>,
     minerals: Vec<Mineral>,
-    mineral_next_id: u32,
     manip_len: f32, // 0..MANIP_MAX_LEN
     tick: u64,
     stage_tick: u64,
@@ -256,8 +313,10 @@ struct Game {
     booster_enabled: bool,
     booster_attached: bool,
     booster_done: bool,
+    booster_done_tick: u64,
     fuel_stand_enabled: bool,
     fuel_stand_done: bool,
+    fuel_stand_done_tick: u64,
     late_fined: bool,
     gold_count: u32,
     rare_count: u32,
@@ -270,45 +329,9 @@ struct Game {
     last_repair_cost: u32,
     last_fuel_cost: u32,
     last_fuel_stand_cost: u32,
-    keys_up: bool,
-    keys_down: bool,
-    keys_left: bool,
-    keys_right: bool,
-    keys_manip: bool,
 }
 
 impl Game {
-    fn asteroid_damage(radius: f32) -> u16 {
-        if radius <= 5.5 {
-            5
-        } else if radius <= 9.5 {
-            8
-        } else if radius <= 14.5 {
-            12
-        } else if radius <= 20.5 {
-            16
-        } else {
-            20
-        }
-    }
-
-    fn spend_fuel(&mut self) {
-        let mut use_points = 0.0f32;
-        if self.keys_up {
-            use_points += 0.5;
-        }
-        if self.keys_down {
-            use_points += 0.1;
-        }
-        if self.keys_left {
-            use_points += 0.1;
-        }
-        if self.keys_right {
-            use_points += 0.1;
-        }
-        self.fuel = (self.fuel - use_points).max(0.0);
-    }
-
     fn apply_service_costs(&mut self) {
         let repair_needed = SHIP_HP_MAX.saturating_sub(self.hp) as u32;
         let fuel_needed = (SHIP_FUEL_MAX - self.fuel).max(0.0).ceil() as u32;
@@ -324,6 +347,67 @@ impl Game {
         self.money = self.money.saturating_sub(fuel_cost);
         self.fuel = (self.fuel + fuel_points as f32).min(SHIP_FUEL_MAX);
         self.last_fuel_cost = fuel_cost;
+    }
+
+    fn apply_client_state(&mut self, ship: ClientShip, hp: u16, fuel: f32, manip_len: f32) {
+        // Accept browser simulation only while the ship is controllable.
+        // This keeps stale packets from changing title, clear or game-over state.
+        if !matches!(
+            self.phase,
+            Phase::Playing | Phase::BoosterDocking | Phase::FuelDocking | Phase::Docking
+        ) {
+            return;
+        }
+
+        self.sx = ship.x.clamp(SHIP_R, W - SHIP_R);
+        self.sy = ship.y.clamp(SHIP_R, H - SHIP_R);
+        self.svx = ship.vx.clamp(-SHIP_MAX_SPEED, SHIP_MAX_SPEED);
+        self.svy = ship.vy.clamp(-SHIP_MAX_SPEED, SHIP_MAX_SPEED);
+        self.hp = hp.min(SHIP_HP_MAX);
+        self.fuel = fuel.clamp(0.0, SHIP_FUEL_MAX);
+        self.manip_len = manip_len.clamp(0.0, MANIP_MAX_LEN);
+
+        if self.hp == 0 {
+            self.phase = Phase::GameOver;
+            self.event = Some("gameover");
+        } else if self.fuel <= 0.0 {
+            self.phase = Phase::GameOver;
+            self.event = Some("fuel_empty");
+        }
+    }
+
+    fn collect_client_mineral(&mut self, mineral_id: u32, mineral_kind: Option<String>) {
+        if !matches!(
+            self.phase,
+            Phase::Playing | Phase::BoosterDocking | Phase::FuelDocking | Phase::Docking
+        ) {
+            return;
+        }
+
+        let kind = if let Some(index) = self.minerals.iter().position(|m| m.id == mineral_id) {
+            self.minerals.swap_remove(index).kind
+        } else if mineral_kind.as_deref() == Some("rare") {
+            MineralKind::Rare
+        } else {
+            MineralKind::Gold
+        };
+        let bonus = match kind {
+            MineralKind::Gold => 300 * self.round,
+            MineralKind::Rare => 700 * self.round,
+        };
+        self.score += bonus;
+        match kind {
+            MineralKind::Gold => {
+                self.money += MONEY_GOLD;
+                self.gold_count += 1;
+                self.event = Some("mineral_gold");
+            }
+            MineralKind::Rare => {
+                self.money += MONEY_RARE;
+                self.rare_count += 1;
+                self.event = Some("mineral_rare");
+            }
+        }
     }
 
     fn new() -> Self {
@@ -346,7 +430,6 @@ impl Game {
             fuel_stand_x: pick_fuel_stand_x(0, 1),
             asteroids: Vec::new(),
             minerals: Vec::new(),
-            mineral_next_id: 0,
             manip_len: 0.0,
             tick: 0,
             stage_tick: 0,
@@ -358,8 +441,10 @@ impl Game {
             booster_enabled: false,
             booster_attached: false,
             booster_done: false,
+            booster_done_tick: 0,
             fuel_stand_enabled: is_dense_route(0),
             fuel_stand_done: false,
+            fuel_stand_done_tick: 0,
             late_fined: false,
             gold_count: 0,
             rare_count: 0,
@@ -372,11 +457,6 @@ impl Game {
             last_repair_cost: 0,
             last_fuel_cost: 0,
             last_fuel_stand_cost: 0,
-            keys_up: false,
-            keys_down: false,
-            keys_left: false,
-            keys_right: false,
-            keys_manip: false,
         }
     }
 
@@ -395,7 +475,10 @@ impl Game {
             _ => {}
         }
 
-        self.stage_tick += 1;
+        let route_time_paused = matches!(self.phase, Phase::BoosterDocking | Phase::FuelDocking);
+        if !route_time_paused {
+            self.stage_tick += 1;
+        }
         if self.invincible > 0 {
             self.invincible -= 1;
         }
@@ -430,50 +513,8 @@ impl Game {
             return;
         }
 
-        // ── Ship movement ──
-        let can_thrust = self.fuel > 0.0;
-        let ax = if can_thrust && self.keys_right {
-            SHIP_ACCEL
-        } else if can_thrust && self.keys_left {
-            -SHIP_ACCEL
-        } else {
-            0.0
-        };
-        let ay = if can_thrust && self.keys_down {
-            SHIP_ACCEL
-        } else if can_thrust && self.keys_up {
-            -SHIP_ACCEL
-        } else {
-            0.0
-        };
-        if can_thrust {
-            self.spend_fuel();
-            if self.fuel <= 0.0 {
-                self.fuel = 0.0;
-                self.phase = Phase::GameOver;
-                self.event = Some("fuel_empty");
-                return;
-            }
-        }
-        self.svx = (self.svx + ax) * SHIP_DRAG;
-        self.svy = (self.svy + ay) * SHIP_DRAG;
-        let spd = (self.svx * self.svx + self.svy * self.svy).sqrt();
-        if spd > SHIP_MAX_SPEED {
-            self.svx = self.svx / spd * SHIP_MAX_SPEED;
-            self.svy = self.svy / spd * SHIP_MAX_SPEED;
-        }
-        self.sx = (self.sx + self.svx).clamp(SHIP_R, W - SHIP_R);
-        self.sy = (self.sy + self.svy).clamp(SHIP_R, H - SHIP_R);
-
         let cruise_tick = self.stage_tick.saturating_sub(LAUNCH_TICKS);
         let progress = (cruise_tick as f32 / CRUISE_TICKS as f32).min(1.0);
-
-        // ── Manip ──
-        if self.keys_manip {
-            self.manip_len = (self.manip_len + MANIP_GROW).min(MANIP_MAX_LEN);
-        } else {
-            self.manip_len = (self.manip_len - MANIP_SHRINK).max(0.0);
-        }
 
         // ── Mineral collection ──
         if self.manip_len > 2.0 {
@@ -512,101 +553,6 @@ impl Game {
             }
         }
 
-        // ── Spawn asteroids (playing only) ──
-        if self.phase == Phase::Playing {
-            let mut interval = if self.booster_attached {
-                spawn_interval_boosted(self.round, progress)
-            } else {
-                spawn_interval(self.round, progress)
-            };
-            if self.fuel_stand_enabled {
-                interval = (interval / 2).max(4);
-            }
-            if self.tick % interval == 0 {
-                self.asteroids
-                    .push(spawn_asteroid(self.tick, self.asteroids.len(), self.round));
-            }
-            // Spawn minerals
-            if self.tick % MINERAL_INTERVAL == 7 && cruise_tick > 30 {
-                self.minerals
-                    .push(spawn_mineral(self.tick, self.mineral_next_id, self.round));
-                self.mineral_next_id = self.mineral_next_id.wrapping_add(1);
-            }
-        }
-
-        // ── Move asteroids ──
-        let mut i = 0;
-        while i < self.asteroids.len() {
-            let a = &mut self.asteroids[i];
-            a.x += a.vx;
-            a.y += a.vy
-                + if self.booster_attached {
-                    BOOSTER_SCROLL_BONUS_Y
-                } else {
-                    0.0
-                };
-            if a.x < -a.radius - 10.0 {
-                a.x += W + a.radius * 2.0;
-            }
-            if a.x > W + a.radius + 10.0 {
-                a.x -= W + a.radius * 2.0;
-            }
-            if a.y > H + a.radius + 20.0 {
-                self.asteroids.swap_remove(i);
-            } else {
-                i += 1;
-            }
-        }
-
-        // ── Move minerals ──
-        let mut i = 0;
-        while i < self.minerals.len() {
-            let m = &mut self.minerals[i];
-            m.x += m.vx;
-            m.y += m.vy
-                + if self.booster_attached {
-                    BOOSTER_SCROLL_BONUS_Y * 0.9
-                } else {
-                    0.0
-                };
-            if m.x < -MINERAL_R - 10.0 {
-                m.x += W + MINERAL_R * 2.0;
-            }
-            if m.x > W + MINERAL_R + 10.0 {
-                m.x -= W + MINERAL_R * 2.0;
-            }
-            if m.y > H + MINERAL_R + 20.0 {
-                self.minerals.swap_remove(i);
-            } else {
-                i += 1;
-            }
-        }
-
-        // ── Collision (asteroids) ──
-        if self.invincible == 0
-            && matches!(
-                self.phase,
-                Phase::Playing | Phase::BoosterDocking | Phase::FuelDocking
-            )
-        {
-            for a in &self.asteroids {
-                let dx = self.sx - a.x;
-                let dy = self.sy - a.y;
-                if (dx * dx + dy * dy).sqrt() < SHIP_R + a.radius {
-                    let dmg = Self::asteroid_damage(a.radius);
-                    self.hp = self.hp.saturating_sub(dmg);
-                    self.invincible = INVINCIBLE_TICKS;
-                    self.event = Some("damage");
-                    if self.hp == 0 {
-                        self.phase = Phase::GameOver;
-                        self.event = Some("gameover");
-                        return;
-                    }
-                    break;
-                }
-            }
-        }
-
         // ── Enter booster docking phase ──
         if self.phase == Phase::Playing
             && self.booster_enabled
@@ -615,7 +561,6 @@ impl Game {
         {
             self.phase = Phase::BoosterDocking;
             self.asteroids.clear();
-            self.minerals.clear();
             self.event = Some("booster_call");
         }
 
@@ -627,6 +572,7 @@ impl Game {
                 if self.money < BOOSTER_COST {
                     self.event = Some("booster_fee_short");
                     self.booster_done = true;
+                    self.booster_done_tick = self.tick;
                     self.booster_enabled = false;
                     self.phase = if progress >= 0.80 {
                         Phase::Docking
@@ -648,6 +594,7 @@ impl Game {
                 self.last_booster_cost = BOOSTER_COST;
                 self.booster_attached = true;
                 self.booster_done = true;
+                self.booster_done_tick = self.tick;
                 self.event = Some("booster_attach");
                 self.phase = if progress >= 0.80 {
                     Phase::Docking
@@ -665,7 +612,6 @@ impl Game {
         {
             self.phase = Phase::FuelDocking;
             self.asteroids.clear();
-            self.minerals.clear();
             self.event = Some("fuel_stand_call");
         }
 
@@ -695,6 +641,7 @@ impl Game {
                     self.event = Some("fuel_stand_refuel");
                 }
                 self.fuel_stand_done = true;
+                self.fuel_stand_done_tick = self.tick;
                 self.phase = if progress >= 0.80 {
                     Phase::Docking
                 } else {
@@ -781,9 +728,11 @@ impl Game {
         self.booster_enabled = should_booster_stage(self.stage);
         self.booster_attached = false;
         self.booster_done = false;
+        self.booster_done_tick = 0;
         self.booster_precision = 2;
         self.fuel_stand_enabled = is_dense_route(self.stage);
         self.fuel_stand_done = false;
+        self.fuel_stand_done_tick = 0;
         self.gold_count = 0;
         self.rare_count = 0;
         self.last_delivery_score = 0;
@@ -798,16 +747,7 @@ impl Game {
     }
 
     fn to_json(&self) -> String {
-        let phase_str = match self.phase {
-            Phase::Launching => "launching",
-            Phase::Playing => "playing",
-            Phase::BoosterDocking => "booster_docking",
-            Phase::FuelDocking => "fuel_docking",
-            Phase::Docking => "docking",
-            Phase::StageClear => "stage_clear",
-            Phase::LapClear => "lap_clear",
-            Phase::GameOver => "gameover",
-        };
+        let phase_str = self.phase.as_str();
         let ct = self.stage_tick.saturating_sub(LAUNCH_TICKS);
         let progress = (ct as f32 / CRUISE_TICKS as f32 * 100.0).min(100.0);
         let from_st = &STATIONS[self.stage % TOTAL_STATIONS];
@@ -815,21 +755,24 @@ impl Game {
         let next_stage_booster =
             self.phase == Phase::StageClear && should_booster_stage(self.stage + 1);
 
-        let asteroids: Vec<_> = self.asteroids.iter().map(|a|
-            serde_json::json!({"x":r1(a.x),"y":r1(a.y),"r":a.radius,"tier":a.speed_tier,"seed":a.seed})
-        ).collect();
+        let asteroids: Vec<serde_json::Value> = Vec::new();
+        let asteroid_plan = if self.phase == Phase::Launching && self.stage_tick <= 10 {
+            build_asteroid_plan(self.stage, self.round)
+        } else {
+            Vec::new()
+        };
+        let mineral_plan = if self.phase == Phase::Launching && self.stage_tick <= 10 {
+            build_mineral_plan(self.round)
+        } else {
+            Vec::new()
+        };
+        let route_config = if self.phase == Phase::Launching && self.stage_tick <= 10 {
+            route_config_json()
+        } else {
+            serde_json::Value::Null
+        };
 
-        let minerals: Vec<_> = self
-            .minerals
-            .iter()
-            .map(|m| {
-                serde_json::json!({
-                    "x":r1(m.x),"y":r1(m.y),
-                    "kind": if m.kind==MineralKind::Gold {"gold"} else {"rare"},
-                    "seed":m.seed, "id":m.id,
-                })
-            })
-            .collect();
+        let minerals: Vec<serde_json::Value> = Vec::new();
 
         serde_json::json!({
             "type":"state","phase":phase_str,
@@ -843,6 +786,10 @@ impl Game {
             "manip_len": self.manip_len,
             "hp":self.hp,"fuel":((self.fuel * 10.0).round() / 10.0),"score":self.score,"money":self.money,"round":self.round,"stage":self.stage,"lap":self.lap,
             "progress":progress,"stage_tick":self.stage_tick,
+            "route_paused":matches!(self.phase, Phase::BoosterDocking | Phase::FuelDocking | Phase::Docking),
+            "asteroid_plan":asteroid_plan,
+            "mineral_plan":mineral_plan,
+            "route_config":route_config,
             "airlock_x":r1(self.airlock_x),
             "depart_x":r1(self.depart_x),
             "booster_x":r1(self.booster_x),
@@ -866,14 +813,13 @@ impl Game {
             "booster_precision":self.booster_precision,
             "booster_enabled":self.booster_enabled,
             "booster_attached":self.booster_attached,
+            "booster_done_tick":self.booster_done_tick,
             "fuel_stand_enabled":self.fuel_stand_enabled,
             "fuel_stand_done":self.fuel_stand_done,
+            "fuel_stand_done_tick":self.fuel_stand_done_tick,
             "dense_route":self.fuel_stand_enabled,
             "fast_scroll":self.booster_attached,
             "next_stage_booster":next_stage_booster,
-            "dock_x_ok": DOCK_X_OK,
-            "booster_x_ok": BOOSTER_X_OK,
-            "fuel_stand_x_ok": FUEL_STAND_X_OK,
         }).to_string()
     }
 }
@@ -881,6 +827,17 @@ impl Game {
 fn pick_airlock_x(stage: u32, round: u32) -> f32 {
     let seed = lcg(stage.wrapping_mul(1009).wrapping_add(round * 997));
     90.0 + lcgf(seed) * (W - 180.0)
+}
+
+fn route_config_json() -> serde_json::Value {
+    serde_json::json!({
+        "dock_y": AIRLOCK_Y,
+        "dock_x_ok": DOCK_X_OK,
+        "booster_y": BOOSTER_Y,
+        "booster_x_ok": BOOSTER_X_OK,
+        "fuel_stand_y": FUEL_STAND_Y,
+        "fuel_stand_x_ok": FUEL_STAND_X_OK,
+    })
 }
 
 fn pick_booster_x(stage: u32, round: u32) -> f32 {
@@ -909,31 +866,37 @@ fn pick_fuel_stand_x(stage: u32, round: u32) -> f32 {
 }
 
 // ── Input ─────────────────────────────────────────────────────────────────────
-#[derive(Deserialize, Default)]
-struct Keys {
-    #[serde(default)]
-    up: bool,
-    #[serde(default)]
-    down: bool,
-    #[serde(default)]
-    left: bool,
-    #[serde(default)]
-    right: bool,
-    #[serde(default)]
-    manip: bool,
+#[derive(Deserialize)]
+struct ClientShip {
+    x: f32,
+    y: f32,
+    vx: f32,
+    vy: f32,
 }
 
+// The browser owns moment-to-moment ship simulation.
+// It notifies the server only when a meaningful gameplay event happens.
 #[derive(Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum ClientMsg {
-    Input {
-        keys: Keys,
-    },
     Start {
         #[serde(default)]
         name: String,
     },
-    Restart,
+    ClientEvent {
+        ship: ClientShip,
+        hp: u16,
+        fuel: f32,
+        manip_len: f32,
+        #[serde(default)]
+        mineral_id: Option<u32>,
+        #[serde(default)]
+        mineral_kind: Option<String>,
+    },
+    Restart {
+        #[serde(default)]
+        name: String,
+    },
     Continue,
 }
 
@@ -941,33 +904,71 @@ fn score_list(scores: &Arc<Mutex<ScoreBoard>>) -> serde_json::Value {
     serde_json::json!(scores.lock().unwrap().list())
 }
 
+fn title_state(scores: &Arc<Mutex<ScoreBoard>>) -> String {
+    serde_json::json!({"type":"state","phase":"title","scores":score_list(scores)}).to_string()
+}
+
+fn should_send_state(game: &Game, last_sent_phase: Phase) -> bool {
+    game.event.is_some()
+        || (game.phase == Phase::Launching && game.stage_tick <= 3)
+        || game.phase != last_sent_phase
+        || matches!(game.phase, Phase::GameOver)
+}
+
+async fn send_state(socket: &mut WebSocket, game: &Game) -> bool {
+    socket
+        .send(Message::Text(game.to_json().into()))
+        .await
+        .is_err()
+}
+
+async fn send_gameover_state(
+    socket: &mut WebSocket,
+    game: &Game,
+) -> bool {
+    socket
+        .send(Message::Text(
+            serde_json::json!({
+                "type":"state","phase":"gameover",
+                "score":game.score,"round":game.round,"lap":game.lap,
+                "rank":null,"scores":[],
+            })
+            .to_string()
+            .into(),
+        ))
+        .await
+        .is_err()
+}
+
+fn register_score(scores: &Arc<Mutex<ScoreBoard>>, name: String, score: u32) {
+    let final_name = if name.trim().is_empty() {
+        "野郎".to_string()
+    } else {
+        name.chars().take(20).collect()
+    };
+    let mut sb = scores.lock().unwrap();
+    let _ = sb.add(final_name, score);
+}
+
 pub async fn run(mut socket: WebSocket, scores: Arc<Mutex<ScoreBoard>>, players: Arc<AtomicUsize>) {
     let _guard = PlayerCountGuard::new(players);
     let _ = socket
-        .send(Message::Text(
-            serde_json::json!({"type":"state","phase":"title","scores":score_list(&scores)})
-                .to_string()
-                .into(),
-        ))
+        .send(Message::Text(title_state(&scores).into()))
         .await;
 
     loop {
-        let name = loop {
+        loop {
             match socket.recv().await {
                 Some(Ok(Message::Text(txt))) => {
-                    if let Ok(ClientMsg::Start { name }) = serde_json::from_str(&txt) {
-                        break if name.trim().is_empty() {
-                            "野郎".to_string()
-                        } else {
-                            name.chars().take(20).collect()
-                        };
+                    if let Ok(ClientMsg::Start { .. }) = serde_json::from_str(&txt) {
+                        break;
                     }
                 }
                 None | Some(Err(_)) | Some(Ok(Message::Close(_))) => return,
                 _ => {}
             }
         };
-        if game_session(&mut socket, &scores, &name).await {
+        if game_session(&mut socket, &scores).await {
             return;
         }
     }
@@ -976,32 +977,28 @@ pub async fn run(mut socket: WebSocket, scores: Arc<Mutex<ScoreBoard>>, players:
 async fn game_session(
     socket: &mut WebSocket,
     scores: &Arc<Mutex<ScoreBoard>>,
-    player_name: &str,
 ) -> bool {
     let mut game = Game::new();
+    let mut last_sent_phase = game.phase;
     let mut ticker = interval(Duration::from_millis(TICK_MS));
     ticker.set_missed_tick_behavior(MissedTickBehavior::Skip);
     loop {
         tokio::select! {
             _ = ticker.tick() => {
                 game.tick_game();
-                if socket.send(Message::Text(game.to_json().into())).await.is_err() { return true; }
+                if should_send_state(&game, last_sent_phase) {
+                    last_sent_phase = game.phase;
+                    if send_state(socket, &game).await { return true; }
+                }
                 if game.phase == Phase::GameOver {
-                    let rank = { let mut sb=scores.lock().unwrap(); sb.add(player_name.to_string(), game.score) };
-                    let _ = socket.send(Message::Text(
-                        serde_json::json!({
-                            "type":"state","phase":"gameover",
-                            "score":game.score,"round":game.round,"lap":game.lap,
-                            "rank":rank,"scores":score_list(scores),
-                        }).to_string().into()
-                    )).await;
+                    let _ = send_gameover_state(socket, &game).await;
                     loop {
                         match socket.recv().await {
                             Some(Ok(Message::Text(txt))) => {
-                                if let Ok(ClientMsg::Restart) = serde_json::from_str(&txt) {
+                                if let Ok(ClientMsg::Restart { name }) = serde_json::from_str(&txt) {
+                                    register_score(scores, name, game.score);
                                     let _ = socket.send(Message::Text(
-                                        serde_json::json!({"type":"state","phase":"title","scores":score_list(scores)})
-                                        .to_string().into()
+                                        title_state(scores).into()
                                     )).await;
                                     return false;
                                 }
@@ -1015,12 +1012,14 @@ async fn game_session(
             msg = socket.recv() => {
                 match msg {
                     Some(Ok(Message::Text(txt))) => {
-                        if let Ok(ClientMsg::Input { keys }) = serde_json::from_str(&txt) {
-                            game.keys_up    = keys.up;
-                            game.keys_down  = keys.down;
-                            game.keys_left  = keys.left;
-                            game.keys_right = keys.right;
-                            game.keys_manip = keys.manip;
+                        if let Ok(ClientMsg::ClientEvent { ship, hp, fuel, manip_len, mineral_id, mineral_kind }) = serde_json::from_str(&txt) {
+                            game.apply_client_state(ship, hp, fuel, manip_len);
+                            if let Some(mineral_id) = mineral_id {
+                                game.collect_client_mineral(mineral_id, mineral_kind);
+                            }
+                            if game.event.is_some() || matches!(game.phase, Phase::GameOver) {
+                                if send_state(socket, &game).await { return true; }
+                            }
                         }
                         if let Ok(ClientMsg::Continue) = serde_json::from_str(&txt) {
                             if matches!(game.phase, Phase::StageClear | Phase::LapClear) {
