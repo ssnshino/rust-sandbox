@@ -14,6 +14,7 @@
 | Breakout | [breakout.md](./breakout.md) | `/breakout`, `/ws/breakout`, `/api/breakout/scores` |
 | あやかダンジョン × 平安京エイリアン | [dungeon.md](./dungeon.md) | `/dungeon`, `/ws/dungeon`, `/api/dungeon/scores` |
 | 宇宙トラック野郎 | [truckers_v2.md](./truckers_v2.md) / [旧仕様](./truckers.md) | `/truckers`, `/truckers/refs/:name`, `/ws/truckers` |
+| ベクター・エアレース | [airrace.md](./airrace.md) | `/airrace` |
 
 ## 共通アーキテクチャ
 
@@ -57,7 +58,8 @@ rust-sandbox/
 │   ├── breakout.md         # Breakout 仕様書
 │   ├── dungeon.md          # あやかダンジョン仕様書
 │   ├── truckers.md         # 宇宙トラック野郎 旧仕様書
-│   └── truckers_v2.md      # 宇宙トラック野郎 v2 仕様書
+│   ├── truckers_v2.md      # 宇宙トラック野郎 v2 仕様書
+│   └── airrace.md          # ベクター・エアレース仕様書
 └── app/
     ├── Cargo.toml
     └── src/
@@ -66,6 +68,7 @@ rust-sandbox/
         ├── breakout.rs       # Breakout
         ├── dungeon.rs        # あやかダンジョン
         ├── truckers/         # 宇宙トラック野郎
+        ├── airrace.html      # ベクター・エアレース
         ├── dungeon_gen.rs    # 迷路生成
         ├── scores.rs         # ハイスコア共通
         ├── index.html
