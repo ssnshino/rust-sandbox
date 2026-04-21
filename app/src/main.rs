@@ -25,6 +25,7 @@ struct AppState {
     dungeon_scores:      Arc<Mutex<scores::ScoreBoard>>,
     fighting_scores:     Arc<Mutex<scores::ScoreBoard>>,
     truckers_scores:     Arc<Mutex<scores::ScoreBoard>>,
+    airrace_scores:      Arc<Mutex<scores::ScoreBoard>>,
     pong_single_players: Arc<AtomicUsize>,
     pong_2p_players:     Arc<AtomicUsize>,
     breakout_players:    Arc<AtomicUsize>,
@@ -44,6 +45,7 @@ async fn main() {
         dungeon_scores:      Arc::clone(&dungeon_scores),
         fighting_scores:     Arc::new(Mutex::new(scores::ScoreBoard::load("fighting_scores.json"))),
         truckers_scores:     Arc::new(Mutex::new(scores::ScoreBoard::load("truckers_scores.json"))),
+        airrace_scores:      Arc::new(Mutex::new(scores::ScoreBoard::load("airrace_scores.json"))),
         pong_single_players: Arc::new(AtomicUsize::new(0)),
         pong_2p_players:     Arc::new(AtomicUsize::new(0)),
         breakout_players:    Arc::new(AtomicUsize::new(0)),
@@ -74,6 +76,8 @@ async fn main() {
         .route("/truckers.i18n.json",  get(truckers_i18n))
         .route("/truckers/refs/:name", get(truckers_ref))
         .route("/ws/truckers",         get(ws_truckers))
+        .route("/airrace",             get(airrace_page))
+        .route("/api/airrace/scores",  get(get_airrace_scores).post(post_airrace_score))
         .route("/favicon.ico",         get(favicon))
         .with_state(state);
 
@@ -90,6 +94,7 @@ async fn dungeon_page()  -> Html<String> {
     Html(include_str!("dungeon.html").replace("__BUILD_HASH__", &build_hash))
 }
 async fn fighting_page() -> Html<&'static str> { Html(include_str!("fighting.html")) }
+async fn airrace_page()  -> Html<&'static str> { Html(include_str!("airrace.html")) }
 async fn truckers_page() -> Html<&'static str> { Html(include_str!("truckers/truckers.html")) }
 async fn truckers_css() -> impl IntoResponse {
     ([(CONTENT_TYPE, "text/css; charset=utf-8")], include_str!("truckers/truckers.css")).into_response()
@@ -189,6 +194,25 @@ struct SubmitPayload { name: String, score: u32 }
 
 async fn post_score(State(s): State<AppState>, Json(p): Json<SubmitPayload>) -> impl IntoResponse {
     let mut sb = s.scores.lock().unwrap();
+    let rank = sb.add(p.name, p.score);
+    let list: Vec<_> = sb.list().to_vec();
+    let min = sb.min_score();
+    let rank_val = match rank {
+        Some(r) => serde_json::Value::Number(r.into()),
+        None    => serde_json::Value::Null,
+    };
+    Json(serde_json::json!({ "rank": rank_val, "scores": list, "min_score": min }))
+}
+
+async fn get_airrace_scores(State(s): State<AppState>) -> impl IntoResponse {
+    let sb = s.airrace_scores.lock().unwrap();
+    let list: Vec<_> = sb.list().to_vec();
+    let min = sb.min_score();
+    Json(serde_json::json!({ "scores": list, "min_score": min }))
+}
+
+async fn post_airrace_score(State(s): State<AppState>, Json(p): Json<SubmitPayload>) -> impl IntoResponse {
+    let mut sb = s.airrace_scores.lock().unwrap();
     let rank = sb.add(p.name, p.score);
     let list: Vec<_> = sb.list().to_vec();
     let min = sb.min_score();
