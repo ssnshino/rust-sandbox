@@ -112,7 +112,8 @@ const ASTEROID_COLORS = [
 ];
 
 // Update downward background speed from ship Y and fast-scroll mode.
-function updateScroll(shipY, fastScroll) {
+function updateScroll(shipY, fastScroll, paused = false) {
+  if (paused) return;
   const y = shipY ?? H * 0.67;
   const pct = 1 - Math.max(0, Math.min(1, y / H));
   const min = fastScroll ? 0.7 : SCROLL_MIN;
@@ -134,8 +135,8 @@ function drawNebula(x, y, r, hue) {
 }
 
 // Draw the animated space background behind gameplay objects.
-function renderBg(tick, shipY, fastScroll) {
-  updateScroll(shipY, fastScroll);
+function renderBg(tick, shipY, fastScroll, paused = false) {
+  updateScroll(shipY, fastScroll, paused);
   ctx.fillStyle = "#050510";
   ctx.fillRect(0, 0, W, H);
   for (const nebula of NEBULAS) {
@@ -404,7 +405,7 @@ function drawThrusters(tw, th, boosterAttached) {
 
 // Draw the player truck body and optional booster pod.
 function drawTruck(x, y, invincible, tick, boosterAttached) {
-  if (invincible && Math.floor(tick / 4) % 2 === 1) return;
+  if (invincible && Math.floor(tick / 2) % 2 === 1) return;
   ctx.save();
   ctx.translate(x, y);
   const tw = 14;
@@ -620,7 +621,7 @@ export function renderGame(state) {
   //
   updateFpsMeter();
   const tick = state.tick || 0;
-  renderBg(tick, state.ship ? state.ship.y : undefined, !!state.fast_scroll);
+  renderBg(tick, state.ship ? state.ship.y : undefined, !!state.fast_scroll, !!state.route_paused);
   drawProgressBar(state.progress, state.phase);
 
   const pulse = 0.5 + 0.5 * Math.sin(tick * 0.1);
@@ -662,7 +663,7 @@ export function renderGame(state) {
 
   if (
     state.phase === "booster_docking" ||
-    (state.booster_enabled && state.booster_attached && (state.progress || 0) < 40)
+    (state.booster_attached && (state.tick || 0) - (state.booster_done_tick || 0) <= 30)
   ) {
     // @@@ 20260420 addd.
 //    drawStation(270, BOOSTER_Y, "", "", true, state.booster_x, pulse, "booster");
@@ -672,7 +673,7 @@ export function renderGame(state) {
 
   if (
     state.phase === "fuel_docking" ||
-    (state.fuel_stand_enabled && !state.fuel_stand_done && (state.progress || 0) >= 45 && (state.progress || 0) <= 66)
+    (state.fuel_stand_done && (state.tick || 0) - (state.fuel_stand_done_tick || 0) <= 30)
   ) {
     drawStation(180, FUEL_STAND_Y, "", "", true, state.fuel_stand_x, pulse, "fuel");
   }

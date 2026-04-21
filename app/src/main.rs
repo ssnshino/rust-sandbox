@@ -106,6 +106,7 @@ async fn truckers_js_module(Path(name): Path<String>) -> impl IntoResponse {
         "render.js" => include_str!("truckers/js/render.js"),
         "audio.js" => include_str!("truckers/js/audio.js"),
         "input.js" => include_str!("truckers/js/input.js"),
+        "game.js" => include_str!("truckers/js/game.js"),
         "ws.js" => include_str!("truckers/js/ws.js"),
         _ => return StatusCode::NOT_FOUND.into_response(),
     };

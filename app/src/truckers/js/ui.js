@@ -12,6 +12,26 @@ let routePendingName = null;
 let routePendingState = null;
 
 const STATION_SYMBOLS = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"];
+const J2000_UTC = Date.UTC(2000, 0, 1, 12, 0, 0);
+const DAY_MS = 86_400_000;
+const ORBIT_BODIES = [
+    {
+        key: "earth",
+        nameJa: "地球",
+        nameEn: "Earth",
+        periodDays: 365.256,
+        j2000Longitude: 100.46,
+        radius: 72,
+    },
+    {
+        key: "mars",
+        nameJa: "火星",
+        nameEn: "Mars",
+        periodDays: 686.98,
+        j2000Longitude: 355.43,
+        radius: 106,
+    },
+];
 
 function el(id) {
     return document.getElementById(id);
@@ -35,6 +55,62 @@ function html(id, value) {
 
 function stationNames() {
     return t("station_names") || [];
+}
+
+function normalizeDeg(deg) {
+    return ((deg % 360) + 360) % 360;
+}
+
+function orbitAngleRad(longitudeDeg) {
+    return ((normalizeDeg(longitudeDeg) / 360) * Math.PI * 2) - Math.PI / 2;
+}
+
+function eclipticSignName(longitudeDeg) {
+    const names = stationNames();
+    const index = Math.floor(normalizeDeg(longitudeDeg) / 30) % 12;
+    return names[index] || STATION_SYMBOLS[index];
+}
+
+function bodyLongitude(body, date = new Date()) {
+    const days = (date.getTime() - J2000_UTC) / DAY_MS;
+    return normalizeDeg(body.j2000Longitude + (days / body.periodDays) * 360);
+}
+
+function solarSystemLayerHtml(date = new Date()) {
+    const dateLabel = date.toLocaleDateString(lang === "ja" ? "ja-JP" : "en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
+    const bodyHtml = ORBIT_BODIES.map((body) => {
+        const longitude = bodyLongitude(body, date);
+        const angle = orbitAngleRad(longitude);
+        const x = Math.cos(angle) * body.radius;
+        const y = Math.sin(angle) * body.radius;
+        const label = lang === "ja" ? body.nameJa : body.nameEn;
+        const sign = eclipticSignName(longitude);
+        return `
+            <div class="orbit-body ${body.key}" style="left: calc(50% + ${x.toFixed(1)}px); top: calc(50% + ${y.toFixed(1)}px);">
+                <span class="body-dot"></span>
+                <span class="body-label">${label}</span>
+            </div>
+            <div class="orbit-note ${body.key}" style="left: calc(50% + ${(x * 1.18).toFixed(1)}px); top: calc(50% + ${(y * 1.18).toFixed(1)}px);">
+                ${label}: ${sign}
+            </div>
+        `;
+    }).join("");
+
+    return `
+        <div class="orbit-ring earth-orbit"></div>
+        <div class="orbit-ring mars-orbit"></div>
+        <div class="orbit-ring belt-orbit"></div>
+        <div class="solar-center">
+            <span class="solar-dot"></span>
+            <span>${lang === "ja" ? "太陽系中心" : "Solar center"}</span>
+        </div>
+        <div class="orbit-date">${dateLabel}</div>
+        ${bodyHtml}
+    `;
 }
 
 function routeStationHtml(index, currentIndex, nextIndex) {
@@ -66,7 +142,7 @@ function routeStationHtml(index, currentIndex, nextIndex) {
 }
 
 function currentName() {
-    const input = el("name-input");
+    const input = el("go-name-input");
     return ((input && input.value) || ui.playerName || "").trim() || (lang === "ja" ? "野郎" : "Trucker");
 }
 
@@ -151,13 +227,9 @@ function bonusHtml(state) {
 function startGameDirect() {
     ensureAudio();
     resumeAudio();
-    const nextName = currentName();
-    setPlayerName(nextName);
-    const input = el("name-input");
-    if (input) input.value = nextName;
     routePendingState = { stage: 0 };
     routePendingMode = "start";
-    routePendingName = nextName;
+    routePendingName = null;
     showRouteScreen(routePendingState);
 }
 
@@ -181,7 +253,7 @@ function closeRouteScreen(sendAction = false) {
         return;
     }
     if (nextMode === "start") {
-        sendMessage({ type: "start", name: nextName || currentName() });
+        sendMessage({ type: "start" });
     } else if (nextMode === "continue") {
         sendMessage({ type: "continue" });
     }
@@ -219,7 +291,9 @@ function bindFallbackDom() {
             routePendingMode = null;
             routePendingName = null;
             routePendingState = null;
-            sendMessage({ type: "restart" });
+            const nextName = currentName();
+            setPlayerName(nextName);
+            sendMessage({ type: "restart", name: nextName });
             return;
         }
         // 配達完了「次のステーションへ！」ボタン
@@ -251,10 +325,10 @@ function bindFallbackDom() {
     document.addEventListener("keydown", (event) => {
         const target = event.target;
         if (!(target instanceof HTMLInputElement)) return;
-        if (target.id !== "name-input") return;
+        if (target.id !== "go-name-input") return;
         if (event.key === "Enter") {
             event.preventDefault();
-            startGameDirect();
+            target.blur();
         }
     });
 }
@@ -266,7 +340,7 @@ export function bindUiActions(send) {
 
 export function createTruckersUi() {
     bindFallbackDom();
-    const input = el("name-input");
+    const input = el("go-name-input");
     if (input && !input.value) input.value = ui.playerName || "";
     syncUiLanguage();
 }
@@ -304,9 +378,8 @@ export function showClear(title, sub, i18n, state) {
     setVisible("btn-continue", true, "inline-flex");
     setVisible("screen-clear", true, "flex");
     clearTimeoutId = setTimeout(() => {
-        // 次ステージへのボタンクリック
-        //triggerContinueFlow();
-    }, 10000); // - 10 sec.
+        triggerContinueFlow();
+    }, 10000);
 }
 
 export function setNextRouteState(state) {
@@ -321,11 +394,13 @@ export function setNextRouteState(state) {
  */
 export function showRouteScreen(state) {
     hideGm();
+    ui.screen = "route";
     ui.clearVisible = false;
     ui.canContinue = false;
     const currentIndex = Number((state && state.stage) || 0) % 12;
     const nextIndex = (currentIndex + 1) % 12;
     const routeMap = `
+        ${solarSystemLayerHtml()}
         <div class="route-core">
             <div class="route-core-title">${lang === "ja" ? "アステロイドベルト" : "ASTEROID BELT"}</div>
             <div class="route-core-sub">${lang === "ja" ? "12宇宙ステーション" : "12 STATIONS"}</div>
@@ -352,7 +427,7 @@ export function showRouteScreen(state) {
 
     clearTimeout(routeTimeout);
     routeTimeout = setTimeout(() => {
-        //hideRouteScreen();
+        hideRouteScreen();
     }, 10000);
 }
 
@@ -457,14 +532,16 @@ export function updateHudUi(state) {
 
 export function updateGameoverUi(state) {
     ui.goScoreText = t("score_lbl") + (state.score || 0).toLocaleString();
-    ui.goRankText = state.rank ? tf("rank_msg", { rank: state.rank }) : t("no_rank");
+    ui.goRankText = t("name_ph");
     text("go-score", ui.goScoreText);
     text("go-rank", ui.goRankText);
+    const input = el("go-name-input");
+    if (input && !input.value) input.value = ui.playerName || "";
 }
 
 export function syncUiLanguage() {
     applyLang();
-    const input = el("name-input");
+    const input = el("go-name-input");
     if (input) input.placeholder = t("name_ph");
     text("btn-start", t("btn_start"));
     text("btn-restart", t("btn_restart"));

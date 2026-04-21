@@ -1,7 +1,8 @@
-import { beep } from "./audio.js";
-import { lang } from "./state.js";
+import { beep, noiseBurst } from "./audio.js";
+import { lang, ui } from "./state.js";
 import { recordNetworkFrame } from "./render.js";
 import { renderGame, renderTitleBg } from "./render.js";
+import { applyClientGame } from "./game.js";
 import { getLangDict, t, tf } from "./i18n.js";
 import { setNextRouteState, showClear, showGm, showScreen, renderScoreList, updateGameoverUi } from "./ui.js";
 
@@ -10,6 +11,8 @@ let pendingMessages = [];
 let lastEvent = null;
 let prevPhase = null;
 let lastFastScroll = false;
+let latestPlayState = null;
+let animationFrameId = null;
 
 let statusCounter = 0;
 
@@ -70,6 +73,79 @@ function statusPhaseView(code) {
   statusPhase.textContent = 'Phase: ' + code;
 }
 
+// Gameplay rendering must not depend on WebSocket packet frequency.
+// The server sends coarse state snapshots; the browser simulates and draws
+// each animation frame from the latest snapshot.
+function startPlayLoop() {
+  if (animationFrameId !== null) return;
+  const frame = () => {
+    animationFrameId = null;
+    if (!latestPlayState) return;
+    try {
+      const renderState = applyClientGame(latestPlayState, send);
+      renderGame(renderState);
+      handlePlayEvents(latestPlayState, renderState);
+    } catch (err) {
+      console.error("truckers renderGame failed", err, latestPlayState);
+      showGm(`render error: ${err?.message || err}`);
+      return;
+    }
+    animationFrameId = requestAnimationFrame(frame);
+  };
+  animationFrameId = requestAnimationFrame(frame);
+}
+
+function stopPlayLoop() {
+  latestPlayState = null;
+  if (animationFrameId !== null) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+}
+
+function handlePlayEvents(msg, renderState) {
+  const eventKey = renderState.event_token || renderState.event;
+  if (renderState.event && eventKey !== lastEvent) {
+    if (renderState.event === "damage") {
+      showGm(pick(t("gm_hit")));
+      noiseBurst(0.13, 0.09);
+      beep(150, 0.08, "sawtooth", 0.035);
+    }
+    if (renderState.event === "delivery") showGm(pick(t("gm_ok")));
+    if (renderState.event === "booster_call") showGm(pick(t("gm_booster")));
+    if (renderState.event === "booster_attach") showGm(pick(t("gm_booster_ok")));
+    if (renderState.event === "booster_fee_short") showGm(pick(t("gm_booster_fee_short")));
+    if (renderState.event === "fuel_stand_call") showGm(pick(t("gm_fuel_stand")));
+    if (renderState.event === "fuel_stand_refuel") showGm(pick(t("gm_fuel_stand_ok")));
+    if (renderState.event === "fuel_stand_fee_short") showGm(pick(t("gm_fuel_stand_short")));
+    if (renderState.event === "late_fine") showGm(pick(t("gm_late_fine")));
+    if (renderState.event === "fuel_empty") showGm(pick(t("gm_fuel_empty")));
+    if (renderState.event === "mineral_gold") {
+      showGm(lang === "ja" ? "金鉱石ゲット！" : "Gold ore get!");
+      if (renderState.event_token) beep(1040, 0.07, "square", 0.05);
+    }
+    if (renderState.event === "mineral_rare") {
+      showGm(lang === "ja" ? "レアメタルきた！" : "Rare metal!");
+      if (renderState.event_token) beep(1320, 0.09, "triangle", 0.06);
+    }
+  }
+  if (msg.phase === "booster_docking" && prevPhase !== "booster_docking") {
+    showGm(pick(t("gm_booster")));
+  }
+  if (msg.phase === "fuel_docking" && prevPhase !== "fuel_docking") {
+    showGm(pick(t("gm_fuel_stand")));
+  }
+  if (msg.phase === "docking" && prevPhase !== "docking") {
+    showGm(pick(t("gm_dock")));
+  }
+  if (msg.fast_scroll && !lastFastScroll) {
+    showGm(pick(t("gm_fast")));
+  }
+  lastEvent = eventKey;
+  prevPhase = msg.phase;
+  lastFastScroll = !!msg.fast_scroll;
+}
+
 // Consume state packets from the server and route them to the proper screen.
 function handleMsg(msg) {
   if (msg.type !== "state") return;
@@ -83,6 +159,10 @@ function handleMsg(msg) {
   switch (msg.phase) {
     case "title":
       // ゲームタイトル画面
+      if (ui.clearVisible || ui.screen === "route") {
+        break;
+      }
+      stopPlayLoop();
       showScreen("title");
       renderTitleBg();
       renderScoreList("title-scores", msg.scores || []);
@@ -101,51 +181,12 @@ function handleMsg(msg) {
     case "docking":
       // ゴール宇宙ステーション
       showScreen("playing");
-      try {
-        renderGame(msg);
-      } catch (err) {
-        console.error("truckers renderGame failed", err, msg);
-        showGm(`render error: ${err?.message || err}`);
-        return;
-      }
-      if (msg.event && msg.event !== lastEvent) {
-        if (msg.event === "damage") showGm(pick(t("gm_hit")));
-        if (msg.event === "delivery") showGm(pick(t("gm_ok")));
-        if (msg.event === "booster_call") showGm(pick(t("gm_booster")));
-        if (msg.event === "booster_attach") showGm(pick(t("gm_booster_ok")));
-        if (msg.event === "booster_fee_short") showGm(pick(t("gm_booster_fee_short")));
-        if (msg.event === "fuel_stand_call") showGm(pick(t("gm_fuel_stand")));
-        if (msg.event === "fuel_stand_refuel") showGm(pick(t("gm_fuel_stand_ok")));
-        if (msg.event === "fuel_stand_fee_short") showGm(pick(t("gm_fuel_stand_short")));
-        if (msg.event === "late_fine") showGm(pick(t("gm_late_fine")));
-        if (msg.event === "fuel_empty") showGm(pick(t("gm_fuel_empty")));
-        if (msg.event === "mineral_gold") {
-          showGm(lang === "ja" ? "金鉱石ゲット！" : "Gold ore get!");
-          beep(1040, 0.07, "square", 0.05);
-        }
-        if (msg.event === "mineral_rare") {
-          showGm(lang === "ja" ? "レアメタルきた！" : "Rare metal!");
-          beep(1320, 0.09, "triangle", 0.06);
-        }
-      }
-      if (msg.phase === "booster_docking" && prevPhase !== "booster_docking") {
-        showGm(pick(t("gm_booster")));
-      }
-      if (msg.phase === "fuel_docking" && prevPhase !== "fuel_docking") {
-        showGm(pick(t("gm_fuel_stand")));
-      }
-      if (msg.phase === "docking" && prevPhase !== "docking") {
-        showGm(pick(t("gm_dock")));
-      }
-      if (msg.fast_scroll && !lastFastScroll) {
-        showGm(pick(t("gm_fast")));
-      }
-      lastEvent = msg.event;
-      prevPhase = msg.phase;
-      lastFastScroll = !!msg.fast_scroll;
+      latestPlayState = msg;
+      startPlayLoop();
       break;
     case "stage_clear":
       // 宇宙ステーションとのドッキング完了「ステージクリア」
+      stopPlayLoop();
       if (prevPhase !== "stage_clear") {
         showScreen("playing");
       }
@@ -168,6 +209,7 @@ function handleMsg(msg) {
       break;
     case "lap_clear":
       // 全12ステージクリア
+      stopPlayLoop();
       if (prevPhase !== "lap_clear") {
         showScreen("playing");
       }
@@ -180,6 +222,7 @@ function handleMsg(msg) {
       break;
     case "gameover":
       // ゲームオーバーがm値
+      stopPlayLoop();
       showScreen("gameover");
       updateGameoverUi(msg);
       renderScoreList("go-scores", msg.scores || []);
