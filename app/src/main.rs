@@ -77,6 +77,7 @@ async fn main() {
         .route("/truckers/refs/:name", get(truckers_ref))
         .route("/ws/truckers",         get(ws_truckers))
         .route("/airrace",             get(airrace_page))
+        .route("/airrace.webmanifest", get(airrace_manifest))
         .route("/api/airrace/scores",  get(get_airrace_scores).post(post_airrace_score))
         .route("/favicon.ico",         get(favicon))
         .with_state(state);
@@ -95,6 +96,15 @@ async fn dungeon_page()  -> Html<String> {
 }
 async fn fighting_page() -> Html<&'static str> { Html(include_str!("fighting.html")) }
 async fn airrace_page()  -> Html<&'static str> { Html(include_str!("airrace.html")) }
+async fn airrace_manifest() -> impl IntoResponse {
+    (
+        [
+            (CONTENT_TYPE, "application/manifest+json; charset=utf-8"),
+            (CACHE_CONTROL, "public, max-age=3600"),
+        ],
+        include_str!("airrace.webmanifest"),
+    ).into_response()
+}
 async fn truckers_page() -> Html<&'static str> { Html(include_str!("truckers/truckers.html")) }
 async fn truckers_css() -> impl IntoResponse {
     ([(CONTENT_TYPE, "text/css; charset=utf-8")], include_str!("truckers/truckers.css")).into_response()

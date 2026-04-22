@@ -3,8 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#06172b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Air Race">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>ベクター・エアレース</title>
   <link rel="icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/favicon.ico">
+  <link rel="manifest" href="/airrace.webmanifest">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 
@@ -63,8 +69,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: max(8px, env(safe-area-inset-top)) 10px max(12px, env(safe-area-inset-bottom));
+      gap: 0;
+      padding: max(4px, env(safe-area-inset-top)) 6px max(4px, env(safe-area-inset-bottom));
       position: relative;
       box-sizing: border-box;
     }
@@ -79,8 +85,16 @@
     }
 
     .top-menu {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      z-index: 8;
       display: inline-block;
       width: fit-content;
+      padding: 4px 8px;
+      border: 1px solid rgba(125, 249, 255, 0.24);
+      border-radius: 999px;
+      background: rgba(1, 12, 24, 0.46);
       color: #bae6fd;
       font-size: 13px;
       text-decoration: none;
@@ -112,9 +126,9 @@
 
     #canvas-wrap {
       position: relative;
-      width: min(100%, 375px);
-      aspect-ratio: 375 / 500;
-      max-height: calc(100dvh - 96px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      width: min(calc(100dvw - 12px), 980px);
+      height: min(calc(100dvh - 8px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 680px);
+      max-height: calc(100dvh - 8px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
       border: 1px solid rgba(125, 249, 255, 0.42);
       border-radius: 18px;
       overflow: hidden;
@@ -273,6 +287,13 @@
       color: #422006;
     }
 
+    #gamepad-status {
+      min-height: 16px;
+      font-size: 11px;
+      color: #bae6fd;
+      text-shadow: 0 0 8px rgba(56, 189, 248, 0.70);
+    }
+
     #name-input {
       width: 100%;
       margin: 8px 0;
@@ -308,14 +329,20 @@
     }
 
     #message {
-      min-height: 34px;
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 8px;
+      z-index: 7;
+      min-height: 0;
       border: 1px solid rgba(125, 249, 255, 0.24);
       border-radius: 12px;
       background: rgba(1, 10, 20, 0.55);
-      padding: 8px 10px;
+      padding: 6px 10px;
       font-size: 13px;
       color: #fef3c7;
       text-shadow: 0 0 8px rgba(251, 191, 36, 0.50);
+      pointer-events: none;
     }
 
     #controls {
@@ -331,7 +358,7 @@
     #stick {
       position: absolute;
       left: 14px;
-      bottom: 16px;
+      bottom: 58px;
       width: 92px;
       height: 92px;
       border-radius: 50%;
@@ -357,7 +384,7 @@
     #boost {
       position: absolute;
       right: 16px;
-      bottom: 28px;
+      bottom: 70px;
       width: 84px;
       height: 56px;
       border-radius: 20px;
@@ -371,7 +398,7 @@
       position: absolute;
       left: 116px;
       right: 110px;
-      bottom: 32px;
+      bottom: 74px;
       font-size: 11px;
       line-height: 1.6;
       color: #93c5fd;
@@ -381,7 +408,7 @@
     @media (max-height: 700px) {
       #app {
         justify-content: center;
-        gap: 6px;
+        gap: 0;
       }
 
       #topbar {
@@ -398,13 +425,15 @@
       }
 
       #canvas-wrap {
-        max-height: calc(100dvh - 84px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        width: min(calc(100dvw - 12px), 980px);
+        height: min(calc(100dvh - 8px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 560px);
+        max-height: calc(100dvh - 8px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
       }
 
       #stick {
         width: 82px;
         height: 82px;
-        bottom: 14px;
+        bottom: 52px;
       }
 
       #knob {
@@ -417,19 +446,18 @@
       #boost {
         width: 78px;
         height: 52px;
-        bottom: 24px;
+        bottom: 64px;
       }
 
       #message {
         font-size: 12px;
-        padding: 6px 8px;
+        padding: 5px 8px;
       }
     }
   </style>
 </head>
 <body>
   <div id="app">
-    <a class="top-menu" href="/">← MENU</a>
     <a id="back" href="/">← menu</a>
     <div id="topbar">
       <div class="meter"><strong>SPEED</strong><span id="speed">320 km/h</span></div>
@@ -439,7 +467,9 @@
 
     <div id="canvas-wrap">
       <canvas id="c" width="375" height="500"></canvas>
+      <a class="top-menu" href="/">← MENU</a>
       <div id="guide">NEXT GATE →</div>
+      <div id="message">左プニコンで旋回と高度。BOOSTで加速。</div>
       <div id="controls">
         <div id="stick"><div id="knob"></div></div>
         <div id="help">← → 旋回<br>↑ ↓ 高度<br>PCは矢印/WASD + Space</div>
@@ -451,7 +481,9 @@
         <div id="control-mode" class="control-mode">
           <button id="mode-stick" class="active">プニコン</button>
           <button id="mode-tilt">傾き操作</button>
+          <button id="mode-gamepad">コントローラ</button>
         </div>
+        <div id="gamepad-status">PS4/PS5 コントローラは接続後にボタンを1回押してね。</div>
         <div class="rankings">
           <h2>TOP 5 TIME</h2>
           <div id="title-rankings"></div>
@@ -471,21 +503,38 @@
       </section>
     </div>
 
-    <div id="message">左プニコンで旋回と高度。BOOSTで加速。</div>
   </div>
 
   <script>
     const canvas = document.getElementById("c");
     const ctx = canvas.getContext("2d");
-    const W = canvas.width;
-    const H = canvas.height;
-    const horizon = 230;
-    const centerX = W / 2;
-    const centerY = 255;
-    const worldWidth = 420;
+    let W = canvas.width;
+    let H = canvas.height;
+    let horizon = 230;
+    let centerX = W / 2;
+    let centerY = 255;
+    let worldWidth = 420;
     const minAlt = 0;
     const maxAlt = 720;
     const rollVisual = 0.88;
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const cssW = Math.max(320, Math.round(rect.width));
+      const cssH = Math.max(320, Math.round(rect.height));
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
+        canvas.width = Math.round(cssW * dpr);
+        canvas.height = Math.round(cssH * dpr);
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      W = cssW;
+      H = cssH;
+      centerX = W / 2;
+      centerY = H * 0.51;
+      horizon = H * 0.46;
+      worldWidth = Math.max(420, W * 1.12);
+    }
 
     const ui = {
       speed: document.getElementById("speed"),
@@ -500,9 +549,13 @@
       nameInput: document.getElementById("name-input"),
       nextRound: document.getElementById("next-round"),
       retry: document.getElementById("retry"),
+      start: document.getElementById("start"),
+      saveScore: document.getElementById("save-score"),
       controlMode: document.getElementById("control-mode"),
       modeStick: document.getElementById("mode-stick"),
       modeTilt: document.getElementById("mode-tilt"),
+      modeGamepad: document.getElementById("mode-gamepad"),
+      gamepadStatus: document.getElementById("gamepad-status"),
       knob: document.getElementById("knob"),
       stick: document.getElementById("stick"),
       guide: document.getElementById("guide"),
@@ -521,6 +574,16 @@
     let tiltBase = null;
     let tilt = { beta: 0, gamma: 0 };
     let tiltFiltered = { beta: 0, gamma: 0 };
+    let activeGamepadIndex = null;
+    let gamepadName = "";
+    let gamepadPrevButtons = [];
+
+    const buttonLabels = {
+      start: "START",
+      saveScore: "SAVE",
+      nextRound: "NEXT ROUND",
+      retry: "TITLE",
+    };
 
     function roundDifficulty(round) {
       return {
@@ -680,6 +743,7 @@
       ui.nextRound.style.display = "none";
       ui.retry.style.display = "none";
       renderRankings();
+      updateButtonHints();
       drawSplash();
       ui.message.textContent = "左プニコンで旋回と高度。BOOSTで加速。";
     }
@@ -916,7 +980,7 @@
 
     function drawPlaneHud() {
       ctx.save();
-      ctx.translate(centerX, 330);
+      ctx.translate(centerX, H * 0.66);
       ctx.rotate(game.roll * 0.62 + game.loopAngle);
       ctx.strokeStyle = "#f8fafc";
       ctx.fillStyle = "rgba(14,165,233,.22)";
@@ -936,10 +1000,10 @@
       ctx.strokeStyle = "rgba(255,255,255,.65)";
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(centerX - 42, 250);
-      ctx.lineTo(centerX - 12, 250);
-      ctx.moveTo(centerX + 12, 250);
-      ctx.lineTo(centerX + 42, 250);
+      ctx.moveTo(centerX - 42, centerY);
+      ctx.lineTo(centerX - 12, centerY);
+      ctx.moveTo(centerX + 12, centerY);
+      ctx.lineTo(centerX + 42, centerY);
       ctx.stroke();
     }
 
@@ -1041,11 +1105,12 @@
       ctx.font = "14px DotGothic16";
       ctx.textAlign = "center";
       ctx.fillText(`${labels[Math.round(deg / 45) % 8]} ${Math.round(deg)}°`, centerX, 31);
-      ctx.fillStyle = "#67e8f9";
-      ctx.fillText(`R${game.round}`, 24, 24);
       const elapsed = (performance.now() - game.totalStartMs) / 1000;
       ctx.textAlign = "right";
-      ctx.fillText(elapsed.toFixed(1), W - 12, 24);
+      ctx.fillStyle = "#67e8f9";
+      ctx.fillText(`ROUND ${game.round}`, W - 12, 20);
+      ctx.fillStyle = "#facc15";
+      ctx.fillText(elapsed.toFixed(1), W - 12, 36);
     }
 
     function drawHud() {
@@ -1056,6 +1121,7 @@
 
     function update(dt) {
       applyTiltInput();
+      applyGamepadInput();
       const turnRate = 1.65 - Math.min(0.55, Math.max(0, game.speed - 320) * 0.001);
       game.heading += input.x * turnRate * dt;
       game.altitude += input.y * 175 * dt;
@@ -1188,6 +1254,7 @@
 
     function frame(now) {
       if (!game || !game.running) return;
+      resizeCanvas();
       const dt = Math.min(0.05, (now - game.lastMs) / 1000);
       game.lastMs = now;
       update(dt);
@@ -1249,6 +1316,7 @@
         }
       }
       ui.result.style.display = "flex";
+      updateButtonHints();
     }
 
     function start() {
@@ -1289,8 +1357,14 @@
       controlMode = nextMode;
       ui.modeStick.classList.toggle("active", controlMode === "stick");
       ui.modeTilt.classList.toggle("active", controlMode === "tilt");
+      ui.modeGamepad.classList.toggle("active", controlMode === "gamepad");
       tiltBase = null;
       tiltFiltered = { beta: tilt.beta, gamma: tilt.gamma };
+      if (controlMode !== "gamepad") {
+        input.boost = false;
+      }
+      updateGamepadStatus();
+      updateButtonHints();
     }
 
     function applyTiltInput() {
@@ -1325,16 +1399,141 @@
       setControlMode("tilt");
     }
 
+    function axisWithDeadzone(value, deadZone = 0.14) {
+      if (Math.abs(value) < deadZone) return 0;
+      const sign = Math.sign(value);
+      const scaled = (Math.abs(value) - deadZone) / (1 - deadZone);
+      return sign * Math.min(1, Math.max(0, scaled));
+    }
+
+    function getActiveGamepad() {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      if (activeGamepadIndex !== null && pads[activeGamepadIndex]) {
+        return pads[activeGamepadIndex];
+      }
+      return Array.from(pads).find(Boolean) || null;
+    }
+
+    function updateGamepadStatus() {
+      if (!ui.gamepadStatus) return;
+      const pad = getActiveGamepad();
+      if (pad) {
+        gamepadName = pad.id || "Gamepad";
+        ui.gamepadStatus.textContent = `GAMEPAD: ${gamepadName}`;
+      } else {
+        ui.gamepadStatus.textContent = "PS4/PS5 コントローラは接続後にボタンを1回押してね。";
+      }
+      updateButtonHints();
+    }
+
+    function useGamepadHints() {
+      return controlMode === "gamepad" && !!getActiveGamepad();
+    }
+
+    function updateButtonHints() {
+      const showHints = useGamepadHints();
+      ui.start.textContent = showHints ? `× ${buttonLabels.start}` : buttonLabels.start;
+      ui.saveScore.textContent = showHints ? `× ${buttonLabels.saveScore}` : buttonLabels.saveScore;
+      ui.nextRound.textContent = showHints ? `× ${buttonLabels.nextRound}` : buttonLabels.nextRound;
+      ui.retry.textContent = showHints ? `○ ${buttonLabels.retry}` : buttonLabels.retry;
+    }
+
+    function applyGamepadInput() {
+      if (controlMode !== "gamepad") return;
+      const pad = getActiveGamepad();
+      if (!pad) {
+        input.x = 0;
+        input.y = 0;
+        input.boost = false;
+        updateGamepadStatus();
+        return;
+      }
+      activeGamepadIndex = pad.index;
+      input.x = axisWithDeadzone(pad.axes[0] || 0);
+      input.y = axisWithDeadzone(pad.axes[1] || 0);
+      const cross = pad.buttons[0]?.pressed || false;
+      const r2 = (pad.buttons[7]?.value || 0) > 0.35 || (pad.buttons[7]?.pressed || false);
+      const r1 = pad.buttons[5]?.pressed || false;
+      input.boost = cross || r1 || r2;
+    }
+
+    function isVisible(el) {
+      return !!el && getComputedStyle(el).display !== "none";
+    }
+
+    function gamepadPressedOnce(pad, index) {
+      const pressed = pad.buttons[index]?.pressed || false;
+      const wasPressed = gamepadPrevButtons[index] || false;
+      gamepadPrevButtons[index] = pressed;
+      return pressed && !wasPressed;
+    }
+
+    function pollGamepadUi() {
+      const pad = getActiveGamepad();
+      if (!pad || controlMode !== "gamepad") {
+        requestAnimationFrame(pollGamepadUi);
+        return;
+      }
+
+      // UI操作は「押した瞬間」だけ使う。BOOST押しっぱなしからの誤爆を避ける。
+      const crossOnce = gamepadPressedOnce(pad, 0);
+      const circleOnce = gamepadPressedOnce(pad, 1);
+      const optionsOnce = gamepadPressedOnce(pad, 9);
+
+      if (crossOnce) {
+        if (isVisible(ui.title)) {
+          start();
+        } else if (isVisible(ui.nextRound)) {
+          ui.nextRound.click();
+        } else if (isVisible(ui.nameEntry)) {
+          ui.saveScore.click();
+        } else if (isVisible(ui.retry)) {
+          ui.retry.click();
+        }
+      }
+
+      if (circleOnce || optionsOnce) {
+        if (isVisible(ui.result) || isVisible(ui.title)) {
+          showTitle();
+        }
+      }
+
+      requestAnimationFrame(pollGamepadUi);
+    }
+
     window.addEventListener("deviceorientation", (ev) => {
       tilt.beta = Number(ev.beta || 0);
       tilt.gamma = Number(ev.gamma || 0);
     });
 
-    if ("DeviceOrientationEvent" in window) {
+    if ("DeviceOrientationEvent" in window || "getGamepads" in navigator) {
       ui.controlMode.style.display = "flex";
     }
     ui.modeStick.addEventListener("click", () => setControlMode("stick"));
     ui.modeTilt.addEventListener("click", enableTiltMode);
+    ui.modeGamepad.addEventListener("click", () => {
+      setControlMode("gamepad");
+      updateGamepadStatus();
+    });
+
+    window.addEventListener("gamepadconnected", (ev) => {
+      activeGamepadIndex = ev.gamepad.index;
+      gamepadName = ev.gamepad.id || "Gamepad";
+      gamepadPrevButtons = [];
+      updateGamepadStatus();
+      if (controlMode === "stick") {
+        setControlMode("gamepad");
+      }
+    });
+
+    window.addEventListener("gamepaddisconnected", (ev) => {
+      if (activeGamepadIndex === ev.gamepad.index) {
+        activeGamepadIndex = null;
+        gamepadPrevButtons = [];
+        input.boost = false;
+      }
+      updateGamepadStatus();
+    });
 
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "ArrowLeft" || ev.key.toLowerCase() === "a") input.x = -1;
@@ -1395,6 +1594,20 @@
       ui.knob.style.transform = "translate(0, 0)";
     }
 
+    window.addEventListener("resize", () => {
+      resizeCanvas();
+      if (!game) drawSplash();
+    });
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        resizeCanvas();
+        if (!game) drawSplash();
+      }, 250);
+    });
+
+    resizeCanvas();
+    updateButtonHints();
+    pollGamepadUi();
     showTitle();
 
     function drawSplash() {
@@ -1410,7 +1623,7 @@
       ctx.fillStyle = "#67e8f9";
       ctx.font = "14px DotGothic16";
       ctx.textAlign = "center";
-      ctx.fillText("VECTOR SCAN AIR COURSE", centerX, 245);
+      ctx.fillText("VECTOR SCAN AIR COURSE", centerX, horizon + 15);
     }
   </script>
 </body>
