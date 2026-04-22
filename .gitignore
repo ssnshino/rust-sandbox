@@ -1,5 +1,6 @@
 app/target/
 *_scores.json
+*_ghosts.json
 .env
 
 .DS_Store

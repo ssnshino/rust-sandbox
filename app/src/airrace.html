@@ -516,6 +516,8 @@
     let worldWidth = 420;
     const minAlt = 0;
     const maxAlt = 720;
+    const cruiseSpeed = 340;
+    const maxBoostSpeed = 1500;
     const rollVisual = 0.88;
 
     function resizeCanvas() {
@@ -565,6 +567,7 @@
       x: 0,
       y: 0,
       boost: false,
+      throttle: 0,
     };
 
     let game = null;
@@ -577,6 +580,8 @@
     let activeGamepadIndex = null;
     let gamepadName = "";
     let gamepadPrevButtons = [];
+    const keyboardTarget = { x: 0, y: 0 };
+    window.airraceGhosts = [];
 
     const buttonLabels = {
       start: "START",
@@ -597,35 +602,54 @@
     function makeCourse(round) {
       const diff = roundDifficulty(round);
       const gates = [];
+      const courseMarkers = [];
+      const coursePath = [
+        { x: 82, y: -95, z: -220, heading: 0 },
+        { x: 82, y: -70, z: 260, heading: 0 },
+        { x: 42, y: 35, z: 920, heading: 0 },
+      ];
       let x = 0;
       let z = 1280;
       let heading = 0;
       for (let i = 0; i < 12; i += 1) {
+        const prev = gates[gates.length - 1] || { x: 0, y: 35, z: 0 };
         heading += (Math.sin(i * 1.27) * 0.46 + (i % 4 === 1 ? 0.34 : i % 4 === 3 ? -0.40 : 0)) * diff.turnScale;
         const spacing = (780 + (i % 3) * 120) * diff.spacingScale;
         x += Math.sin(heading) * spacing * diff.lateralScale;
         z += Math.cos(heading) * spacing;
         const y = 35 + Math.sin(i * 0.62) * 120 * diff.verticalScale + (round >= 4 ? Math.sin(i * 1.8) * 70 : 0);
         gates.push({ x, y, z, heading, passed: false });
+        coursePath.push({ x, y, z, heading });
+        for (let m = 1; m <= 5; m += 1) {
+          const t = m / 6;
+          courseMarkers.push({
+            x: prev.x + (x - prev.x) * t,
+            y: prev.y + (y - prev.y) * t,
+            z: prev.z + (z - prev.z) * t,
+          });
+        }
       }
 
       const pylons = [];
       const scenery = [];
       for (let i = 0; i < gates.length; i += 1) {
         const gate = gates[i];
-        const side = i % 2 === 0 ? -1 : 1;
         const nx = Math.cos(gate.heading);
         const nz = -Math.sin(gate.heading);
         pylons.push({
-          x: gate.x + nx * side * 116,
+          x: gate.x + nx * 78,
           y: -40,
-          z: gate.z + nz * side * 116,
+          z: gate.z + nz * 78,
+          h: 130,
+          gateEdge: true,
           hit: false,
         });
         pylons.push({
-          x: gate.x - nx * side * 190,
+          x: gate.x - nx * 78,
           y: -40,
-          z: gate.z - nz * side * 190,
+          z: gate.z - nz * 78,
+          h: 130,
+          gateEdge: true,
           hit: false,
         });
         for (let j = 0; j < 5; j += 1) {
@@ -635,6 +659,7 @@
             x: gate.x + nx * side2 * (260 + j * 70),
             y: -40,
             z: gate.z + nz * side2 * (260 + j * 70) + offset,
+            h: 110 + (j % 3) * 24,
             hit: false,
           });
         }
@@ -644,10 +669,94 @@
             type: j % 5 === 0 ? "tree" : "grass",
             x: gate.x + nx * side3 * (330 + (j % 7) * 95),
             z: gate.z + nz * side3 * (330 + (j % 7) * 95) + (j - 7) * 58,
+            h: j % 5 === 0 ? 34 + ((i * 17 + j * 29) % 56) : 10 + (j % 3) * 5,
           });
         }
       }
-      return { gates, pylons, scenery };
+      return { gates, pylons, scenery, courseMarkers, coursePath };
+    }
+
+    function makeRival(round, coursePath) {
+      const saved = pickSavedGhost(round);
+      if (saved) {
+        const first = saved.samples[0] || { x: 82, y: -95, z: -220, h: 0, r: 0, s: 0 };
+        return {
+          active: true,
+          kind: "ghost",
+          name: saved.name || "GHOST",
+          totalTime: saved.time_ms / 1000,
+          samples: saved.samples,
+          x: first.x,
+          y: first.y,
+          z: first.z,
+          heading: first.h,
+          roll: first.r || 0,
+          finished: false,
+        };
+      }
+      const finishZ = coursePath[coursePath.length - 1]?.z || 12000;
+      const baseTime = Math.max(32, finishZ / (395 + round * 42));
+      return {
+        active: true,
+        kind: "cpu",
+        name: "CPU",
+        totalTime: baseTime * (1.04 - Math.min(0.12, round * 0.018)),
+        x: 82,
+        y: -95,
+        z: -220,
+        heading: 0,
+        finished: false,
+      };
+    }
+
+    async function loadGhosts() {
+      try {
+        const res = await fetch("/api/airrace/ghosts");
+        if (!res.ok) return [];
+        const data = await res.json();
+        window.airraceGhosts = Array.isArray(data.ghosts) ? data.ghosts : [];
+        return window.airraceGhosts;
+      } catch {
+        return [];
+      }
+    }
+
+    function saveGhost(record) {
+      if (!record.samples || record.samples.length < 20) return;
+      fetch("/api/airrace/ghosts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(record),
+      })
+        .then((res) => (res.ok ? loadGhosts() : null))
+        .catch(() => {});
+    }
+
+    function pickSavedGhost(round) {
+      const ghosts = (window.airraceGhosts || []).filter((g) => g.round === round && Array.isArray(g.samples) && g.samples.length >= 2);
+      if (ghosts.length === 0) return null;
+      return ghosts[Math.floor(Math.random() * ghosts.length)];
+    }
+
+    function sampleFromGhost(samples, elapsedMs) {
+      if (!samples || samples.length === 0) return null;
+      if (elapsedMs <= samples[0].t) return samples[0];
+      for (let i = 1; i < samples.length; i += 1) {
+        const a = samples[i - 1];
+        const b = samples[i];
+        if (elapsedMs <= b.t) {
+          const f = (elapsedMs - a.t) / Math.max(1, b.t - a.t);
+          return {
+            x: a.x + (b.x - a.x) * f,
+            y: a.y + (b.y - a.y) * f,
+            z: a.z + (b.z - a.z) * f,
+            h: a.h + (b.h - a.h) * f,
+            r: a.r + (b.r - a.r) * f,
+            s: a.s + (b.s - a.s) * f,
+          };
+        }
+      }
+      return samples[samples.length - 1];
     }
 
     function resetGame(round = 1, carry = null) {
@@ -662,10 +771,12 @@
         roundStartMs: now,
         lastMs: now,
         distance: 0,
-        speed: 320,
-        altitude: 150,
+        phase: "countdown",
+        countdownStartMs: now,
+        speed: 0,
+        altitude: 24,
         planeX: 0,
-        planeZ: 0,
+        planeZ: -520,
         heading: 0,
         roll: 0,
         loopAngle: 0,
@@ -673,15 +784,18 @@
         damage: 0,
         gateIndex: 0,
         messageUntil: 0,
+        ghostSamples: [],
+        lastGhostSampleMs: -999,
         ...course,
       };
+      game.rival = makeRival(round, game.coursePath);
       ui.title.style.display = "none";
       ui.result.style.display = "none";
       ui.nameEntry.style.display = "none";
       ui.nextRound.style.display = "none";
       ui.retry.style.display = "none";
-      ui.guide.style.display = "block";
-      setMessage(`ROUND ${round} START。ゲート1へ進入。`, 1800);
+      ui.guide.style.display = "none";
+      setMessage("滑走路待機。シグナルを待て。", 1800);
     }
 
     function setMessage(text, ms = 1200) {
@@ -785,9 +899,9 @@
       if (!audio) return;
       const t = audio.ac.currentTime;
       audio.prop.frequency.setTargetAtTime(70 + game.speed * 0.10, t, 0.05);
-      audio.propGain.gain.setTargetAtTime(input.boost ? 0.045 : 0.024, t, 0.05);
-      audio.wobble.frequency.setTargetAtTime(input.boost ? 42 : 26, t, 0.04);
-      audio.wobbleGain.gain.setTargetAtTime(input.boost ? 0.022 : 0.0, t, 0.04);
+      audio.propGain.gain.setTargetAtTime(0.024 + input.throttle * 0.025, t, 0.05);
+      audio.wobble.frequency.setTargetAtTime(26 + input.throttle * 24, t, 0.04);
+      audio.wobbleGain.gain.setTargetAtTime(input.throttle * 0.026, t, 0.04);
     }
 
     function hitSound(kind) {
@@ -834,6 +948,21 @@
       };
     }
 
+    function interpolatePath(path, t) {
+      if (!path || path.length === 0) return null;
+      const scaled = Math.max(0, Math.min(path.length - 1.001, t * (path.length - 1)));
+      const i = Math.floor(scaled);
+      const f = scaled - i;
+      const a = path[i];
+      const b = path[Math.min(path.length - 1, i + 1)];
+      return {
+        x: a.x + (b.x - a.x) * f,
+        y: a.y + (b.y - a.y) * f,
+        z: a.z + (b.z - a.z) * f,
+        heading: a.heading + (b.heading - a.heading) * f,
+      };
+    }
+
     function rollPoint(x, y) {
       const angle = -game.roll * rollVisual;
       const dx = x - centerX;
@@ -854,6 +983,18 @@
       ctx.moveTo(a.x, a.y);
       ctx.lineTo(b.x, b.y);
       ctx.stroke();
+    }
+
+    function fillPoly(a, b, c, d, color) {
+      if (!a || !b || !c || !d) return;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.lineTo(c.x, c.y);
+      ctx.lineTo(d.x, d.y);
+      ctx.closePath();
+      ctx.fill();
     }
 
     function drawRolledBackground(leftHorizon, rightHorizon) {
@@ -888,16 +1029,33 @@
       ctx.lineTo(rightHorizon.x, rightHorizon.y);
       ctx.stroke();
 
-      for (let i = -7; i <= 7; i += 1) {
-        const near = groundPoint(i * 112, 120);
-        const far = groundPoint(i * 112, 3400);
-        drawLine(near, far, "rgba(251,191,36,.25)");
+      drawWorldGroundGrid();
+    }
+
+    function drawWorldGroundGrid() {
+      const step = 220;
+      const range = 1760;
+      const near = 80;
+      const far = 3600;
+      const minX = Math.floor((game.planeX - range) / step) * step;
+      const maxX = Math.ceil((game.planeX + range) / step) * step;
+      const minZ = Math.floor((game.planeZ + near) / step) * step;
+      const maxZ = Math.ceil((game.planeZ + far) / step) * step;
+
+      for (let x = minX; x <= maxX; x += step) {
+        drawLine(
+          projectPoint(x, -110, game.planeZ + near),
+          projectPoint(x, -110, game.planeZ + far),
+          "rgba(251,191,36,.18)"
+        );
       }
 
-      for (let z = 180; z < 3400; z += 220) {
-        const left = groundPoint(-920, z);
-        const right = groundPoint(920, z);
-        drawLine(left, right, "rgba(251,191,36,.20)");
+      for (let z = minZ; z <= maxZ; z += step) {
+        drawLine(
+          projectPoint(game.planeX - range, -110, z),
+          projectPoint(game.planeX + range, -110, z),
+          "rgba(251,191,36,.16)"
+        );
       }
     }
 
@@ -913,8 +1071,7 @@
       const p = projectPoint(gate.x, gate.y, gate.z);
       if (!p || p.z > 3200) return;
 
-      const halfW = 54 * p.s;
-      const halfH = 42 * p.s;
+      const r = 58 * p.s;
       const color = gate.passed
         ? "#facc15"
         : index === game.gateIndex
@@ -927,22 +1084,31 @@
           : "rgba(148,163,184,.14)";
 
       ctx.fillStyle = glow;
-      ctx.fillRect(p.x - halfW, p.y - halfH, halfW * 2, halfH * 2);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r * 1.05, 0, Math.PI * 2);
+      ctx.fill();
       ctx.strokeStyle = color;
       ctx.lineWidth = Math.max(1, 3 * p.s);
-      ctx.strokeRect(p.x - halfW, p.y - halfH, halfW * 2, halfH * 2);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,.35)";
+      ctx.lineWidth = Math.max(1, 1.2 * p.s);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r * 0.68, 0, Math.PI * 2);
+      ctx.stroke();
 
       ctx.fillStyle = color;
       ctx.font = `${Math.max(10, 22 * p.s)}px DotGothic16`;
       ctx.textAlign = "center";
-      ctx.fillText(`${index + 1}`, p.x, p.y - halfH - 6);
+      ctx.fillText(`${index + 1}`, p.x, p.y - r - 6);
     }
 
     function drawPylon(pylon) {
       const base = projectPoint(pylon.x, -80, pylon.z);
-      const top = projectPoint(pylon.x, 40, pylon.z);
+      const top = projectPoint(pylon.x, -80 + (pylon.h || 120), pylon.z);
       if (!base || !top || base.z > 2800) return;
-      const w = Math.max(3, 18 * base.s);
+      const w = Math.max(3, (pylon.gateEdge ? 16 : 18) * base.s);
 
       ctx.strokeStyle = pylon.hit ? "rgba(239,68,68,.35)" : "#fb923c";
       ctx.lineWidth = w;
@@ -962,20 +1128,106 @@
     function drawScenery(item) {
       const base = projectPoint(item.x, -110, item.z);
       if (!base || base.z > 2800) return;
-      const h = (item.type === "tree" ? 46 : 16) * base.s;
+      const h = (item.h || (item.type === "tree" ? 46 : 16)) * base.s;
       const w = (item.type === "tree" ? 18 : 10) * base.s;
+      const angle = -game.roll * rollVisual;
+      const topX = base.x + Math.sin(angle) * h * 0.45;
+      const topY = base.y - Math.cos(angle) * h;
       ctx.strokeStyle = item.type === "tree" ? "#22c55e" : "#84cc16";
       ctx.lineWidth = Math.max(1, w);
       ctx.beginPath();
       ctx.moveTo(base.x, base.y);
-      ctx.lineTo(base.x, base.y - h);
+      ctx.lineTo(topX, topY);
       ctx.stroke();
       if (item.type === "tree") {
         ctx.fillStyle = "rgba(34,197,94,.35)";
         ctx.beginPath();
-        ctx.arc(base.x, base.y - h, Math.max(2, 15 * base.s), 0, Math.PI * 2);
+        ctx.arc(topX, topY, Math.max(2, 15 * base.s), 0, Math.PI * 2);
         ctx.fill();
       }
+    }
+
+    function drawCourseMarker(marker) {
+      const p = projectPoint(marker.x, marker.y, marker.z);
+      if (!p || p.z > 3200) return;
+      const r = Math.max(3, 24 * p.s);
+      ctx.strokeStyle = "rgba(186,230,253,.34)";
+      ctx.lineWidth = Math.max(1, 1.8 * p.s);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function landingWorldPoint(side, forward) {
+      const base = game.landing || { x: 0, z: game.planeZ, heading: game.heading };
+      const sin = Math.sin(base.heading);
+      const cos = Math.cos(base.heading);
+      return {
+        x: base.x + sin * forward + cos * side,
+        z: base.z + cos * forward - sin * side,
+      };
+    }
+
+    function drawRunway() {
+      if (!game || !["countdown", "landing"].includes(game.phase)) return;
+      const segments = game.phase === "landing"
+        ? [[120, 2100], [2100, 2500]]
+        : [[-420, 1120]];
+      for (const [a, b] of segments) {
+        const l1 = landingWorldPoint(-95, a);
+        const r1 = landingWorldPoint(95, a);
+        const l2 = landingWorldPoint(-95, b);
+        const r2 = landingWorldPoint(95, b);
+        fillPoly(
+          projectPoint(l1.x, -108, l1.z),
+          projectPoint(r1.x, -108, r1.z),
+          projectPoint(r2.x, -108, r2.z),
+          projectPoint(l2.x, -108, l2.z),
+          "rgba(15,23,42,.52)"
+        );
+        const c1 = landingWorldPoint(0, a);
+        const c2 = landingWorldPoint(0, b);
+        drawLine(projectPoint(c1.x, -106, c1.z), projectPoint(c2.x, -106, c2.z), "rgba(250,204,21,.45)", 2);
+      }
+      for (let f = game.phase === "landing" ? 160 : -360; f <= (game.phase === "landing" ? 2380 : 1040); f += 120) {
+        for (const side of [-118, 118]) {
+          const light = landingWorldPoint(side, f);
+          const p = projectPoint(light.x, -102, light.z);
+          if (!p) continue;
+          const r = Math.max(2, 10 * p.s);
+          ctx.fillStyle = side < 0 ? "rgba(56,189,248,.72)" : "rgba(250,204,21,.72)";
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      if (game.phase === "landing") {
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.font = "20px DotGothic16";
+        ctx.fillStyle = "#fef3c7";
+        ctx.textBaseline = "middle";
+        ctx.fillText("着陸せよ", centerX, Math.max(72, H * 0.17));
+        ctx.restore();
+      }
+    }
+
+    function drawStartSignal() {
+      if (!game || game.phase !== "countdown") return;
+      const elapsed = (performance.now() - game.countdownStartMs) / 1000;
+      const lit = Math.min(4, Math.floor(elapsed) + 1);
+      const labels = ["●", "●", "●", "●"];
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.font = "42px DotGothic16";
+      for (let i = 0; i < 4; i += 1) {
+        ctx.fillStyle = i < lit ? (i < 3 ? "#ef4444" : "#22c55e") : "rgba(148,163,184,.35)";
+        ctx.fillText(labels[i], centerX - 72 + i * 48, H * 0.22);
+      }
+      ctx.font = "18px DotGothic16";
+      ctx.fillStyle = lit >= 4 ? "#bbf7d0" : "#fecaca";
+      ctx.fillText(lit >= 4 ? "GO!" : "READY...", centerX, H * 0.22 + 44);
+      ctx.restore();
     }
 
     function drawPlaneHud() {
@@ -1007,6 +1259,30 @@
       ctx.stroke();
     }
 
+    function drawRival() {
+      if (!game.rival) return;
+      if (game.rival.finished) return;
+      const heightOffset = game.phase === "countdown" ? 28 : 32;
+      const p = projectPoint(game.rival.x, game.rival.y + heightOffset, game.rival.z);
+      if (!p || p.z > 3000) return;
+      const size = Math.max(4, 24 * p.s);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(game.rival.heading - game.heading - game.roll * 0.2);
+      ctx.fillStyle = "rgba(239,68,68,.75)";
+      ctx.strokeStyle = "#fecaca";
+      ctx.lineWidth = Math.max(1, 2 * p.s);
+      ctx.beginPath();
+      ctx.moveTo(0, -size);
+      ctx.lineTo(size * 1.4, size * 0.7);
+      ctx.lineTo(0, size * 0.25);
+      ctx.lineTo(-size * 1.4, size * 0.7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
     function drawDamage() {
       if (game.damage <= 0) return;
       ctx.fillStyle = "rgba(239,68,68,.10)";
@@ -1014,14 +1290,14 @@
       ctx.fillStyle = "#fecaca";
       ctx.font = "12px DotGothic16";
       ctx.textAlign = "right";
-      ctx.fillText(`DAMAGE ${game.damage}%`, W - 12, 22);
+      ctx.fillText(`DAMAGE ${game.damage}%`, W - 12, 54);
     }
 
     function drawSpeedGauge() {
       const x = 54;
       const y = 68;
       const r = 30;
-      const pct = Math.max(0, Math.min(1, game.speed / 1000));
+      const pct = Math.max(0, Math.min(1, game.speed / maxBoostSpeed));
       const start = Math.PI * 0.78;
       const end = Math.PI * 2.22;
       const angle = start + (end - start) * pct;
@@ -1122,6 +1398,26 @@
     function update(dt) {
       applyTiltInput();
       applyGamepadInput();
+      if (controlMode !== "tilt" && controlMode !== "gamepad" && stickPointer === null) {
+        input.x += (keyboardTarget.x - input.x) * Math.min(1, dt * 4.0);
+        input.y += (keyboardTarget.y - input.y) * Math.min(1, dt * 5.0);
+      }
+      if (game.phase === "countdown") {
+        const elapsed = (performance.now() - game.countdownStartMs) / 1000;
+        game.roll += (0 - game.roll) * Math.min(1, dt * 4);
+        if (elapsed >= 3.2) {
+          game.phase = "race";
+          game.totalStartMs = performance.now();
+          game.roundStartMs = game.totalStartMs;
+          game.lastMs = game.totalStartMs;
+          game.speed = 220;
+          game.altitude = 34;
+          ui.guide.style.display = "block";
+          hitSound("gate");
+          setMessage("GREEN! BOOSTで離陸だ！", 1300);
+        }
+        return;
+      }
       const turnRate = 1.65 - Math.min(0.55, Math.max(0, game.speed - 320) * 0.001);
       game.heading += input.x * turnRate * dt;
       game.altitude += input.y * 175 * dt;
@@ -1129,12 +1425,24 @@
       game.roll += (input.x * 1.45 - game.roll) * Math.min(1, dt * 5.8);
       updateLoop(dt);
 
-      const targetSpeed = input.boost ? 1000 : 340;
-      game.speed += (targetSpeed - game.speed) * Math.min(1, dt * 1.8);
+      const throttle = Math.max(input.boost ? 1 : 0, input.throttle || 0);
+      if (controlMode === "gamepad") {
+        const accel = 430 * throttle - 135 * (1 - throttle);
+        game.speed = Math.max(180, Math.min(maxBoostSpeed, game.speed + accel * dt));
+      } else {
+        const targetSpeed = cruiseSpeed + (maxBoostSpeed - cruiseSpeed) * throttle;
+        game.speed += (targetSpeed - game.speed) * Math.min(1, dt * 1.8);
+      }
       game.distance += game.speed * dt;
       game.planeX += Math.sin(game.heading) * game.speed * dt;
       game.planeZ += Math.cos(game.heading) * game.speed * dt;
+      updateRival();
       updateAudio();
+
+      if (game.phase === "landing") {
+        updateLanding();
+        return;
+      }
 
       const gate = game.gates[game.gateIndex];
       if (gate && distance2d(gate.x, gate.z, game.planeX, game.planeZ) < 72) {
@@ -1158,7 +1466,8 @@
         if (distance2d(pylon.x, pylon.z, game.planeX, game.planeZ) < 34) {
           const dx = Math.abs(pylon.x - game.planeX);
           const dy = Math.abs(0 - (game.altitude - 150));
-          if (dx < 26 && dy < 86) {
+          const hitWidth = pylon.gateEdge ? 18 : 26;
+          if (dx < hitWidth && dy < 86) {
             pylon.hit = true;
             game.damage = Math.min(100, game.damage + 18);
             hitSound("pylon");
@@ -1167,22 +1476,110 @@
         }
       }
 
-      if (game.altitude <= minAlt + 1) {
+      if (game.altitude < 45) {
+        setMessage("高度低下！引き起こせ！", 500);
+      }
+
+      if (game.altitude <= minAlt + 1 && game.phase !== "countdown") {
         hitSound("crash");
         setMessage("GROUND IMPACT!", 1200);
         finish(false, "crash");
         return;
       }
 
-      if (game.altitude < 45) {
-        setMessage("高度低下！引き起こせ！", 500);
-      }
-
       if (game.damage >= 100) {
         hitSound("crash");
         finish(false, "crash");
       } else if (game.gateIndex >= game.gates.length) {
+        beginLanding();
+      }
+    }
+
+    function updateRival() {
+      if (!game.rival || game.phase === "countdown") return;
+      const elapsed = (performance.now() - game.totalStartMs) / 1000;
+      if (game.rival.kind === "ghost") {
+        const pos = sampleFromGhost(game.rival.samples, elapsed * 1000);
+        if (!pos) return;
+        game.rival.x = pos.x;
+        game.rival.y = pos.y;
+        game.rival.z = pos.z;
+        game.rival.heading = pos.h;
+        game.rival.roll = pos.r || 0;
+        game.rival.finished = elapsed >= game.rival.totalTime;
+      } else {
+        const t = Math.min(1, elapsed / game.rival.totalTime);
+        const pos = interpolatePath(game.coursePath, t);
+        if (!pos) return;
+        game.rival.x = pos.x;
+        game.rival.y = pos.y;
+        game.rival.z = pos.z;
+        game.rival.heading = pos.heading;
+        game.rival.finished = t >= 1;
+      }
+    }
+
+    function recordGhostSample(now) {
+      if (!game || game.phase === "countdown") return;
+      const t = Math.round(now - game.totalStartMs);
+      if (t - game.lastGhostSampleMs < 120) return;
+      game.lastGhostSampleMs = t;
+      game.ghostSamples.push({
+        t,
+        x: Number(game.planeX.toFixed(1)),
+        y: Number((game.altitude - 150).toFixed(1)),
+        z: Number(game.planeZ.toFixed(1)),
+        h: Number(game.heading.toFixed(4)),
+        r: Number(game.roll.toFixed(4)),
+        s: Math.round(game.speed),
+      });
+    }
+
+    function beginLanding() {
+      if (game.phase === "landing") return;
+      game.phase = "landing";
+      game.landing = {
+        x: game.planeX,
+        z: game.planeZ,
+        heading: game.heading,
+      };
+      setMessage("着陸せよ。滑走路中心へ進入！", 2600);
+    }
+
+    function landingProgress() {
+      const base = game.landing;
+      const dx = game.planeX - base.x;
+      const dz = game.planeZ - base.z;
+      return dx * Math.sin(base.heading) + dz * Math.cos(base.heading);
+    }
+
+    function landingLateral() {
+      const base = game.landing;
+      const dx = game.planeX - base.x;
+      const dz = game.planeZ - base.z;
+      return dx * Math.cos(base.heading) - dz * Math.sin(base.heading);
+    }
+
+    function updateLanding() {
+      const progress = landingProgress();
+      const lateral = Math.abs(landingLateral());
+      if (progress > 160 && game.altitude < 46 && lateral < 105 && game.speed < 620) {
+        setMessage("LANDING OK!", 1200);
         finishRound();
+        return;
+      }
+      if (progress > 2450 || game.altitude <= 1) {
+        hitSound("crash");
+        setMessage("FAILED LANDING!", 1200);
+        finish(false, "crash");
+        return;
+      }
+      if (progress > 900 && game.speed > 620) {
+        setMessage("速度が速すぎる！減速して接地！", 500);
+      } else if (progress > 900 && lateral > 110) {
+        setMessage("滑走路中心へ戻せ！", 500);
+      } else if (progress > 900 && game.altitude > 80) {
+        setMessage("高度を下げて着陸姿勢！", 500);
       }
     }
 
@@ -1199,6 +1596,9 @@
     }
 
     function guideInfo() {
+      if (game.phase === "landing") {
+        return { arrow: "↓", dist: Math.max(0, 1600 - landingProgress()) };
+      }
       const gate = game.gates[game.gateIndex];
       if (!gate) return null;
       const dx = gate.x - game.planeX;
@@ -1244,12 +1644,16 @@
 
     function draw() {
       drawGrid();
+      drawRunway();
       for (const item of game.scenery) drawScenery(item);
+      for (const marker of game.courseMarkers) drawCourseMarker(marker);
       for (const gate of game.gates) drawGate(gate, game.gates.indexOf(gate));
       for (const pylon of game.pylons) drawPylon(pylon);
+      drawRival();
       drawPlaneHud();
       drawHud();
       drawDamage();
+      drawStartSignal();
     }
 
     function frame(now) {
@@ -1258,6 +1662,7 @@
       const dt = Math.min(0.05, (now - game.lastMs) / 1000);
       game.lastMs = now;
       update(dt);
+      recordGhostSample(now);
       draw();
       updateMeters(now);
       raf = requestAnimationFrame(frame);
@@ -1268,9 +1673,10 @@
       ui.speed.textContent = `${Math.round(game.speed)} km/h`;
       ui.alt.textContent = `${Math.round(game.altitude)} m`;
       ui.time.textContent = `R${game.round} ${elapsed.toFixed(2)}`;
+      const diff = game.rival ? elapsed - game.rival.totalTime * Math.min(1, game.gateIndex / game.gates.length) : 0;
       const guide = guideInfo();
       ui.guide.innerHTML = guide
-        ? `<span class="guide-arrow">${guide.arrow}</span><span class="guide-meta">GATE ${game.gateIndex + 1} / ${Math.round(guide.dist)}m</span>`
+        ? `<span class="guide-arrow">${guide.arrow}</span><span class="guide-meta">${game.phase === "landing" ? "RUNWAY" : `GATE ${game.gateIndex + 1}`} / ${Math.round(guide.dist)}m / RIVAL ${diff >= 0 ? "+" : ""}${diff.toFixed(1)}s</span>`
         : `<span class="guide-arrow">★</span><span class="guide-meta">FINAL</span>`;
       if (game.altitude < 45 && now > game.messageUntil) {
         ui.message.textContent = "高度低下！地面効果で機体が暴れるぞ。";
@@ -1283,6 +1689,15 @@
       cancelAnimationFrame(raf);
       stopAudio();
       const elapsedMs = performance.now() - game.totalStartMs;
+      if (success || reason === "round_clear") {
+        saveGhost({
+          name: localStorage.getItem("airrace_name") || "PILOT",
+          round: game.round,
+          time_ms: Math.round(elapsedMs),
+          samples: game.ghostSamples,
+          created_at: new Date().toISOString(),
+        });
+      }
       const recordRound = success ? 5 : Math.max(0, game.round - 1);
       const recordScore = encodeScore(recordRound, elapsedMs);
       const title = ui.result.querySelector("h1");
@@ -1292,12 +1707,14 @@
       ui.nameEntry.style.display = "none";
       if (reason === "round_clear") {
         title.textContent = `ROUND ${game.round} CLEAR`;
-        ui.resultText.textContent = `TOTAL ${formatTime(elapsedMs)} / NEXT ROUND ${game.round + 1}`;
+        const result = game.rival?.finished ? "YOU LOSE" : "YOU WIN";
+        ui.resultText.textContent = `${result} / TOTAL ${formatTime(elapsedMs)} / NEXT ROUND ${game.round + 1}`;
         ui.nextRound.style.display = "inline-block";
         ui.retry.style.display = "none";
       } else if (success) {
         title.textContent = "FINISH";
-        ui.resultText.textContent = `TOTAL TIME ${formatTime(elapsedMs)} / DAMAGE ${Math.round(game.damage)}%`;
+        const result = game.rival?.finished ? "YOU LOSE" : "YOU WIN";
+        ui.resultText.textContent = `${result} / TOTAL TIME ${formatTime(elapsedMs)} / DAMAGE ${Math.round(game.damage)}%`;
         if (scoreQualifies(recordScore)) {
           ui.nameEntry.style.display = "block";
           ui.retry.style.display = "none";
@@ -1319,7 +1736,8 @@
       updateButtonHints();
     }
 
-    function start() {
+    async function start() {
+      await loadGhosts();
       resetGame();
       raf = requestAnimationFrame(frame);
     }
@@ -1362,6 +1780,7 @@
       tiltFiltered = { beta: tilt.beta, gamma: tilt.gamma };
       if (controlMode !== "gamepad") {
         input.boost = false;
+        input.throttle = 0;
       }
       updateGamepadStatus();
       updateButtonHints();
@@ -1445,6 +1864,7 @@
         input.x = 0;
         input.y = 0;
         input.boost = false;
+        input.throttle = 0;
         updateGamepadStatus();
         return;
       }
@@ -1452,9 +1872,10 @@
       input.x = axisWithDeadzone(pad.axes[0] || 0);
       input.y = axisWithDeadzone(pad.axes[1] || 0);
       const cross = pad.buttons[0]?.pressed || false;
-      const r2 = (pad.buttons[7]?.value || 0) > 0.35 || (pad.buttons[7]?.pressed || false);
       const r1 = pad.buttons[5]?.pressed || false;
-      input.boost = cross || r1 || r2;
+      const r2Value = pad.buttons[7]?.value || 0;
+      input.throttle = Math.max(cross || r1 ? 1 : 0, r2Value);
+      input.boost = input.throttle > 0.02;
     }
 
     function isVisible(el) {
@@ -1531,33 +1952,43 @@
         activeGamepadIndex = null;
         gamepadPrevButtons = [];
         input.boost = false;
+        input.throttle = 0;
       }
       updateGamepadStatus();
     });
 
     document.addEventListener("keydown", (ev) => {
-      if (ev.key === "ArrowLeft" || ev.key.toLowerCase() === "a") input.x = -1;
-      if (ev.key === "ArrowRight" || ev.key.toLowerCase() === "d") input.x = 1;
-      if (ev.key === "ArrowUp" || ev.key.toLowerCase() === "w") input.y = 1;
-      if (ev.key === "ArrowDown" || ev.key.toLowerCase() === "s") input.y = -1;
-      if (ev.code === "Space") input.boost = true;
+      if (ev.key === "ArrowLeft" || ev.key.toLowerCase() === "a") keyboardTarget.x = -0.72;
+      if (ev.key === "ArrowRight" || ev.key.toLowerCase() === "d") keyboardTarget.x = 0.72;
+      if (ev.key === "ArrowUp" || ev.key.toLowerCase() === "w") keyboardTarget.y = -0.86;
+      if (ev.key === "ArrowDown" || ev.key.toLowerCase() === "s") keyboardTarget.y = 0.86;
+      if (ev.code === "Space") {
+        input.boost = true;
+        input.throttle = 1;
+      }
     });
 
     document.addEventListener("keyup", (ev) => {
-      if (["ArrowLeft", "ArrowRight", "a", "d", "A", "D"].includes(ev.key)) input.x = 0;
-      if (["ArrowUp", "ArrowDown", "w", "s", "W", "S"].includes(ev.key)) input.y = 0;
-      if (ev.code === "Space") input.boost = false;
+      if (["ArrowLeft", "ArrowRight", "a", "d", "A", "D"].includes(ev.key)) keyboardTarget.x = 0;
+      if (["ArrowUp", "ArrowDown", "w", "s", "W", "S"].includes(ev.key)) keyboardTarget.y = 0;
+      if (ev.code === "Space") {
+        input.boost = false;
+        input.throttle = 0;
+      }
     });
 
     document.getElementById("boost").addEventListener("pointerdown", (ev) => {
       ev.preventDefault();
       input.boost = true;
+      input.throttle = 1;
     });
     document.getElementById("boost").addEventListener("pointerup", () => {
       input.boost = false;
+      input.throttle = 0;
     });
     document.getElementById("boost").addEventListener("pointercancel", () => {
       input.boost = false;
+      input.throttle = 0;
     });
 
     let stickPointer = null;
@@ -1608,6 +2039,7 @@
     resizeCanvas();
     updateButtonHints();
     pollGamepadUi();
+    loadGhosts();
     showTitle();
 
     function drawSplash() {

@@ -8,15 +8,66 @@ mod fighting;
 mod truckers;
 
 use axum::{
-    extract::{ws::WebSocketUpgrade, Path, State},
+    extract::{ws::WebSocketUpgrade, Path, Query, State},
     http::{header::{CACHE_CONTROL, CONTENT_TYPE}, StatusCode},
     response::{Html, IntoResponse},
     routing::get,
     Json, Router,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+const MAX_AIRRACE_GHOSTS: usize = 100;
+
+#[derive(Serialize, Deserialize, Clone)]
+struct AirraceGhost {
+    name: String,
+    round: u32,
+    time_ms: u32,
+    samples: Vec<serde_json::Value>,
+    created_at: String,
+}
+
+struct AirraceGhostStore {
+    file: &'static str,
+    ghosts: Vec<AirraceGhost>,
+}
+
+impl AirraceGhostStore {
+    fn load(file: &'static str) -> Self {
+        let ghosts = std::fs::read_to_string(file)
+            .ok()
+            .and_then(|s| serde_json::from_str::<Vec<AirraceGhost>>(&s).ok())
+            .unwrap_or_default();
+        Self { file, ghosts }
+    }
+
+    fn list(&self, round: Option<u32>) -> Vec<AirraceGhost> {
+        self.ghosts
+            .iter()
+            .filter(|g| round.map_or(true, |r| g.round == r))
+            .cloned()
+            .collect()
+    }
+
+    fn add(&mut self, mut ghost: AirraceGhost) {
+        ghost.name = ghost.name.chars().take(20).collect::<String>().trim().to_string();
+        if ghost.name.is_empty() {
+            ghost.name = "PILOT".to_string();
+        }
+        ghost.samples.truncate(1200);
+        self.ghosts.insert(0, ghost);
+        self.ghosts.truncate(MAX_AIRRACE_GHOSTS);
+        self.save();
+    }
+
+    fn save(&self) {
+        if let Ok(json) = serde_json::to_string_pretty(&self.ghosts) {
+            let _ = std::fs::write(self.file, json);
+        }
+    }
+}
 
 #[derive(Clone)]
 struct AppState {
@@ -26,6 +77,7 @@ struct AppState {
     fighting_scores:     Arc<Mutex<scores::ScoreBoard>>,
     truckers_scores:     Arc<Mutex<scores::ScoreBoard>>,
     airrace_scores:      Arc<Mutex<scores::ScoreBoard>>,
+    airrace_ghosts:      Arc<Mutex<AirraceGhostStore>>,
     pong_single_players: Arc<AtomicUsize>,
     pong_2p_players:     Arc<AtomicUsize>,
     breakout_players:    Arc<AtomicUsize>,
@@ -46,6 +98,7 @@ async fn main() {
         fighting_scores:     Arc::new(Mutex::new(scores::ScoreBoard::load("fighting_scores.json"))),
         truckers_scores:     Arc::new(Mutex::new(scores::ScoreBoard::load("truckers_scores.json"))),
         airrace_scores:      Arc::new(Mutex::new(scores::ScoreBoard::load("airrace_scores.json"))),
+        airrace_ghosts:      Arc::new(Mutex::new(AirraceGhostStore::load("airrace_ghosts.json"))),
         pong_single_players: Arc::new(AtomicUsize::new(0)),
         pong_2p_players:     Arc::new(AtomicUsize::new(0)),
         breakout_players:    Arc::new(AtomicUsize::new(0)),
@@ -79,6 +132,7 @@ async fn main() {
         .route("/airrace",             get(airrace_page))
         .route("/airrace.webmanifest", get(airrace_manifest))
         .route("/api/airrace/scores",  get(get_airrace_scores).post(post_airrace_score))
+        .route("/api/airrace/ghosts",  get(get_airrace_ghosts).post(post_airrace_ghost))
         .route("/favicon.ico",         get(favicon))
         .with_state(state);
 
@@ -231,4 +285,26 @@ async fn post_airrace_score(State(s): State<AppState>, Json(p): Json<SubmitPaylo
         None    => serde_json::Value::Null,
     };
     Json(serde_json::json!({ "rank": rank_val, "scores": list, "min_score": min }))
+}
+
+#[derive(Deserialize)]
+struct AirraceGhostQuery {
+    round: Option<u32>,
+}
+
+async fn get_airrace_ghosts(
+    State(s): State<AppState>,
+    Query(q): Query<AirraceGhostQuery>,
+) -> impl IntoResponse {
+    let ghosts = s.airrace_ghosts.lock().unwrap().list(q.round);
+    Json(serde_json::json!({ "ghosts": ghosts }))
+}
+
+async fn post_airrace_ghost(
+    State(s): State<AppState>,
+    Json(p): Json<AirraceGhost>,
+) -> impl IntoResponse {
+    let mut store = s.airrace_ghosts.lock().unwrap();
+    store.add(p);
+    Json(serde_json::json!({ "ok": true, "count": store.ghosts.len() }))
 }
