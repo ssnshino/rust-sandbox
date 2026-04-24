@@ -19,6 +19,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 const MAX_AIRRACE_GHOSTS: usize = 100;
+const AIRRACE_ROUNDS_JSON: &str = include_str!("airrace_rounds.json");
 
 #[derive(Serialize, Deserialize, Clone)]
 struct AirraceGhost {
@@ -131,6 +132,7 @@ async fn main() {
         .route("/ws/truckers",         get(ws_truckers))
         .route("/airrace",             get(airrace_page))
         .route("/airrace.webmanifest", get(airrace_manifest))
+        .route("/api/airrace/round/:round", get(get_airrace_round_bundle))
         .route("/api/airrace/scores",  get(get_airrace_scores).post(post_airrace_score))
         .route("/api/airrace/ghosts",  get(get_airrace_ghosts).post(post_airrace_ghost))
         .route("/favicon.ico",         get(favicon))
@@ -285,6 +287,27 @@ async fn post_airrace_score(State(s): State<AppState>, Json(p): Json<SubmitPaylo
         None    => serde_json::Value::Null,
     };
     Json(serde_json::json!({ "rank": rank_val, "scores": list, "min_score": min }))
+}
+
+fn airrace_round_course(round: u32) -> Option<serde_json::Value> {
+    let root = serde_json::from_str::<serde_json::Value>(AIRRACE_ROUNDS_JSON).ok()?;
+    let key = round.to_string();
+    Some(root.get(key.as_str())?.clone())
+}
+
+async fn get_airrace_round_bundle(
+    Path(round): Path<u32>,
+    State(s): State<AppState>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let Some(course) = airrace_round_course(round) else {
+        return Err(StatusCode::NOT_FOUND);
+    };
+    let ghosts = s.airrace_ghosts.lock().unwrap().list(Some(round));
+    Ok(Json(serde_json::json!({
+        "round": round,
+        "course": course,
+        "ghosts": ghosts,
+    })))
 }
 
 #[derive(Deserialize)]

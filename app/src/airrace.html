@@ -207,6 +207,60 @@
       display: none;
     }
 
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 12;
+      background: rgba(2, 8, 23, 0.76);
+      backdrop-filter: blur(2px);
+    }
+
+    .loading-panel {
+      width: min(82%, 280px);
+      padding: 18px 16px 16px;
+      border: 1px solid rgba(125, 249, 255, 0.28);
+      border-radius: 16px;
+      background: rgba(1, 12, 24, 0.84);
+      box-shadow: 0 0 24px rgba(34, 211, 238, 0.18);
+      text-align: center;
+    }
+
+    .loading-panel strong {
+      display: block;
+      color: #f8fafc;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .loading-bar {
+      width: 100%;
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(14, 116, 144, 0.32);
+      border: 1px solid rgba(125, 249, 255, 0.18);
+    }
+
+    .loading-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #67e8f9, #facc15);
+      box-shadow: 0 0 14px rgba(250, 204, 21, 0.38);
+      transition: width 0.18s ease;
+    }
+
+    .loading-meta {
+      display: block;
+      margin-top: 8px;
+      color: #bae6fd;
+      font-size: 11px;
+      min-height: 1.4em;
+    }
+
     h1 {
       margin: 0;
       font-size: 26px;
@@ -222,41 +276,6 @@
       font-size: 13px;
       line-height: 1.7;
       color: #b6efff;
-    }
-
-    .rankings {
-      width: min(100%, 280px);
-      border: 1px solid rgba(125, 249, 255, 0.28);
-      border-radius: 14px;
-      background: rgba(1, 12, 24, 0.52);
-      padding: 10px 12px;
-      font-size: 12px;
-      color: #dff9ff;
-      text-align: left;
-    }
-
-    .rankings h2 {
-      margin: 0 0 6px;
-      color: #facc15;
-      font-size: 13px;
-      letter-spacing: 0.10em;
-      text-align: center;
-      text-shadow: 0 0 10px rgba(250, 204, 21, 0.65);
-    }
-
-    .rankings table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .rankings td {
-      padding: 2px 4px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .rankings td:last-child {
-      text-align: right;
-      color: #86efac;
     }
 
     #name-entry {
@@ -285,6 +304,81 @@
     .control-mode button.active {
       background: linear-gradient(180deg, #fef3c7, #facc15);
       color: #422006;
+    }
+
+    .plane-select {
+      width: min(100%, 320px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .field-mode {
+      width: min(100%, 320px);
+      margin-top: -4px;
+      font-size: 12px;
+      padding: 8px 12px;
+      background: rgba(8, 47, 73, 0.85);
+      color: #cffafe;
+    }
+
+    .round-mode {
+      width: min(100%, 320px);
+      margin-top: -4px;
+      font-size: 12px;
+      padding: 8px 12px;
+      background: rgba(58, 47, 10, 0.88);
+      color: #fef3c7;
+    }
+
+    .start-actions {
+      width: min(100%, 320px);
+      display: grid;
+      gap: 8px;
+    }
+
+    .plane-nav {
+      min-width: 0;
+      width: 54px;
+      padding: 10px 0;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .plane-display {
+      flex: 1;
+      border: 1px solid rgba(125, 249, 255, 0.26);
+      border-radius: 14px;
+      background: rgba(1, 12, 24, 0.54);
+      padding: 10px 12px;
+      text-align: center;
+    }
+
+    .plane-display strong {
+      display: block;
+      color: #f8fafc;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .plane-display span {
+      display: block;
+      color: #bae6fd;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .plane-display.active {
+      border-color: rgba(250, 204, 21, 0.72);
+      box-shadow: 0 0 18px rgba(250, 204, 21, 0.16);
+    }
+
+    #plane-preview {
+      display: block;
+      width: 100%;
+      height: 42px;
+      margin-bottom: 6px;
     }
 
     #gamepad-status {
@@ -477,18 +571,28 @@
       </div>
       <section id="title">
         <h1>VECTOR<br>AIR RACE</h1>
-        <p class="lead">全5ROUNDのタイムアタック<br>ゲートを順番にくぐれ。パイロンに当たるな。</p>
+        <p class="lead">5機から自機を選んで参戦<br>Round 3 から World Grand Prix 全10コース。</p>
         <div id="control-mode" class="control-mode">
           <button id="mode-stick" class="active">プニコン</button>
           <button id="mode-tilt">傾き操作</button>
           <button id="mode-gamepad">コントローラ</button>
         </div>
         <div id="gamepad-status">PS4/PS5 コントローラは接続後にボタンを1回押してね。</div>
-        <div class="rankings">
-          <h2>TOP 5 TIME</h2>
-          <div id="title-rankings"></div>
+        <div id="plane-select" class="plane-select">
+          <button id="plane-prev" class="plane-nav" type="button">＜</button>
+          <div id="plane-display" class="plane-display active">
+            <canvas id="plane-preview" width="220" height="42"></canvas>
+            <strong id="plane-name"></strong>
+            <span id="plane-summary"></span>
+          </div>
+          <button id="plane-next" class="plane-nav" type="button">＞</button>
         </div>
-        <button id="start">START</button>
+        <button id="field-mode" class="field-mode" type="button">FIELD NORMAL</button>
+        <button id="round-mode" class="round-mode" type="button">START ROUND 3</button>
+        <div class="start-actions">
+          <button id="start">ROUND 1 START</button>
+          <button id="start-main">ROUND 3 START</button>
+        </div>
       </section>
       <section id="result">
         <h1>FINISH</h1>
@@ -500,6 +604,13 @@
         </div>
         <button id="next-round">NEXT ROUND</button>
         <button id="retry">TITLE</button>
+      </section>
+      <section id="loading">
+        <div class="loading-panel">
+          <strong id="loading-label">NOW LOADING</strong>
+          <div class="loading-bar"><div id="loading-fill" class="loading-fill"></div></div>
+          <span id="loading-meta" class="loading-meta"></span>
+        </div>
       </section>
     </div>
 
@@ -515,10 +626,12 @@
     let centerY = 255;
     let worldWidth = 420;
     const minAlt = 0;
-    const maxAlt = 720;
+    const maxAlt = 1000;
     const cruiseSpeed = 340;
     const maxBoostSpeed = 1500;
     const rollVisual = 0.88;
+    const groundY = -110;
+    const gateWorldRadius = 86;
 
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
@@ -546,18 +659,31 @@
       title: document.getElementById("title"),
       result: document.getElementById("result"),
       resultText: document.getElementById("result-text"),
-      rankings: document.getElementById("title-rankings"),
       nameEntry: document.getElementById("name-entry"),
       nameInput: document.getElementById("name-input"),
       nextRound: document.getElementById("next-round"),
       retry: document.getElementById("retry"),
       start: document.getElementById("start"),
+      startMain: document.getElementById("start-main"),
       saveScore: document.getElementById("save-score"),
       controlMode: document.getElementById("control-mode"),
       modeStick: document.getElementById("mode-stick"),
       modeTilt: document.getElementById("mode-tilt"),
       modeGamepad: document.getElementById("mode-gamepad"),
       gamepadStatus: document.getElementById("gamepad-status"),
+      planeSelect: document.getElementById("plane-select"),
+      planePrev: document.getElementById("plane-prev"),
+      planeNext: document.getElementById("plane-next"),
+      fieldMode: document.getElementById("field-mode"),
+      roundMode: document.getElementById("round-mode"),
+      planeDisplay: document.getElementById("plane-display"),
+      planePreview: document.getElementById("plane-preview"),
+      planeName: document.getElementById("plane-name"),
+      planeSummary: document.getElementById("plane-summary"),
+      loading: document.getElementById("loading"),
+      loadingLabel: document.getElementById("loading-label"),
+      loadingFill: document.getElementById("loading-fill"),
+      loadingMeta: document.getElementById("loading-meta"),
       knob: document.getElementById("knob"),
       stick: document.getElementById("stick"),
       guide: document.getElementById("guide"),
@@ -574,6 +700,9 @@
     let raf = null;
     let audio = null;
     let controlMode = "stick";
+    let selectedAircraftId = localStorage.getItem("airrace_aircraft") || "skylancer";
+    let selectedFieldModeId = localStorage.getItem("airrace_field_mode") || "normal";
+    let selectedStartRound = Math.max(1, Math.min(10, Number(localStorage.getItem("airrace_start_round") || 3) || 3));
     let tiltBase = null;
     let tilt = { beta: 0, gamma: 0 };
     let tiltFiltered = { beta: 0, gamma: 0 };
@@ -581,64 +710,481 @@
     let gamepadName = "";
     let gamepadPrevButtons = [];
     const keyboardTarget = { x: 0, y: 0 };
-    window.airraceGhosts = [];
+    window.airraceRoundCache = {};
+    let loadingToken = 0;
 
     const buttonLabels = {
-      start: "START",
+      start: "ROUND 1 START",
+      startMain: "ROUND 3 START",
       saveScore: "SAVE",
       nextRound: "NEXT ROUND",
       retry: "TITLE",
     };
 
+    const AIRCRAFTS = [
+      {
+        id: "skylancer",
+        name: "スカイランサー号",
+        summary: "平均的な優等生。初見コースの基準機。",
+        speedMul: 1.0,
+        boostMul: 1.0,
+        turnMul: 1.0,
+        climbMul: 1.0,
+        color: "rgba(125, 211, 252, 0.78)",
+        stroke: "#e0f2fe",
+        shape: "standard",
+      },
+      {
+        id: "thunderbolt",
+        name: "サンダーボルト号",
+        summary: "きびきび旋回。テクニカル向け。",
+        speedMul: 0.94,
+        boostMul: 0.94,
+        turnMul: 1.24,
+        climbMul: 1.08,
+        color: "rgba(250, 204, 21, 0.78)",
+        stroke: "#fef3c7",
+        shape: "broad",
+      },
+      {
+        id: "shootingstar",
+        name: "シューティングスター号",
+        summary: "高速番長。直線と大カーブで強い。",
+        speedMul: 1.08,
+        boostMul: 1.16,
+        turnMul: 0.82,
+        climbMul: 0.94,
+        color: "rgba(248, 113, 113, 0.80)",
+        stroke: "#fee2e2",
+        shape: "dart",
+      },
+      {
+        id: "spiralfang",
+        name: "スパイラルファング号",
+        summary: "ピーキーな軽量機。反応最速。",
+        speedMul: 0.98,
+        boostMul: 0.98,
+        turnMul: 1.32,
+        climbMul: 1.14,
+        color: "rgba(192, 132, 252, 0.82)",
+        stroke: "#f3e8ff",
+        shape: "fang",
+      },
+      {
+        id: "ironhawk",
+        name: "アイアンホーク号",
+        summary: "重いけど安定。崩れにくい。",
+        speedMul: 1.03,
+        boostMul: 1.08,
+        turnMul: 0.9,
+        climbMul: 0.92,
+        color: "rgba(74, 222, 128, 0.76)",
+        stroke: "#dcfce7",
+        shape: "heavy",
+      },
+    ];
+
+    const TOTAL_ROUNDS = 10;
+    const GRAND_PRIX_START_ROUND = 3;
+    const USE_GHOST_RIVALS = false;
+    const POINT_TABLE = [10, 8, 6, 4, 2];
+    const FIELD_MODES = [
+      { id: "normal", label: "FIELD NORMAL", round2Size: 3, gpSize: 5 },
+      { id: "test8", label: "FIELD TEST 8", round2Size: 8, gpSize: 8 },
+      { id: "test12", label: "FIELD TEST 12", round2Size: 12, gpSize: 12 },
+      { id: "test16", label: "FIELD TEST 16", round2Size: 16, gpSize: 16 },
+    ];
+    const RIVAL_ARCHETYPES = [
+      {
+        id: "blaze",
+        name: "BLAZE FALCON",
+        aircraftId: "shootingstar",
+        style: "speed",
+        laneOffset: -156,
+        label: "SPEED",
+        paceByRound: { 3: 0.93, 4: 1.00, 5: 0.91, 6: 1.02, 7: 1.01, 8: 0.94, 9: 0.90, 10: 1.03 },
+        wave: 22,
+      },
+      {
+        id: "ciel",
+        name: "CIEL NOVA",
+        aircraftId: "thunderbolt",
+        style: "line",
+        laneOffset: -52,
+        label: "LINE",
+        paceByRound: { 3: 0.99, 4: 0.94, 5: 1.00, 6: 0.95, 7: 0.96, 8: 1.01, 9: 1.03, 10: 0.93 },
+        wave: 10,
+      },
+      {
+        id: "gaia",
+        name: "GAIA PHOENIX",
+        aircraftId: "ironhawk",
+        style: "steady",
+        laneOffset: 58,
+        label: "POWER",
+        paceByRound: { 3: 1.10, 4: 1.08, 5: 1.05, 6: 1.11, 7: 1.07, 8: 1.12, 9: 1.09, 10: 1.04 },
+        wave: 4,
+      },
+      {
+        id: "viper",
+        name: "VIPER SWING",
+        aircraftId: "spiralfang",
+        style: "line",
+        laneOffset: 162,
+        label: "AGILE",
+        paceByRound: { 3: 1.05, 4: 0.98, 5: 1.02, 6: 1.00, 7: 0.97, 8: 0.99, 9: 1.01, 10: 0.95 },
+        wave: 18,
+      },
+      {
+        id: "nova",
+        name: "NOVA DART",
+        aircraftId: "skylancer",
+        style: "steady",
+        laneOffset: 0,
+        label: "BALANCE",
+        paceByRound: { 3: 1.02, 4: 1.01, 5: 0.99, 6: 1.00, 7: 1.02, 8: 1.00, 9: 0.98, 10: 0.97 },
+        wave: 7,
+      },
+      {
+        id: "orca",
+        name: "ORCA CRUISE",
+        aircraftId: "ironhawk",
+        style: "steady",
+        laneOffset: 0,
+        label: "HEAVY",
+        paceByRound: { 3: 1.13, 4: 1.10, 5: 1.09, 6: 1.15, 7: 1.12, 8: 1.14, 9: 1.11, 10: 1.08 },
+        wave: 3,
+      },
+    ];
+
+    function pointsForPosition(position) {
+      return POINT_TABLE[Math.max(0, position - 1)] || 0;
+    }
+
+    function currentFieldSize() {
+      return 1 + ((game?.rivals?.length) || 0);
+    }
+
+    function selectedFieldMode() {
+      return FIELD_MODES.find((mode) => mode.id === selectedFieldModeId) || FIELD_MODES[0];
+    }
+
+    function cycleFieldMode() {
+      const index = Math.max(0, FIELD_MODES.findIndex((mode) => mode.id === selectedFieldModeId));
+      const next = FIELD_MODES[(index + 1) % FIELD_MODES.length];
+      selectedFieldModeId = next.id;
+      localStorage.setItem("airrace_field_mode", selectedFieldModeId);
+      renderFieldMode();
+    }
+
+    function renderFieldMode() {
+      if (!ui.fieldMode) return;
+      const mode = selectedFieldMode();
+      ui.fieldMode.textContent = mode.label;
+    }
+
+    function cycleStartRound() {
+      selectedStartRound = selectedStartRound >= TOTAL_ROUNDS ? 1 : selectedStartRound + 1;
+      localStorage.setItem("airrace_start_round", String(selectedStartRound));
+      renderStartRound();
+    }
+
+    function renderStartRound() {
+      if (selectedStartRound > TOTAL_ROUNDS) selectedStartRound = TOTAL_ROUNDS;
+      buttonLabels.startMain = `ROUND ${selectedStartRound} START`;
+      if (ui.roundMode) ui.roundMode.textContent = `START ROUND ${selectedStartRound}`;
+      updateButtonHints();
+    }
+
+    function aircraftById(id) {
+      return AIRCRAFTS.find((plane) => plane.id === id) || AIRCRAFTS[0];
+    }
+
+    function buildLaneOffsets(count) {
+      const spacing = count >= 14 ? 38 : count >= 10 ? 46 : count >= 6 ? 60 : 104;
+      const offsets = [];
+      for (let i = 0; i < count; i += 1) {
+        let offset = (i - (count - 1) / 2) * spacing;
+        if (Math.abs(offset) < spacing * 0.45) offset += offset >= 0 ? spacing * 0.6 : -spacing * 0.6;
+        offsets.push(Math.round(offset));
+      }
+      return offsets;
+    }
+
+    function buildRivalProfiles(count) {
+      const offsets = buildLaneOffsets(count);
+      return Array.from({ length: count }, (_, index) => {
+        const base = RIVAL_ARCHETYPES[index % RIVAL_ARCHETYPES.length];
+        const tier = Math.floor(index / RIVAL_ARCHETYPES.length);
+        const paceShift = tier * 0.025 + (index >= count - 2 ? 0.03 : 0);
+        const suffix = tier > 0 ? ` ${tier + 1}` : "";
+        return {
+          ...base,
+          id: `${base.id}_${index}`,
+          name: `${base.name}${suffix}`,
+          laneOffset: offsets[index],
+          aircraft: aircraftById(base.aircraftId),
+          points: 0,
+          paceByRound: Object.fromEntries(
+            Object.entries(base.paceByRound || {}).map(([round, pace]) => [round, pace + paceShift])
+          ),
+          wave: (base.wave || 0) + tier * 2,
+        };
+      });
+    }
+
+    function createTournamentState() {
+      const mode = selectedFieldMode();
+      return {
+        playerPoints: 0,
+        rounds: [],
+        rivals: buildRivalProfiles(Math.max(0, mode.gpSize - 1)),
+      };
+    }
+
+    function tournamentStatusText(tournament) {
+      if (!tournament) return "";
+      const rows = [
+        { name: "YOU", points: tournament.playerPoints || 0 },
+        ...tournament.rivals.map((rival) => ({ name: rival.name, points: rival.points || 0 })),
+      ].sort((a, b) => b.points - a.points);
+      return rows.map((row, index) => `${index + 1}.${row.name} ${row.points}pt`).join(" / ");
+    }
+
+    function setLoadingState(visible, label = "NOW LOADING", progress = 0, meta = "") {
+      if (!ui.loading) return;
+      ui.loading.style.display = visible ? "flex" : "none";
+      if (ui.loadingLabel) ui.loadingLabel.textContent = label;
+      if (ui.loadingFill) ui.loadingFill.style.width = `${Math.max(0, Math.min(100, progress * 100))}%`;
+      if (ui.loadingMeta) ui.loadingMeta.textContent = meta;
+      if (ui.start) ui.start.disabled = visible;
+      if (ui.nextRound) ui.nextRound.disabled = visible;
+    }
+
+    function currentRoundCache(round) {
+      return window.airraceRoundCache?.[round] || null;
+    }
+
+    async function fetchRoundBundle(round, onProgress = () => {}, forceRefresh = false) {
+      const cached = !forceRefresh ? currentRoundCache(round) : null;
+      if (cached) return cached;
+      onProgress(0.18, "course json");
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(`/api/airrace/round/${round}?ts=${Date.now()}`, {
+        cache: "no-store",
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timer));
+      if (!res.ok) throw new Error(`round fetch failed: ${round}`);
+      onProgress(0.56, "ghost data");
+      const data = await res.json();
+      const bundle = {
+        round,
+        course: data.course || {},
+        ghosts: Array.isArray(data.ghosts) ? data.ghosts : [],
+      };
+      window.airraceRoundCache[round] = bundle;
+      onProgress(0.82, "scan build");
+      return bundle;
+    }
+
+    async function preloadRound(round) {
+      if (round > TOTAL_ROUNDS || currentRoundCache(round)) return;
+      try {
+        await fetchRoundBundle(round);
+      } catch {}
+    }
+
     function roundDifficulty(round) {
       return {
-        spacingScale: Math.max(1.15, 3.0 - (round - 1) * 0.45),
-        turnScale: 0.38 + (round - 1) * 0.16,
-        lateralScale: 0.45 + (round - 1) * 0.18,
-        verticalScale: 0.35 + (round - 1) * 0.22,
+        spacingScale: round === 1 ? 3.7 : round === 2 ? 3.2 : Math.max(1.35, 2.95 - (round - 1) * 0.42),
+        turnScale: round === 1 ? 0.16 : round === 2 ? 0.24 : 0.36 + (round - 1) * 0.16,
+        lateralScale: round === 1 ? 0.30 : round === 2 ? 0.38 : 0.45 + (round - 1) * 0.18,
+        verticalScale: round === 1 ? 0.10 : round === 2 ? 0.18 : 0.35 + (round - 1) * 0.22,
       };
     }
 
     function roundBriefing(round) {
+      const mode = selectedFieldMode();
+      const round2Rivals = Math.max(0, mode.round2Size - 1);
+      const gpRivals = Math.max(0, mode.gpSize - 1);
       const briefings = [
         {
           title: "ROUND 1 / 離陸訓練",
           difficulty: 1,
-          text: "ゆるい周回コース。まずは旋回とゲート通過に慣れよう。",
+          text: "ライバルなし。大きいゲートを順番にくぐって、まずは離陸と旋回に慣れよう。",
         },
         {
           title: "ROUND 2 / 高度変化",
           difficulty: 2,
-          text: "上下移動の練習。高度計を見ながらゲートをくぐれ。",
+          text: `ここから${mode.round2Size}機レース。${round2Rivals}機を相手に、ゆるい高低差と順位争いを覚えよう。`,
         },
         {
-          title: "ROUND 3 / 本格周回",
+          title: "ROUND 3 / USA DESERT OPENING",
           difficulty: 3,
-          text: "上下左右に動く標準コース。ライン取りがタイムを決める。",
+          text: `アメリカ砂漠ラウンド。長い直線と赤土キャニオンで World Grand Prix 開幕だ。${mode.gpSize}機で一気に出る。`,
         },
         {
-          title: "ROUND 4 / 高速直線",
+          title: "ROUND 4 / FRANCE RIVER CIRCUIT",
           difficulty: 4,
-          text: "長い直線あり。BOOSTで伸ばして、次の旋回に備えろ。",
+          text: `フランス河川都市ラウンド。中速カーブをつないで、ライン取りで差を作るテクニカル戦。`,
         },
         {
-          title: "ROUND 5 / FINAL RACE",
+          title: "ROUND 5 / ITALY COASTAL SPRINT",
           difficulty: 5,
-          text: "最高速で上下左右に振られる最終面。攻め切れ！",
+          text: "イタリア海岸ラウンド。海沿いのハイスピード区間で、BOOSTを気持ちよく使える高速戦。",
+        },
+        {
+          title: "ROUND 6 / NETHERLANDS HARBOR WIND",
+          difficulty: 6,
+          text: "オランダ港湾ラウンド。低い空と細かな向き変えで、落ち着いた操縦が効く。",
+        },
+        {
+          title: "ROUND 7 / GERMANY RHINE INDUSTRIAL",
+          difficulty: 7,
+          text: "ドイツ工業地帯ラウンド。中速の切り返しと重めの流れで、安定感のある機体が光る。",
+        },
+        {
+          title: "ROUND 8 / CHINA MEGACITY RING",
+          difficulty: 8,
+          text: "中国メガシティラウンド。高層都市を大きく回る高速外周で、視界も速度感も一気に上がる。",
+        },
+        {
+          title: "ROUND 9 / UAE SKY DUNE RUSH",
+          difficulty: 9,
+          text: "UAE 砂丘ラウンド。高速直線から一気に曲げる見せ場コース。決勝前に差を動かす最後の山場。",
+        },
+        {
+          title: "ROUND 10 / JAPAN GRAND FINAL",
+          difficulty: 10,
+          text: "最終戦 JAPAN。テクニカル区間と高速区間の両方をまとめて取り切って、総合優勝を決めろ。",
         },
       ];
       return briefings[Math.max(0, Math.min(briefings.length - 1, round - 1))];
     }
 
-    function makeCourse(round) {
+    function catmullRomPoint(p0, p1, p2, p3, t) {
+      const t2 = t * t;
+      const t3 = t2 * t;
+      return {
+        x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+        y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
+        z: 0.5 * ((2 * p1.z) + (-p0.z + p2.z) * t + (2 * p0.z - 5 * p1.z + 4 * p2.z - p3.z) * t2 + (-p0.z + 3 * p1.z - 3 * p2.z + p3.z) * t3),
+      };
+    }
+
+    function buildSmoothCoursePath(points, subdivisions = 12) {
+      if (!points || points.length < 2) return points || [];
+      const out = [];
+      for (let i = 0; i < points.length - 1; i += 1) {
+        const p0 = points[Math.max(0, i - 1)];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = points[Math.min(points.length - 1, i + 2)];
+        for (let j = 0; j < subdivisions; j += 1) {
+          out.push(catmullRomPoint(p0, p1, p2, p3, j / subdivisions));
+        }
+      }
+      out.push({ ...points[points.length - 1] });
+      for (let i = 0; i < out.length; i += 1) {
+        const prev = out[Math.max(0, i - 1)];
+        const next = out[Math.min(out.length - 1, i + 1)];
+        out[i].heading = Math.atan2(next.x - prev.x, next.z - prev.z);
+      }
+      return out;
+    }
+
+    function sampleGuideMarkers(path, spacing) {
+      if (!path || path.length < 2) return [];
+      const markers = [];
+      let traveled = 0;
+      let target = spacing;
+      for (let i = 1; i < path.length; i += 1) {
+        const a = path[i - 1];
+        const b = path[i];
+        const seg = Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z);
+        if (seg <= 0.001) continue;
+        while (traveled + seg >= target) {
+          const f = (target - traveled) / seg;
+          markers.push({
+            x: a.x + (b.x - a.x) * f,
+            y: a.y + (b.y - a.y) * f,
+            z: a.z + (b.z - a.z) * f,
+          });
+          target += spacing;
+        }
+        traveled += seg;
+      }
+      return markers;
+    }
+
+    function pathLength(path) {
+      if (!path || path.length < 2) return 0;
+      let total = 0;
+      for (let i = 1; i < path.length; i += 1) {
+        const a = path[i - 1];
+        const b = path[i];
+        total += Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z);
+      }
+      return total;
+    }
+
+    function buildUrbanTowers(path, options = {}) {
+      if (!path || path.length < 3) return [];
+      const towers = [];
+      const laneGap = options.laneGap || 210;
+      const outerGap = options.outerGap || 360;
+      const depth = options.depth || 80;
+      const minHeight = options.minHeight || 300;
+      const maxHeight = options.maxHeight || 760;
+      const step = options.step || 3;
+      const skipStart = options.skipStart || 2;
+      const skipEnd = options.skipEnd || 2;
+      for (let i = skipStart; i < path.length - skipEnd; i += step) {
+        const node = path[i];
+        const next = path[Math.min(path.length - 1, i + 1)];
+        const dx = next.x - node.x;
+        const dz = next.z - node.z;
+        const len = Math.max(1, Math.hypot(dx, dz));
+        const nx = dz / len;
+        const nz = -dx / len;
+        const towerCount = 2 + (i % 2);
+        for (const side of [-1, 1]) {
+          for (let j = 0; j < towerCount; j += 1) {
+            const radial = laneGap + outerGap * (j + 1) + (i % 3) * 34 + j * 16;
+            const along = (j - (towerCount - 1) * 0.5) * 170 + ((i + j) % 2 === 0 ? 60 : -60);
+            const x = node.x + nx * side * radial + (dx / len) * along;
+            const z = node.z + nz * side * radial + (dz / len) * along;
+            const h = minHeight + ((i * 97 + j * 71 + (side > 0 ? 37 : 0)) % (maxHeight - minHeight));
+            towers.push({
+              type: "tower",
+              x,
+              y: groundY,
+              z,
+              h,
+              w: 90 + ((i + j) % 3) * 24,
+              d: depth + (j % 2) * 18,
+              glow: 0.16 + ((i + j) % 4) * 0.03,
+              hit: false,
+            });
+          }
+        }
+      }
+      return towers;
+    }
+
+    function makeCourse(round, courseSpec = null) {
       const diff = roundDifficulty(round);
       const gates = [];
-      const courseMarkers = [];
-      const coursePath = [
+      const clouds = [];
+      const coursePath = (courseSpec?.entryPath || [
         { x: 82, y: -95, z: -220, heading: 0 },
         { x: 82, y: -70, z: 260, heading: 0 },
         { x: 42, y: 35, z: 920, heading: 0 },
-      ];
+      ]).map((node) => ({ ...node }));
+      const layoutScaleX = courseSpec?.layoutScaleX ?? 1.18;
+      const layoutScaleZ = courseSpec?.layoutScaleZ ?? 1.24;
+      const layoutScaleY = courseSpec?.layoutScaleY ?? 1.16;
       const fixedLayouts = {
         1: [
           { x: 0, z: 1700, y: 58, h: 0.00 },
@@ -724,7 +1270,9 @@
           { x: 0, z: -1100, y: 60, h: 0.00 },
         ],
       };
-      const fixedLayout = fixedLayouts[round] || null;
+      let fixedLayout = courseSpec?.fixedLayout || fixedLayouts[round] || null;
+      if (!courseSpec && fixedLayout && round === 1) fixedLayout = fixedLayout.slice(0, 7);
+      if (!courseSpec && fixedLayout && round === 2) fixedLayout = fixedLayout.slice(0, 9);
       let x = 0;
       let z = 1280;
       let heading = 0;
@@ -736,28 +1284,25 @@
           const node = fixedLayout[i];
           const prevNode = fixedLayout[Math.max(0, i - 1)];
           const nextNode = fixedLayout[Math.min(fixedLayout.length - 1, i + 1)];
-          x = node.x;
-          z = node.z;
-          y = node.y;
-          heading = node.h ?? Math.atan2(nextNode.x - prevNode.x, nextNode.z - prevNode.z);
+          x = node.x * layoutScaleX;
+          z = node.z * layoutScaleZ;
+          y = node.y * layoutScaleY;
+          heading = node.h ?? Math.atan2(
+            (nextNode.x - prevNode.x) * layoutScaleX,
+            (nextNode.z - prevNode.z) * layoutScaleZ
+          );
         } else {
           heading += (Math.sin(i * 1.27) * 0.46 + (i % 4 === 1 ? 0.34 : i % 4 === 3 ? -0.40 : 0)) * diff.turnScale;
-          const spacing = (780 + (i % 3) * 120) * diff.spacingScale;
+          const spacing = (980 + (i % 3) * 180) * diff.spacingScale;
           x += Math.sin(heading) * spacing * diff.lateralScale;
           z += Math.cos(heading) * spacing;
-          y = 35 + Math.sin(i * 0.62) * 120 * diff.verticalScale + (round >= 4 ? Math.sin(i * 1.8) * 70 : 0);
+          y = 35 + Math.sin(i * 0.62) * 170 * diff.verticalScale + (round >= 4 ? Math.sin(i * 1.8) * 120 : 0);
         }
         gates.push({ x, y, z, heading, passed: false });
         coursePath.push({ x, y, z, heading });
-        for (let m = 1; m <= 5; m += 1) {
-          const t = m / 6;
-          courseMarkers.push({
-            x: prev.x + (x - prev.x) * t,
-            y: prev.y + (y - prev.y) * t,
-            z: prev.z + (z - prev.z) * t,
-          });
-        }
       }
+      const smoothCoursePath = buildSmoothCoursePath(coursePath, courseSpec?.pathSubdivisions || 14);
+      const courseMarkers = sampleGuideMarkers(smoothCoursePath, courseSpec?.markerSpacing || (round <= 2 ? 420 : 360));
 
       const pylons = [];
       const scenery = [];
@@ -765,74 +1310,77 @@
         const gate = gates[i];
         const nx = Math.cos(gate.heading);
         const nz = -Math.sin(gate.heading);
+        const gatePylonOffset = gateWorldRadius + 36;
+        const topHeight = Math.max(160, gate.y - groundY + gateWorldRadius + 12);
         pylons.push({
-          x: gate.x + nx * 78,
-          y: -40,
-          z: gate.z + nz * 78,
-          h: 130,
+          x: gate.x + nx * gatePylonOffset,
+          y: groundY,
+          z: gate.z + nz * gatePylonOffset,
+          h: topHeight,
           gateEdge: true,
           hit: false,
         });
         pylons.push({
-          x: gate.x - nx * 78,
-          y: -40,
-          z: gate.z - nz * 78,
-          h: 130,
+          x: gate.x - nx * gatePylonOffset,
+          y: groundY,
+          z: gate.z - nz * gatePylonOffset,
+          h: topHeight,
           gateEdge: true,
           hit: false,
         });
-        const hazardPylonCount = round === 1 ? 0 : round === 2 ? 2 : 5;
-        const sceneryCount = round === 1 ? 8 : round === 2 ? 10 : 14;
-        for (let j = 0; j < hazardPylonCount; j += 1) {
-          const offset = 260 + j * 170;
-          const side2 = j % 2 === 0 ? 1 : -1;
-          pylons.push({
-            x: gate.x + nx * side2 * (260 + j * 70),
-            y: -40,
-            z: gate.z + nz * side2 * (260 + j * 70) + offset,
-            h: 110 + (j % 3) * 24,
-            hit: false,
-          });
-        }
-        for (let j = 0; j < sceneryCount; j += 1) {
-          const side3 = j % 2 === 0 ? 1 : -1;
-          scenery.push({
-            type: j % 5 === 0 ? "tree" : "grass",
-            x: gate.x + nx * side3 * (330 + (j % 7) * 95),
-            z: gate.z + nz * side3 * (330 + (j % 7) * 95) + (j - 7) * 58,
-            h: j % 5 === 0 ? 34 + ((i * 17 + j * 29) % 56) : 10 + (j % 3) * 5,
+        if (i % 2 === 0) {
+          const side = i % 4 === 0 ? 1 : -1;
+          clouds.push({
+            x: gate.x + nx * side * (420 + i * 22),
+            y: 650 + (i % 3) * 42,
+            z: gate.z + nz * side * 180 + 420,
+            size: 180 + (i % 4) * 36,
+            alpha: 0.20 + (i % 3) * 0.04,
           });
         }
       }
-      return { gates, pylons, scenery, courseMarkers, coursePath };
+      if (round === 9) {
+        scenery.push(...buildUrbanTowers(smoothCoursePath, {
+          laneGap: 300,
+          outerGap: 390,
+          depth: 92,
+          minHeight: 320,
+          maxHeight: 860,
+          step: 4,
+          skipStart: 2,
+          skipEnd: 1,
+        }));
+      }
+      const boundsX = [0, 82, ...gates.map((gate) => gate.x)];
+      const boundsZ = [-520, 0, ...smoothCoursePath.map((point) => point.z)];
+      const courseBounds = {
+        minX: Math.floor((Math.min(...boundsX) - 1200) / 200) * 200,
+        maxX: Math.ceil((Math.max(...boundsX) + 1200) / 200) * 200,
+        minZ: Math.floor((Math.min(...boundsZ) - 1200) / 200) * 200,
+        maxZ: Math.ceil((Math.max(...boundsZ) + 1800) / 200) * 200,
+      };
+      return { gates, pylons, scenery, clouds, courseMarkers, coursePath: smoothCoursePath, courseBounds, courseSpec };
     }
 
-    function makeRival(round, coursePath) {
-      const saved = pickSavedGhost(round);
-      if (saved) {
-        const first = saved.samples[0] || { x: 82, y: -95, z: -220, h: 0, r: 0, s: 0 };
-        return {
-          active: true,
-          kind: "ghost",
-          name: saved.name || "GHOST",
-          totalTime: saved.time_ms / 1000,
-          samples: saved.samples,
-          x: first.x,
-          y: first.y,
-          z: first.z,
-          heading: first.h,
-          roll: first.r || 0,
-          finished: false,
-        };
-      }
-      const finishZ = coursePath[coursePath.length - 1]?.z || 12000;
-      const baseTime = Math.max(32, finishZ / (395 + round * 42));
+    function makeCpuRival(round, coursePath, laneOffset, label, paceMul, profile = null) {
+      const rivalAircraft = profile?.aircraft || (round >= 4 ? AIRCRAFTS[2] : round === 3 ? AIRCRAFTS[1] : AIRCRAFTS[0]);
+      const courseDistance = Math.max(9600, pathLength(coursePath));
+      const baseCruise = 430 + round * 34;
+      const baseTime = courseDistance / baseCruise;
       return {
         active: true,
         kind: "cpu",
-        name: "CPU",
-        totalTime: baseTime * (1.04 - Math.min(0.12, round * 0.018)),
-        x: 82,
+        aircraft: rivalAircraft,
+        name: label,
+        profileId: profile?.id || label,
+        style: profile?.style || "steady",
+        roleLabel: profile?.label || (round === 2 ? "ROOKIE" : "CPU"),
+        lineWave: profile?.wave || 0,
+        seed: (profile?.id || label).length * 0.83,
+        totalTime: baseTime * paceMul,
+        laneOffset,
+        progress: 0,
+        x: 82 + laneOffset,
         y: -95,
         z: -220,
         heading: 0,
@@ -840,16 +1388,64 @@
       };
     }
 
-    async function loadGhosts() {
-      try {
-        const res = await fetch("/api/airrace/ghosts");
-        if (!res.ok) return [];
-        const data = await res.json();
-        window.airraceGhosts = Array.isArray(data.ghosts) ? data.ghosts : [];
-        return window.airraceGhosts;
-      } catch {
-        return [];
+    function makeGhostRival(saved, laneOffset, label) {
+      const ghostAircraft = AIRCRAFTS[saved?.samples?.length ? saved.samples.length % AIRCRAFTS.length : 0] || AIRCRAFTS[0];
+      const first = saved.samples[0] || { x: 82, y: -95, z: -220, h: 0, r: 0, s: 0 };
+      return {
+        active: true,
+        kind: "ghost",
+        aircraft: ghostAircraft,
+        name: label || saved.name || "GHOST",
+        profileId: saved.name || "ghost",
+        style: "ghost",
+        roleLabel: "GHOST",
+        lineWave: 0,
+        seed: (saved.name || "ghost").length * 0.91,
+        totalTime: saved.time_ms / 1000,
+        samples: saved.samples,
+        laneOffset,
+        progress: 0,
+        x: first.x + laneOffset,
+        y: first.y,
+        z: first.z,
+        heading: first.h,
+        roll: first.r || 0,
+        finished: false,
+      };
+    }
+
+    function makeRivals(round, coursePath) {
+      if (round === 1) return [];
+      const mode = selectedFieldMode();
+      const savedGhosts = USE_GHOST_RIVALS
+        ? (game?.roundGhosts || []).filter((g) => Array.isArray(g.samples) && g.samples.length >= 2)
+        : [];
+      if (round >= GRAND_PRIX_START_ROUND) {
+        const tournament = game?.tournament || createTournamentState();
+        return tournament.rivals.map((profile) => {
+          const paceMul = profile.paceByRound?.[round] || 1.0;
+          return makeCpuRival(round, coursePath, profile.laneOffset, profile.name, paceMul, profile);
+        });
       }
+      const rivals = [];
+      const practiceCount = Math.max(0, mode.round2Size - 1);
+      const practiceOffsets = buildLaneOffsets(practiceCount);
+      for (let i = 0; i < practiceCount; i += 1) {
+        if (savedGhosts[i]) {
+          rivals.push(makeGhostRival(savedGhosts[i], practiceOffsets[i], savedGhosts[i].name || `GHOST ${i + 1}`));
+          continue;
+        }
+        const rookieType = i % 2 === 0 ? aircraftById("skylancer") : aircraftById("thunderbolt");
+        const rookiePace = 1.18 + i * 0.05;
+        rivals.push(makeCpuRival(round, coursePath, practiceOffsets[i], `ROOKIE ${String.fromCharCode(65 + i)}`, rookiePace, {
+          id: `rookie_${i}`,
+          style: i % 3 === 1 ? "line" : "steady",
+          label: "ROOKIE",
+          aircraft: rookieType,
+          wave: 3 + i,
+        }));
+      }
+      return rivals;
     }
 
     function saveGhost(record) {
@@ -859,14 +1455,118 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(record),
       })
-        .then((res) => (res.ok ? loadGhosts() : null))
+        .then((res) => {
+          if (res.ok) delete window.airraceRoundCache[record.round];
+        })
         .catch(() => {});
     }
 
-    function pickSavedGhost(round) {
-      const ghosts = (window.airraceGhosts || []).filter((g) => g.round === round && Array.isArray(g.samples) && g.samples.length >= 2);
-      if (ghosts.length === 0) return null;
-      return ghosts[Math.floor(Math.random() * ghosts.length)];
+    function selectedAircraft() {
+      return AIRCRAFTS.find((plane) => plane.id === selectedAircraftId) || AIRCRAFTS[0];
+    }
+
+    function cycleAircraft(direction) {
+      const index = Math.max(0, AIRCRAFTS.findIndex((plane) => plane.id === selectedAircraftId));
+      const nextIndex = (index + direction + AIRCRAFTS.length) % AIRCRAFTS.length;
+      selectedAircraftId = AIRCRAFTS[nextIndex].id;
+      localStorage.setItem("airrace_aircraft", selectedAircraftId);
+      renderPlaneSelect();
+    }
+
+    function renderPlaneSelect() {
+      if (!ui.planeDisplay) return;
+      const plane = selectedAircraft();
+      if (ui.planeName) ui.planeName.textContent = plane.name;
+      if (ui.planeSummary) ui.planeSummary.textContent = plane.summary;
+      renderPlanePreview(plane);
+      renderFieldMode();
+      renderStartRound();
+    }
+
+    function drawAircraftShapeTo(targetCtx, aircraft, scaleMul, fill, stroke) {
+      const shape = aircraft?.shape || "standard";
+      const unit = 22 * scaleMul;
+      targetCtx.fillStyle = fill;
+      targetCtx.strokeStyle = stroke;
+      targetCtx.lineWidth = Math.max(1.3, 2 * scaleMul);
+
+      if (shape === "broad") {
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, -0.95 * unit);
+        targetCtx.lineTo(1.75 * unit, 0.26 * unit);
+        targetCtx.lineTo(0.52 * unit, 0.16 * unit);
+        targetCtx.lineTo(0.20 * unit, 0.96 * unit);
+        targetCtx.lineTo(-0.20 * unit, 0.96 * unit);
+        targetCtx.lineTo(-0.52 * unit, 0.16 * unit);
+        targetCtx.lineTo(-1.75 * unit, 0.26 * unit);
+        targetCtx.closePath();
+      } else if (shape === "dart") {
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, -1.25 * unit);
+        targetCtx.lineTo(0.78 * unit, -0.12 * unit);
+        targetCtx.lineTo(1.10 * unit, 0.56 * unit);
+        targetCtx.lineTo(0.18 * unit, 0.20 * unit);
+        targetCtx.lineTo(0, 1.00 * unit);
+        targetCtx.lineTo(-0.18 * unit, 0.20 * unit);
+        targetCtx.lineTo(-1.10 * unit, 0.56 * unit);
+        targetCtx.lineTo(-0.78 * unit, -0.12 * unit);
+        targetCtx.closePath();
+      } else if (shape === "fang") {
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, -1.05 * unit);
+        targetCtx.lineTo(1.38 * unit, 0.02 * unit);
+        targetCtx.lineTo(0.44 * unit, 0.22 * unit);
+        targetCtx.lineTo(0.84 * unit, 0.92 * unit);
+        targetCtx.lineTo(0.10 * unit, 0.42 * unit);
+        targetCtx.lineTo(0, 1.04 * unit);
+        targetCtx.lineTo(-0.10 * unit, 0.42 * unit);
+        targetCtx.lineTo(-0.84 * unit, 0.92 * unit);
+        targetCtx.lineTo(-0.44 * unit, 0.22 * unit);
+        targetCtx.lineTo(-1.38 * unit, 0.02 * unit);
+        targetCtx.closePath();
+      } else if (shape === "heavy") {
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, -0.88 * unit);
+        targetCtx.lineTo(1.55 * unit, 0.32 * unit);
+        targetCtx.lineTo(0.70 * unit, 0.52 * unit);
+        targetCtx.lineTo(0.34 * unit, 1.12 * unit);
+        targetCtx.lineTo(-0.34 * unit, 1.12 * unit);
+        targetCtx.lineTo(-0.70 * unit, 0.52 * unit);
+        targetCtx.lineTo(-1.55 * unit, 0.32 * unit);
+        targetCtx.closePath();
+      } else {
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, -1.02 * unit);
+        targetCtx.lineTo(1.46 * unit, 0.42 * unit);
+        targetCtx.lineTo(0.30 * unit, 0.20 * unit);
+        targetCtx.lineTo(0, 1.00 * unit);
+        targetCtx.lineTo(-0.30 * unit, 0.20 * unit);
+        targetCtx.lineTo(-1.46 * unit, 0.42 * unit);
+        targetCtx.closePath();
+      }
+      targetCtx.fill();
+      targetCtx.stroke();
+    }
+
+    function renderPlanePreview(aircraft) {
+      if (!ui.planePreview) return;
+      const previewCtx = ui.planePreview.getContext("2d");
+      const w = ui.planePreview.width;
+      const h = ui.planePreview.height;
+      previewCtx.clearRect(0, 0, w, h);
+      previewCtx.save();
+      previewCtx.translate(w / 2, h / 2 + 2);
+      previewCtx.strokeStyle = "rgba(186,230,253,.28)";
+      previewCtx.lineWidth = 1;
+      previewCtx.beginPath();
+      previewCtx.moveTo(-84, 6);
+      previewCtx.lineTo(-26, 6);
+      previewCtx.moveTo(26, 6);
+      previewCtx.lineTo(84, 6);
+      previewCtx.stroke();
+      drawBoostEffect(previewCtx, aircraft, 0.7, 0.85);
+      drawAircraftShapeTo(previewCtx, aircraft, 0.85, aircraft.color, aircraft.stroke);
+      previewCtx.restore();
     }
 
     function sampleFromGhost(samples, elapsedMs) {
@@ -890,14 +1590,18 @@
       return samples[samples.length - 1];
     }
 
-    function resetGame(round = 1, carry = null) {
-      const course = makeCourse(round);
+    function resetGame(round = 1, carry = null, bundle = null) {
+      const course = makeCourse(round, bundle?.course || null);
+      const aircraft = selectedAircraft();
       startAudio();
       const now = performance.now();
+      const tournament = carry?.tournament || createTournamentState();
       game = {
         running: true,
         finished: false,
+        aircraft,
         round,
+        tournament,
         totalStartMs: carry?.totalStartMs || now,
         roundStartMs: now,
         lastMs: now,
@@ -910,28 +1614,87 @@
         planeZ: -520,
         heading: 0,
         roll: 0,
-        loopAngle: 0,
-        looping: false,
+        pitchVisual: 0,
         damage: 0,
         gateIndex: 0,
         messageUntil: 0,
+        roundGhosts: bundle?.ghosts || [],
+        roundBundle: bundle || null,
         ghostSamples: [],
         lastGhostSampleMs: -999,
+        racePosition: 1,
         ...course,
       };
-      game.rival = makeRival(round, game.coursePath);
+      game.rivals = makeRivals(round, game.coursePath);
       ui.title.style.display = "none";
       ui.result.style.display = "none";
       ui.nameEntry.style.display = "none";
       ui.nextRound.style.display = "none";
       ui.retry.style.display = "none";
       ui.guide.style.display = "none";
-      setMessage("滑走路待機。シグナルを待て。", 1800);
+      const entryMessage = round === 1
+        ? `${aircraft.name} で訓練開始。まずは1機で離陸だ。`
+        : round === 2
+          ? `${aircraft.name} で練習レース。ここから${selectedFieldMode().round2Size}機で順位争いだ。`
+          : `${aircraft.name} 出走。Grand Prix 第${round - 2}戦、総合優勝を狙うぞ。`;
+      setMessage(entryMessage, 1800);
     }
 
     function setMessage(text, ms = 1200) {
       ui.message.textContent = text;
       if (game) game.messageUntil = performance.now() + ms;
+    }
+
+    function raceStandings(success) {
+      const playerPosition = success ? Math.max(1, Math.min(currentFieldSize(), game.racePosition || 1)) : currentFieldSize();
+      const rivalEntries = (game.rivals || [])
+        .map((rival) => ({
+          kind: "rival",
+          id: rival.profileId || rival.name,
+          name: rival.name,
+          progress: rival.progress || 0,
+        }))
+        .sort((a, b) => b.progress - a.progress);
+      const remaining = [];
+      for (let i = 1; i <= currentFieldSize(); i += 1) {
+        if (i !== playerPosition) remaining.push(i);
+      }
+      const standings = [{
+        kind: "player",
+        id: "player",
+        name: "YOU",
+        position: playerPosition,
+      }];
+      for (let i = 0; i < rivalEntries.length; i += 1) {
+        standings.push({
+          ...rivalEntries[i],
+          position: remaining[i] || currentFieldSize(),
+        });
+      }
+      return standings.sort((a, b) => a.position - b.position);
+    }
+
+    function applyTournamentPoints(success) {
+      if (!game?.tournament || game.round < GRAND_PRIX_START_ROUND) return null;
+      const standings = raceStandings(success);
+      const playerEntry = standings.find((entry) => entry.kind === "player");
+      const playerRoundPoints = pointsForPosition(playerEntry?.position || currentFieldSize());
+      game.tournament.playerPoints += playerRoundPoints;
+      for (const entry of standings) {
+        if (entry.kind !== "rival") continue;
+        const rival = game.tournament.rivals.find((item) => item.id === entry.id);
+        if (rival) rival.points += pointsForPosition(entry.position);
+      }
+      game.tournament.rounds.push({
+        round: game.round,
+        standings,
+      });
+      return {
+        standings,
+        playerPosition: playerEntry?.position || currentFieldSize(),
+        playerRoundPoints,
+        table: tournamentStatusText(game.tournament),
+      };
     }
 
     function encodeScore(round, ms) {
@@ -958,14 +1721,6 @@
     async function renderRankings() {
       const data = await fetchScores();
       window.airraceScores = data.scores || [];
-      const scores = window.airraceScores;
-      if (!scores.length) {
-        ui.rankings.innerHTML = "<p class=\"lead\">NO RECORD</p>";
-        return;
-      }
-      ui.rankings.innerHTML = `<table>${scores.map((row, i) => `
-        <tr><td>${i + 1}.</td><td>${row.name}</td><td>${formatRank(row.score)}</td></tr>
-      `).join("")}</table>`;
     }
 
     function formatRank(score) {
@@ -981,16 +1736,42 @@
       stopAudio();
       cancelAnimationFrame(raf);
       game = null;
+      window.airraceRoundCache = {};
+      setLoadingState(false);
       ui.title.style.display = "flex";
       ui.result.style.display = "none";
       ui.guide.style.display = "none";
       ui.nameEntry.style.display = "none";
       ui.nextRound.style.display = "none";
       ui.retry.style.display = "none";
+      renderPlaneSelect();
       renderRankings();
       updateButtonHints();
       drawSplash();
       ui.message.textContent = "左プニコンで旋回と高度。BOOSTで加速。";
+    }
+
+    async function startRound(round, carry = null) {
+      const token = ++loadingToken;
+      const label = round === 1 ? "START LOADING" : `ROUND ${round} LOADING`;
+      setLoadingState(true, label, 0.08, "prepare request");
+      try {
+        const bundle = await fetchRoundBundle(round, (progress, meta) => {
+          if (token !== loadingToken) return;
+          setLoadingState(true, label, progress, meta);
+        }, true);
+        if (token !== loadingToken) return;
+        setLoadingState(true, label, 0.94, "cockpit sync");
+        resetGame(round, carry, bundle);
+        raf = requestAnimationFrame(frame);
+        setLoadingState(false);
+        preloadRound(round + 1);
+      } catch (err) {
+        console.error(err);
+        setLoadingState(false);
+        showTitle();
+        setMessage(`ROUND ${round} LOAD FAILED`, 1800);
+      }
     }
 
     function startAudio() {
@@ -1059,6 +1840,133 @@
       osc.stop(ac.currentTime + 0.2);
     }
 
+    function playerWorldY() {
+      return game.altitude - 150;
+    }
+
+    function updateCamera(dt) {
+      const targetPitch = input.y * 0.62;
+      game.pitchVisual += (targetPitch - game.pitchVisual) * Math.min(1, dt * 3.8);
+      horizon = H * 0.46 + game.pitchVisual * H * 0.17;
+    }
+
+    function roundTheme(round) {
+      const themes = {
+        1: { skyTop: "#153355", skyMid: "#2c6d96", skyLow: "#9ed8ff", skyBottom: "#ebf8ff", groundTop: "#58703a", groundMid: "#33461f", groundBottom: "#12180d" },
+        2: { skyTop: "#17314d", skyMid: "#4374a1", skyLow: "#b7e3ff", skyBottom: "#f2fbff", groundTop: "#7a6338", groundMid: "#514027", groundBottom: "#1b150d" },
+        3: { skyTop: "#3a1f1a", skyMid: "#b35b3c", skyLow: "#f3bf73", skyBottom: "#fff1da", groundTop: "#8a5632", groundMid: "#5b351f", groundBottom: "#24150d" },
+        4: { skyTop: "#26456a", skyMid: "#6aa0cf", skyLow: "#d8f0ff", skyBottom: "#f7fcff", groundTop: "#6d7f4d", groundMid: "#425034", groundBottom: "#172016" },
+        5: { skyTop: "#1f4e72", skyMid: "#3ca0d0", skyLow: "#ffe0a8", skyBottom: "#fff6e5", groundTop: "#5a6b36", groundMid: "#344222", groundBottom: "#14190f" },
+        6: { skyTop: "#3d556c", skyMid: "#89abc6", skyLow: "#e4f3ff", skyBottom: "#fbfdff", groundTop: "#4d6440", groundMid: "#31422b", groundBottom: "#121910" },
+        7: { skyTop: "#30404f", skyMid: "#6f879b", skyLow: "#d6e3ef", skyBottom: "#f7fafc", groundTop: "#655942", groundMid: "#403729", groundBottom: "#17130f" },
+        8: { skyTop: "#183a63", skyMid: "#4f8ec3", skyLow: "#d9ecff", skyBottom: "#fbfdff", groundTop: "#59636c", groundMid: "#363d44", groundBottom: "#13171b" },
+        9: { skyTop: "#6a3018", skyMid: "#d17835", skyLow: "#ffd68d", skyBottom: "#fff3db", groundTop: "#956639", groundMid: "#5e3f22", groundBottom: "#24170d" },
+        10: { skyTop: "#10264e", skyMid: "#305f9a", skyLow: "#bfe0ff", skyBottom: "#f4fbff", groundTop: "#506746", groundMid: "#32412d", groundBottom: "#111710" },
+      };
+      return themes[round] || themes[3];
+    }
+
+    function drawBackdropLandmarks(round, leftHorizon, rightHorizon) {
+      const baseY = (leftHorizon.y + rightHorizon.y) * 0.5;
+      const drawBand = (color, points) => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(points[0][0], points[0][1]);
+        for (let i = 1; i < points.length; i += 1) ctx.lineTo(points[i][0], points[i][1]);
+        ctx.lineTo(W, H);
+        ctx.lineTo(0, H);
+        ctx.closePath();
+        ctx.fill();
+      };
+      const drawSkyline = (color, startX, width, heights) => {
+        ctx.fillStyle = color;
+        let x = startX;
+        for (let i = 0; i < heights.length; i += 1) {
+          const w = width * (0.72 + (i % 3) * 0.2);
+          const h = heights[i];
+          ctx.fillRect(x, baseY - h, w, h);
+          x += w + 4;
+        }
+      };
+      const drawRiver = (colorA, colorB) => {
+        ctx.strokeStyle = colorA;
+        ctx.lineWidth = 16;
+        ctx.beginPath();
+        ctx.moveTo(W * 0.10, baseY + 34);
+        ctx.bezierCurveTo(W * 0.24, baseY + 8, W * 0.38, baseY + 66, W * 0.50, baseY + 18);
+        ctx.bezierCurveTo(W * 0.64, baseY - 18, W * 0.82, baseY + 34, W * 0.94, baseY + 6);
+        ctx.stroke();
+        ctx.strokeStyle = colorB;
+        ctx.lineWidth = 6;
+        ctx.stroke();
+      };
+      const drawWindmills = () => {
+        ctx.strokeStyle = "rgba(245,248,252,0.34)";
+        ctx.lineWidth = 2;
+        [0.16, 0.31, 0.74, 0.86].forEach((p, i) => {
+          const x = W * p;
+          const y = baseY + 18 + (i % 2) * 10;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x, y - 46);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x, y - 46);
+          ctx.lineTo(x - 16, y - 56);
+          ctx.moveTo(x, y - 46);
+          ctx.lineTo(x + 18, y - 42);
+          ctx.moveTo(x, y - 46);
+          ctx.lineTo(x - 4, y - 26);
+          ctx.stroke();
+        });
+      };
+      const drawTowers = () => {
+        ctx.fillStyle = "rgba(185, 202, 215, 0.26)";
+        ctx.fillRect(W * 0.18, baseY - 68, 16, 68);
+        ctx.fillRect(W * 0.72, baseY - 76, 20, 76);
+        ctx.fillRect(W * 0.78, baseY - 56, 12, 56);
+      };
+      const drawHarborCranes = () => {
+        ctx.strokeStyle = "rgba(214, 226, 236, 0.28)";
+        ctx.lineWidth = 3;
+        [0.20, 0.32, 0.68, 0.82].forEach((p) => {
+          const x = W * p;
+          ctx.beginPath();
+          ctx.moveTo(x, baseY + 14);
+          ctx.lineTo(x, baseY - 36);
+          ctx.lineTo(x + 26, baseY - 54);
+          ctx.stroke();
+        });
+      };
+
+      if (round === 3 || round === 9) {
+        drawBand("rgba(121, 74, 36, 0.34)", [[0, baseY + 10], [W * 0.18, baseY - 12], [W * 0.36, baseY + 8], [W * 0.58, baseY - 18], [W * 0.82, baseY + 4], [W, baseY - 10]]);
+      } else if (round === 4) {
+        drawRiver("rgba(123, 196, 240, 0.24)", "rgba(237, 248, 255, 0.18)");
+        drawSkyline("rgba(52, 74, 96, 0.24)", W * 0.08, 18, [36, 42, 58, 34, 50, 70, 30]);
+        drawSkyline("rgba(52, 74, 96, 0.20)", W * 0.62, 18, [28, 36, 54, 44, 38, 60]);
+      } else if (round === 5) {
+        ctx.fillStyle = "rgba(108, 195, 224, 0.18)";
+        ctx.fillRect(0, baseY + 22, W, 24);
+        drawBand("rgba(75, 103, 82, 0.24)", [[0, baseY + 12], [W * 0.18, baseY - 8], [W * 0.40, baseY + 14], [W * 0.72, baseY - 6], [W, baseY + 8]]);
+      } else if (round === 6) {
+        ctx.fillStyle = "rgba(132, 185, 214, 0.16)";
+        ctx.fillRect(0, baseY + 20, W, 22);
+        drawHarborCranes();
+        drawWindmills();
+      } else if (round === 7) {
+        drawSkyline("rgba(70, 72, 76, 0.24)", W * 0.10, 20, [26, 48, 34, 62, 30, 40, 56, 36]);
+        drawTowers();
+      } else if (round === 8) {
+        drawSkyline("rgba(63, 83, 112, 0.30)", W * 0.05, 16, [44, 72, 58, 92, 64, 84, 50, 68, 96]);
+        drawSkyline("rgba(63, 83, 112, 0.22)", W * 0.60, 14, [50, 82, 60, 74, 88, 54, 70]);
+      } else if (round === 10) {
+        drawRiver("rgba(95, 163, 231, 0.18)", "rgba(227, 242, 255, 0.10)");
+        drawSkyline("rgba(57, 78, 112, 0.24)", W * 0.08, 16, [38, 56, 48, 78, 52, 70, 44]);
+        drawBand("rgba(70, 92, 108, 0.18)", [[0, baseY + 14], [W * 0.22, baseY - 18], [W * 0.48, baseY + 10], [W * 0.68, baseY - 28], [W, baseY + 8]]);
+      }
+    }
+
     function projectPoint(x, y, z) {
       const dx = x - game.planeX;
       const dz = z - game.planeZ;
@@ -1069,7 +1977,7 @@
       if (relZ <= 40) return null;
       const scale = 270 / relZ;
       const rawX = centerX + camX * scale;
-      const rawY = horizon - (y - (game.altitude - 150)) * scale;
+      const rawY = horizon - (y - playerWorldY()) * scale;
       const rotated = rollPoint(rawX, rawY);
       return {
         x: rotated.x,
@@ -1128,17 +2036,41 @@
       ctx.fill();
     }
 
-    function drawRolledBackground(leftHorizon, rightHorizon) {
-      ctx.fillStyle = "#071827";
+    function fillGroundQuad(points, color) {
+      const projected = points.map((p) => projectPoint(p.x, p.y, p.z));
+      if (projected.some((p) => !p)) return;
+      ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(W, 0);
-      ctx.lineTo(rightHorizon.x, rightHorizon.y);
-      ctx.lineTo(leftHorizon.x, leftHorizon.y);
+      ctx.moveTo(projected[0].x, projected[0].y);
+      for (let i = 1; i < projected.length; i += 1) ctx.lineTo(projected[i].x, projected[i].y);
       ctx.closePath();
       ctx.fill();
+    }
 
-      ctx.fillStyle = "#2a1b0d";
+    function drawRolledBackground(leftHorizon, rightHorizon) {
+      const theme = roundTheme(game?.round || 1);
+      const sky = ctx.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, theme.skyTop);
+      sky.addColorStop(0.35, theme.skyMid);
+      sky.addColorStop(0.62, theme.skyLow);
+      sky.addColorStop(1, theme.skyBottom);
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, W, H);
+
+      const sunGlow = ctx.createRadialGradient(centerX, Math.max(48, horizon - H * 0.2), 12, centerX, Math.max(48, horizon - H * 0.2), W * 0.45);
+      sunGlow.addColorStop(0, "rgba(255,255,255,.18)");
+      sunGlow.addColorStop(0.25, "rgba(125,211,252,.14)");
+      sunGlow.addColorStop(1, "rgba(2,6,23,0)");
+      ctx.fillStyle = sunGlow;
+      ctx.fillRect(0, 0, W, H);
+
+      drawBackdropLandmarks(game?.round || 1, leftHorizon, rightHorizon);
+
+      const ground = ctx.createLinearGradient(0, horizon, 0, H);
+      ground.addColorStop(0, theme.groundTop);
+      ground.addColorStop(0.4, theme.groundMid);
+      ground.addColorStop(1, theme.groundBottom);
+      ctx.fillStyle = ground;
       ctx.beginPath();
       ctx.moveTo(leftHorizon.x, leftHorizon.y);
       ctx.lineTo(rightHorizon.x, rightHorizon.y);
@@ -1153,6 +2085,9 @@
       const rightHorizon = rollPoint(W, horizon);
       drawRolledBackground(leftHorizon, rightHorizon);
 
+      drawClouds();
+      drawGroundDecor();
+
       ctx.strokeStyle = "rgba(125,249,255,.35)";
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -1163,37 +2098,139 @@
       drawWorldGroundGrid();
     }
 
+    function drawGroundDecor() {
+      const bounds = game.courseBounds;
+      if (!bounds) return;
+      const y = groundY + 1;
+      const minX = bounds.minX;
+      const maxX = bounds.maxX;
+      const minZ = bounds.minZ;
+      const maxZ = bounds.maxZ;
+      const round = game.round || 1;
+
+      if (round === 4 || round === 10) {
+        fillGroundQuad([
+          { x: minX + 300, y, z: minZ + 900 },
+          { x: minX + 900, y, z: maxZ - 400 },
+          { x: minX + 1500, y, z: maxZ - 600 },
+          { x: minX + 900, y, z: minZ + 700 },
+        ], round === 10 ? "rgba(86, 156, 220, 0.22)" : "rgba(112, 186, 228, 0.24)");
+      }
+
+      if (round === 5) {
+        fillGroundQuad([
+          { x: maxX - 1400, y, z: minZ + 600 },
+          { x: maxX + 100, y, z: minZ + 900 },
+          { x: maxX + 100, y, z: maxZ - 200 },
+          { x: maxX - 1700, y, z: maxZ - 500 },
+        ], "rgba(76, 172, 216, 0.20)");
+      }
+
+      if (round === 6) {
+        for (let i = 0; i < 5; i += 1) {
+          const x0 = minX + 500 + i * 900;
+          fillGroundQuad([
+            { x: x0, y, z: minZ + 700 },
+            { x: x0 + 260, y, z: minZ + 700 },
+            { x: x0 + 340, y, z: maxZ - 500 },
+            { x: x0 + 80, y, z: maxZ - 500 },
+          ], "rgba(124, 186, 216, 0.16)");
+        }
+      }
+
+      if (round === 7) {
+        for (let i = 0; i < 6; i += 1) {
+          const x0 = minX + 700 + i * 1200;
+          fillGroundQuad([
+            { x: x0, y, z: minZ + 1400 },
+            { x: x0 + 520, y, z: minZ + 1400 },
+            { x: x0 + 620, y, z: maxZ - 900 },
+            { x: x0 + 100, y, z: maxZ - 900 },
+          ], "rgba(84, 86, 92, 0.14)");
+        }
+      }
+
+      if (round === 8 || round === 10) {
+        for (let i = 0; i < 7; i += 1) {
+          const x0 = minX + 600 + i * 950;
+          fillGroundQuad([
+            { x: x0, y, z: minZ + 1000 },
+            { x: x0 + 140, y, z: minZ + 1000 },
+            { x: x0 + 220, y, z: maxZ - 700 },
+            { x: x0 + 80, y, z: maxZ - 700 },
+          ], "rgba(170, 190, 210, 0.08)");
+        }
+      }
+
+      if (round === 9) {
+        for (let i = 0; i < 6; i += 1) {
+          fillGroundQuad([
+            { x: minX + i * 1800, y, z: minZ + 1800 + i * 400 },
+            { x: minX + 900 + i * 1800, y, z: minZ + 1200 + i * 420 },
+            { x: minX + 1600 + i * 1800, y, z: minZ + 2400 + i * 440 },
+            { x: minX + 700 + i * 1800, y, z: minZ + 3000 + i * 420 },
+          ], "rgba(219, 167, 97, 0.10)");
+        }
+      }
+
+      if (round === 1 || round === 2) {
+        for (let i = 0; i < 6; i += 1) {
+          fillGroundQuad([
+            { x: minX + 400 + i * 1000, y, z: minZ + 1000 },
+            { x: minX + 1050 + i * 1000, y, z: minZ + 1000 },
+            { x: minX + 980 + i * 1000, y, z: maxZ - 600 },
+            { x: minX + 320 + i * 1000, y, z: maxZ - 600 },
+          ], i % 2 === 0 ? "rgba(114, 160, 88, 0.10)" : "rgba(170, 138, 82, 0.08)");
+        }
+      }
+    }
+
     function drawWorldGroundGrid() {
-      const step = 220;
-      const near = 80;
-      const activeGates = (game?.gates || []).slice(game?.gateIndex || 0);
-      const xs = [game.planeX, ...(activeGates.map((gate) => gate.x))];
-      const zs = [game.planeZ + near, ...(activeGates.map((gate) => gate.z))];
-      const minGateX = Math.min(...xs);
-      const maxGateX = Math.max(...xs);
-      const minGateZ = Math.min(...zs);
-      const maxGateZ = Math.max(...zs);
-      const range = Math.max(1760, Math.max(Math.abs(minGateX - game.planeX), Math.abs(maxGateX - game.planeX)) + 660);
-      const far = Math.max(3600, maxGateZ - game.planeZ + 900);
-      const minX = Math.floor((game.planeX - range) / step) * step;
-      const maxX = Math.ceil((game.planeX + range) / step) * step;
-      const minZ = Math.floor(Math.min(game.planeZ + near, minGateZ - 440) / step) * step;
-      const maxZ = Math.ceil((game.planeZ + far) / step) * step;
+      const step = 200;
+      const bounds = game.courseBounds || {
+        minX: -2200,
+        maxX: 2200,
+        minZ: -1200,
+        maxZ: 5200,
+      };
+      const minX = Math.min(bounds.minX, Math.floor((game.planeX - 900) / step) * step);
+      const maxX = Math.max(bounds.maxX, Math.ceil((game.planeX + 900) / step) * step);
+      const minZ = Math.min(bounds.minZ, Math.floor((game.planeZ - 600) / step) * step);
+      const maxZ = Math.max(bounds.maxZ, Math.ceil((game.planeZ + 2400) / step) * step);
 
       for (let x = minX; x <= maxX; x += step) {
         drawLine(
-          projectPoint(x, -110, game.planeZ + near),
-          projectPoint(x, -110, game.planeZ + far),
-          "rgba(251,191,36,.18)"
+          projectPoint(x, groundY, minZ),
+          projectPoint(x, groundY, maxZ),
+          x === 0 ? "rgba(250,204,21,.30)" : "rgba(250,204,21,.18)"
         );
       }
 
       for (let z = minZ; z <= maxZ; z += step) {
         drawLine(
-          projectPoint(game.planeX - range, -110, z),
-          projectPoint(game.planeX + range, -110, z),
-          "rgba(251,191,36,.16)"
+          projectPoint(minX, groundY, z),
+          projectPoint(maxX, groundY, z),
+          z === 0 ? "rgba(125,249,255,.24)" : "rgba(251,191,36,.15)"
         );
+      }
+    }
+
+    function drawClouds() {
+      if (!game.clouds || game.clouds.length === 0) return;
+      for (const cloud of game.clouds) {
+        const p = projectPoint(cloud.x, cloud.y, cloud.z);
+        if (!p || p.z > 3600) continue;
+        const visible = Math.max(0, Math.min(0.82, (game.altitude - 700) / 180));
+        if (visible <= 0.02) continue;
+        const radius = Math.max(16, cloud.size * p.s);
+        ctx.fillStyle = `rgba(236, 253, 255, ${(cloud.alpha || 0.22) * visible})`;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, radius, radius * 0.42, -game.roll * rollVisual, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(125, 211, 252, ${(cloud.alpha || 0.22) * 0.42 * visible})`;
+        ctx.beginPath();
+        ctx.ellipse(p.x + radius * 0.2, p.y + radius * 0.08, radius * 0.72, radius * 0.28, -game.roll * rollVisual, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
 
@@ -1202,14 +2239,14 @@
       const cos = Math.cos(game.heading);
       const x = game.planeX + sin * forward + cos * side;
       const z = game.planeZ + cos * forward - sin * side;
-      return projectPoint(x, -110, z);
+      return projectPoint(x, groundY, z);
     }
 
     function drawGate(gate, index) {
       const p = projectPoint(gate.x, gate.y, gate.z);
       if (!p || p.z > 3200) return;
 
-      const r = 58 * p.s;
+      const r = gateWorldRadius * p.s;
       const color = gate.passed
         ? "#facc15"
         : index === game.gateIndex
@@ -1243,10 +2280,10 @@
     }
 
     function drawPylon(pylon) {
-      const base = projectPoint(pylon.x, -80, pylon.z);
-      const top = projectPoint(pylon.x, -80 + (pylon.h || 120), pylon.z);
+      const base = projectPoint(pylon.x, pylon.y ?? groundY, pylon.z);
+      const top = projectPoint(pylon.x, (pylon.y ?? groundY) + (pylon.h || 120), pylon.z);
       if (!base || !top || base.z > 2800) return;
-      const w = Math.max(3, (pylon.gateEdge ? 16 : 18) * base.s);
+      const w = Math.max(3, 15 * base.s);
 
       ctx.strokeStyle = pylon.hit ? "rgba(239,68,68,.35)" : "#fb923c";
       ctx.lineWidth = w;
@@ -1264,6 +2301,72 @@
     }
 
     function drawScenery(item) {
+      if (item.type === "tower") {
+        const baseY = item.y ?? groundY;
+        const halfW = (item.w || 80) * 0.5;
+        const leftBase = projectPoint(item.x - halfW, baseY, item.z);
+        const rightBase = projectPoint(item.x + halfW, baseY, item.z);
+        const leftTop = projectPoint(item.x - halfW, baseY + (item.h || 420), item.z);
+        const rightTop = projectPoint(item.x + halfW, baseY + (item.h || 420), item.z);
+        if (!leftBase || !rightBase || !leftTop || !rightTop || leftBase.z > 3600) return;
+        const base = projectPoint(item.x, baseY, item.z);
+        if (!base) return;
+        const width = Math.max(5, Math.hypot(rightBase.x - leftBase.x, rightBase.y - leftBase.y));
+        const glow = item.glow || 0.18;
+        ctx.fillStyle = item.hit ? "rgba(239,68,68,.24)" : `rgba(120, 156, 188, ${0.22 + glow})`;
+        ctx.beginPath();
+        ctx.moveTo(leftBase.x, leftBase.y);
+        ctx.lineTo(rightBase.x, rightBase.y);
+        ctx.lineTo(rightTop.x, rightTop.y);
+        ctx.lineTo(leftTop.x, leftTop.y);
+        ctx.closePath();
+        ctx.fill();
+
+        const inset = 0.18;
+        const mix = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+        const innerLeftBase = mix(leftBase, rightBase, inset);
+        const innerRightBase = mix(rightBase, leftBase, inset);
+        const innerLeftTop = mix(leftTop, rightTop, inset);
+        const innerRightTop = mix(rightTop, leftTop, inset);
+        ctx.fillStyle = item.hit ? "rgba(254,202,202,.20)" : `rgba(210, 228, 244, ${0.18 + glow * 0.5})`;
+        ctx.beginPath();
+        ctx.moveTo(innerLeftBase.x, innerLeftBase.y);
+        ctx.lineTo(innerRightBase.x, innerRightBase.y);
+        ctx.lineTo(innerRightTop.x, innerRightTop.y);
+        ctx.lineTo(innerLeftTop.x, innerLeftTop.y);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = item.hit ? "rgba(254,202,202,.45)" : "rgba(236, 246, 255, 0.44)";
+        ctx.lineWidth = Math.max(1, 1.6 * base.s);
+        ctx.beginPath();
+        ctx.moveTo(leftBase.x, leftBase.y);
+        ctx.lineTo(rightBase.x, rightBase.y);
+        ctx.lineTo(rightTop.x, rightTop.y);
+        ctx.lineTo(leftTop.x, leftTop.y);
+        ctx.closePath();
+        ctx.stroke();
+
+        const heightScreen = Math.max(10, Math.hypot(leftBase.x - leftTop.x, leftBase.y - leftTop.y));
+        const windowRows = Math.min(18, Math.max(4, Math.floor(heightScreen / 18)));
+        const windowCols = Math.min(5, Math.max(2, Math.floor(width / 12)));
+        ctx.fillStyle = item.hit ? "rgba(254,226,226,.30)" : "rgba(250, 244, 169, 0.24)";
+        for (let row = 0; row < windowRows; row += 1) {
+          const rowT = (row + 0.5) / windowRows;
+          const rowLeft = mix(innerLeftTop, innerLeftBase, rowT);
+          const rowRight = mix(innerRightTop, innerRightBase, rowT);
+          for (let col = 0; col < windowCols; col += 1) {
+            const colT = windowCols === 1 ? 0.5 : col / (windowCols - 1);
+            const px = rowLeft.x + (rowRight.x - rowLeft.x) * colT;
+            const py = rowLeft.y + (rowRight.y - rowLeft.y) * colT;
+            ctx.beginPath();
+            ctx.arc(px, py, Math.max(1.2, 2.2 * base.s), 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        return;
+      }
+
       const base = projectPoint(item.x, -110, item.z);
       if (!base || base.z > 2800) return;
       const h = (item.h || (item.type === "tree" ? 46 : 16)) * base.s;
@@ -1356,7 +2459,8 @@
       const lit = Math.min(4, Math.floor(elapsed) + 1);
       const labels = ["●", "●", "●", "●"];
       const briefing = roundBriefing(game.round);
-      const stars = "★".repeat(briefing.difficulty) + "☆".repeat(5 - briefing.difficulty);
+      const level = Math.max(1, Math.min(10, briefing.difficulty || 1));
+      const stars = `LV ${level}`;
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -1422,22 +2526,12 @@
     }
 
     function drawPlaneHud() {
+      const aircraft = game.aircraft || AIRCRAFTS[0];
       ctx.save();
       ctx.translate(centerX, H * 0.66);
-      ctx.rotate(game.roll * 0.62 + game.loopAngle);
-      ctx.strokeStyle = "#f8fafc";
-      ctx.fillStyle = "rgba(14,165,233,.22)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(0, -16);
-      ctx.lineTo(44, 12);
-      ctx.lineTo(8, 8);
-      ctx.lineTo(0, 22);
-      ctx.lineTo(-8, 8);
-      ctx.lineTo(-44, 12);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      ctx.rotate(game.roll * 0.62);
+      drawBoostEffect(ctx, aircraft, 1, 0.45 + input.throttle * 0.7);
+      drawAircraftShape(aircraft, 1, aircraft.color, aircraft.stroke);
       ctx.restore();
 
       ctx.strokeStyle = "rgba(255,255,255,.65)";
@@ -1450,28 +2544,64 @@
       ctx.stroke();
     }
 
-    function drawRival() {
-      if (!game.rival) return;
-      if (game.rival.finished) return;
-      const heightOffset = game.phase === "countdown" ? 28 : 32;
-      const p = projectPoint(game.rival.x, game.rival.y + heightOffset, game.rival.z);
-      if (!p || p.z > 3000) return;
-      const size = Math.max(4, 24 * p.s);
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(game.rival.heading - game.heading - game.roll * 0.2);
-      ctx.fillStyle = "rgba(239,68,68,.75)";
-      ctx.strokeStyle = "#fecaca";
-      ctx.lineWidth = Math.max(1, 2 * p.s);
-      ctx.beginPath();
-      ctx.moveTo(0, -size);
-      ctx.lineTo(size * 1.4, size * 0.7);
-      ctx.lineTo(0, size * 0.25);
-      ctx.lineTo(-size * 1.4, size * 0.7);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
+    function drawAircraftShape(aircraft, scaleMul, fill, stroke) {
+      drawAircraftShapeTo(ctx, aircraft, scaleMul, fill, stroke);
+    }
+
+    function drawBoostEffect(targetCtx, aircraft, scaleMul, intensity) {
+      const shape = aircraft?.shape || "standard";
+      const power = Math.max(0.15, Math.min(1.2, intensity));
+      const unit = 22 * scaleMul;
+      const tailWidth = shape === "broad" ? 0.62 : shape === "heavy" ? 0.68 : shape === "fang" ? 0.42 : 0.52;
+      const tailLength = shape === "dart" ? 2.1 : shape === "heavy" ? 1.45 : shape === "fang" ? 1.75 : 1.6;
+      const spread = shape === "broad" ? 0.76 : shape === "heavy" ? 0.58 : 0.48;
+      targetCtx.save();
+      targetCtx.globalCompositeOperation = "screen";
+      const alpha = 0.18 + power * 0.24;
+      targetCtx.fillStyle = `rgba(255, 241, 118, ${alpha})`;
+      targetCtx.beginPath();
+      targetCtx.moveTo(-tailWidth * unit, 0.70 * unit);
+      targetCtx.quadraticCurveTo(0, (tailLength + 0.35 * power) * unit, tailWidth * unit, 0.70 * unit);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.fillStyle = `rgba(125, 211, 252, ${0.16 + power * 0.18})`;
+      targetCtx.beginPath();
+      targetCtx.moveTo(-spread * unit, 0.62 * unit);
+      targetCtx.quadraticCurveTo(0, (tailLength + 0.85 * power) * unit, spread * unit, 0.62 * unit);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.restore();
+    }
+
+    function drawRivals() {
+      if (!game.rivals || game.rivals.length === 0) return;
+      const drawn = [];
+      for (let i = 0; i < game.rivals.length; i += 1) {
+        const rival = game.rivals[i];
+        if (!rival || rival.finished) continue;
+        const heightOffset = game.phase === "countdown" ? 28 : 32;
+        const p = projectPoint(rival.x, rival.y + heightOffset, rival.z);
+        if (!p || p.z > 3000) continue;
+        const size = Math.max(4, 24 * p.s);
+        const aircraft = rival.aircraft || AIRCRAFTS[(i + 1) % AIRCRAFTS.length];
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(rival.heading - game.heading - game.roll * 0.2);
+        drawBoostEffect(ctx, aircraft, size / 22, rival.kind === "ghost" ? 0.42 : 0.68);
+        drawAircraftShape(aircraft, size / 22, aircraft.color, aircraft.stroke);
+        ctx.restore();
+        drawn.push({ rival, aircraft, p, size });
+      }
+      drawn.sort((a, b) => b.size - a.size);
+      const labelLimit = currentFieldSize() <= 5 ? drawn.length : Math.min(4, drawn.length);
+      for (let i = 0; i < labelLimit; i += 1) {
+        const { rival, aircraft, p, size } = drawn[i];
+        ctx.fillStyle = "rgba(224, 242, 254, 0.92)";
+        ctx.font = `${Math.max(9, 10 * p.s + 1)}px DotGothic16`;
+        ctx.textAlign = "center";
+        const aircraftLabel = aircraft.name.replace("号", "");
+        ctx.fillText(`${rival.name} / ${aircraftLabel}`, p.x, p.y - size - 8);
+      }
     }
 
     function drawDamage() {
@@ -1533,7 +2663,7 @@
       ctx.moveTo(x, top);
       ctx.lineTo(x, bottom);
       ctx.stroke();
-      for (let a = -200; a <= 900; a += 50) {
+      for (let a = -200; a <= 1200; a += 50) {
         const y = top + h / 2 - (a - alt) * 0.34;
         if (y < top || y > bottom) continue;
         const major = a % 100 === 0;
@@ -1587,6 +2717,7 @@
     }
 
     function update(dt) {
+      const aircraft = game.aircraft || AIRCRAFTS[0];
       applyTiltInput();
       applyGamepadInput();
       if (controlMode !== "tilt" && controlMode !== "gamepad" && stickPointer === null) {
@@ -1596,6 +2727,7 @@
       if (game.phase === "countdown") {
         const elapsed = (performance.now() - game.countdownStartMs) / 1000;
         game.roll += (0 - game.roll) * Math.min(1, dt * 4);
+        updateCamera(dt);
         if (elapsed >= 3.2) {
           game.phase = "race";
           game.totalStartMs = performance.now();
@@ -1609,25 +2741,26 @@
         }
         return;
       }
-      const turnRate = 1.65 - Math.min(0.55, Math.max(0, game.speed - 320) * 0.001);
+      const turnRate = (1.65 - Math.min(0.55, Math.max(0, game.speed - 320) * 0.001)) * aircraft.turnMul;
       game.heading += input.x * turnRate * dt;
-      game.altitude += input.y * 175 * dt;
-      game.altitude = Math.max(minAlt, Math.min(maxAlt, game.altitude));
       game.roll += (input.x * 1.45 - game.roll) * Math.min(1, dt * 5.8);
-      updateLoop(dt);
 
       const throttle = Math.max(input.boost ? 1 : 0, input.throttle || 0);
       if (controlMode === "gamepad") {
         const accel = 430 * throttle - 135 * (1 - throttle);
-        game.speed = Math.max(180, Math.min(maxBoostSpeed, game.speed + accel * dt));
+        game.speed = Math.max(180, Math.min(maxBoostSpeed * aircraft.boostMul, game.speed + accel * aircraft.speedMul * dt));
       } else {
-        const targetSpeed = cruiseSpeed + (maxBoostSpeed - cruiseSpeed) * throttle;
+        const targetSpeed = cruiseSpeed * aircraft.speedMul + (maxBoostSpeed * aircraft.boostMul - cruiseSpeed * aircraft.speedMul) * throttle;
         game.speed += (targetSpeed - game.speed) * Math.min(1, dt * 1.8);
       }
+      game.altitude += input.y * 175 * aircraft.climbMul * dt;
+      game.altitude = Math.max(minAlt, Math.min(maxAlt, game.altitude));
+      updateCamera(dt);
       game.distance += game.speed * dt;
       game.planeX += Math.sin(game.heading) * game.speed * dt;
       game.planeZ += Math.cos(game.heading) * game.speed * dt;
-      updateRival();
+      updateRivals();
+      game.racePosition = currentRacePosition();
       updateAudio();
 
       if (game.phase === "landing") {
@@ -1636,10 +2769,10 @@
       }
 
       const gate = game.gates[game.gateIndex];
-      if (gate && distance2d(gate.x, gate.z, game.planeX, game.planeZ) < 72) {
+      if (gate && distance2d(gate.x, gate.z, game.planeX, game.planeZ) < 132) {
         const dx = Math.abs(lateralError(gate));
-        const dy = Math.abs(gate.y - (game.altitude - 150));
-        if (dx < 86 && dy < 72) {
+        const dy = Math.abs(gate.y - playerWorldY());
+        if (dx < 118 && dy < 98) {
           gate.passed = true;
           game.gateIndex += 1;
           hitSound("gate");
@@ -1654,16 +2787,31 @@
 
       for (const pylon of game.pylons) {
         if (pylon.hit) continue;
-        if (distance2d(pylon.x, pylon.z, game.planeX, game.planeZ) < 34) {
+        if (distance2d(pylon.x, pylon.z, game.planeX, game.planeZ) < 44) {
           const dx = Math.abs(pylon.x - game.planeX);
-          const dy = Math.abs(0 - (game.altitude - 150));
-          const hitWidth = pylon.gateEdge ? 18 : 26;
-          if (dx < hitWidth && dy < 86) {
+          const dy = Math.abs((pylon.y + pylon.h * 0.5) - playerWorldY());
+          const hitWidth = pylon.gateEdge ? 22 : 26;
+          if (dx < hitWidth && dy < pylon.h * 0.58) {
             pylon.hit = true;
             game.damage = Math.min(100, game.damage + 18);
             hitSound("pylon");
             setMessage("パイロン接触！機体を立て直せ。", 1300);
           }
+        }
+      }
+
+      for (const item of game.scenery || []) {
+        if (item.type !== "tower" || item.hit) continue;
+        const halfW = (item.w || 80) * 0.5;
+        const halfD = (item.d || 80) * 0.5;
+        const dx = Math.abs(item.x - game.planeX);
+        const dz = Math.abs(item.z - game.planeZ);
+        const dy = playerWorldY() - (item.y ?? groundY);
+        if (dx < halfW + 18 && dz < halfD + 18 && dy > 0 && dy < (item.h || 420)) {
+          item.hit = true;
+          game.damage = Math.min(100, game.damage + 24);
+          hitSound("pylon");
+          setMessage("高層ビル接触！市街地を抜けろ！", 1400);
         }
       }
 
@@ -1686,27 +2834,56 @@
       }
     }
 
-    function updateRival() {
-      if (!game.rival || game.phase === "countdown") return;
+    function racerProgressValue(gateIndex, dist) {
+      return gateIndex * 100000 - dist;
+    }
+
+    function currentRacePosition(elapsedOverride = null) {
+      const elapsed = elapsedOverride ?? ((performance.now() - game.totalStartMs) / 1000);
+      if (game.phase === "landing" || !game.gates[game.gateIndex]) {
+        const beatenBy = (game.rivals || []).filter((rival) => elapsed >= (rival.totalTime || Number.POSITIVE_INFINITY)).length;
+        return 1 + beatenBy;
+      }
+      const gate = game.gates[game.gateIndex];
+      const playerDist = gate ? distance2d(gate.x, gate.z, game.planeX, game.planeZ) : 0;
+      const playerProgress = racerProgressValue(game.gateIndex, playerDist);
+      const values = [playerProgress, ...(game.rivals || []).map((rival) => rival.progress || 0)];
+      values.sort((a, b) => b - a);
+      return values.indexOf(playerProgress) + 1;
+    }
+
+    function updateRivals() {
+      if (!game.rivals || game.rivals.length === 0 || game.phase === "countdown") return;
       const elapsed = (performance.now() - game.totalStartMs) / 1000;
-      if (game.rival.kind === "ghost") {
-        const pos = sampleFromGhost(game.rival.samples, elapsed * 1000);
-        if (!pos) return;
-        game.rival.x = pos.x;
-        game.rival.y = pos.y;
-        game.rival.z = pos.z;
-        game.rival.heading = pos.h;
-        game.rival.roll = pos.r || 0;
-        game.rival.finished = elapsed >= game.rival.totalTime;
-      } else {
-        const t = Math.min(1, elapsed / game.rival.totalTime);
-        const pos = interpolatePath(game.coursePath, t);
-        if (!pos) return;
-        game.rival.x = pos.x;
-        game.rival.y = pos.y;
-        game.rival.z = pos.z;
-        game.rival.heading = pos.heading;
-        game.rival.finished = t >= 1;
+      for (const rival of game.rivals) {
+        if (rival.kind === "ghost") {
+          const pos = sampleFromGhost(rival.samples, elapsed * 1000);
+          if (!pos) continue;
+          rival.x = pos.x + (rival.laneOffset || 0);
+          rival.y = pos.y;
+          rival.z = pos.z;
+          rival.heading = pos.h;
+          rival.roll = pos.r || 0;
+          rival.finished = elapsed >= rival.totalTime;
+          rival.progress = racerProgressValue(Math.min(game.gates.length, Math.floor((elapsed / Math.max(rival.totalTime, 0.1)) * game.gates.length)), 0);
+        } else {
+          const baseT = Math.min(1, elapsed / rival.totalTime);
+          let t = baseT;
+          if (rival.style === "speed") t = Math.min(1, Math.pow(baseT, 0.91) + Math.sin(baseT * Math.PI * 2.0) * 0.008);
+          else if (rival.style === "line") t = Math.min(1, baseT + Math.sin(baseT * Math.PI * 1.4) * 0.018);
+          else if (rival.style === "steady") t = Math.min(1, baseT + Math.sin(baseT * Math.PI) * 0.005);
+          const pos = interpolatePath(game.coursePath, t);
+          if (!pos) continue;
+          const lane = (rival.laneOffset || 0) + Math.sin(elapsed * 0.55 + (rival.seed || 0)) * (rival.lineWave || 0);
+          const nx = Math.cos(pos.heading);
+          const nz = -Math.sin(pos.heading);
+          rival.x = pos.x + nx * lane;
+          rival.y = pos.y;
+          rival.z = pos.z + nz * lane;
+          rival.heading = pos.heading;
+          rival.finished = t >= 1;
+          rival.progress = racerProgressValue(Math.floor(t * game.gates.length), (1 - t) * 1000);
+        }
       }
     }
 
@@ -1775,7 +2952,7 @@
     }
 
     function finishRound() {
-      if (game.round < 5) {
+      if (game.round < TOTAL_ROUNDS) {
         finish(true, "round_clear");
         return;
       }
@@ -1814,33 +2991,14 @@
       return dx * Math.cos(game.heading) - dz * Math.sin(game.heading);
     }
 
-    function updateLoop(dt) {
-      const wantsLoop = input.y > 0.82 && game.altitude > 520 && game.speed > 420;
-      if (wantsLoop && !game.looping) {
-        game.looping = true;
-        setMessage("LOOP START! そのまま引き続けろ！", 900);
-      }
-      if (game.looping) {
-        game.loopAngle += dt * 4.2;
-        game.altitude = Math.max(180, game.altitude - 95 * dt);
-        if (game.loopAngle >= Math.PI * 2) {
-          game.loopAngle = 0;
-          game.looping = false;
-          setMessage("宙返り成功！", 1000);
-        }
-      } else {
-        game.loopAngle *= Math.max(0, 1 - dt * 4);
-      }
-    }
-
     function draw() {
       drawGrid();
       drawRunway();
-      for (const item of game.scenery) drawScenery(item);
       for (const marker of game.courseMarkers) drawCourseMarker(marker);
+      for (const item of game.scenery || []) drawScenery(item);
       for (const gate of game.gates) drawGate(gate, game.gates.indexOf(gate));
       for (const pylon of game.pylons) drawPylon(pylon);
-      drawRival();
+      drawRivals();
       drawPlaneHud();
       drawHud();
       drawDamage();
@@ -1863,11 +3021,22 @@
       const elapsed = (now - game.totalStartMs) / 1000;
       ui.speed.textContent = `${Math.round(game.speed)} km/h`;
       ui.alt.textContent = `${Math.round(game.altitude)} m`;
-      ui.time.textContent = `R${game.round} ${elapsed.toFixed(2)}`;
-      const diff = game.rival ? elapsed - game.rival.totalTime * Math.min(1, game.gateIndex / game.gates.length) : 0;
+      ui.time.textContent = game.round >= GRAND_PRIX_START_ROUND && game.tournament
+        ? `R${game.round} ${elapsed.toFixed(2)} / ${game.tournament.playerPoints}pt`
+        : `R${game.round} ${elapsed.toFixed(2)}`;
+      const rivals = game.rivals || [];
+      const gate = game.gates[game.gateIndex];
+      const playerDist = gate ? distance2d(gate.x, gate.z, game.planeX, game.planeZ) : 0;
+      const playerProgress = racerProgressValue(game.gateIndex, playerDist);
+      const leaderProgress = Math.max(playerProgress, ...rivals.map((rival) => rival.progress || 0));
+      const progressGap = game.phase === "landing"
+        ? Math.max(0, ...rivals.map((rival) => ((rival.totalTime || 9999) - elapsed) * -100))
+        : leaderProgress - playerProgress;
       const guide = guideInfo();
+      const fieldSize = currentFieldSize();
+      const gpMeta = game.round >= GRAND_PRIX_START_ROUND && game.tournament ? ` / GP ${game.tournament.playerPoints}pt` : "";
       ui.guide.innerHTML = guide
-        ? `<span class="guide-arrow">${guide.arrow}</span><span class="guide-meta">${game.phase === "landing" ? "RUNWAY" : `GATE ${game.gateIndex + 1}`} / ${Math.round(guide.dist)}m / RIVAL ${diff >= 0 ? "+" : ""}${diff.toFixed(1)}s</span>`
+        ? `<span class="guide-arrow">${guide.arrow}</span><span class="guide-meta">${game.phase === "landing" ? "RUNWAY" : `GATE ${game.gateIndex + 1}`} / ${Math.round(guide.dist)}m / POS ${game.racePosition || 1}/${fieldSize} / GAP ${Math.round(progressGap * 0.01)}${gpMeta}</span>`
         : `<span class="guide-arrow">★</span><span class="guide-meta">FINAL</span>`;
       if (game.altitude < 45 && now > game.messageUntil) {
         ui.message.textContent = "高度低下！地面効果で機体が暴れるぞ。";
@@ -1880,6 +3049,9 @@
       cancelAnimationFrame(raf);
       stopAudio();
       const elapsedMs = performance.now() - game.totalStartMs;
+      game.racePosition = currentRacePosition(elapsedMs / 1000);
+      const fieldSize = currentFieldSize();
+      const gpSummary = applyTournamentPoints(success || reason === "round_clear");
       if (success || reason === "round_clear") {
         saveGhost({
           name: localStorage.getItem("airrace_name") || "PILOT",
@@ -1889,7 +3061,7 @@
           created_at: new Date().toISOString(),
         });
       }
-      const recordRound = success ? 5 : Math.max(0, game.round - 1);
+      const recordRound = success ? TOTAL_ROUNDS : Math.max(0, game.round - 1);
       const recordScore = encodeScore(recordRound, elapsedMs);
       const title = ui.result.querySelector("h1");
       ui.guide.style.display = "none";
@@ -1898,14 +3070,18 @@
       ui.nameEntry.style.display = "none";
       if (reason === "round_clear") {
         title.textContent = `ROUND ${game.round} CLEAR`;
-        const result = game.rival?.finished ? "YOU LOSE" : "YOU WIN";
-        ui.resultText.textContent = `${result} / TOTAL ${formatTime(elapsedMs)} / NEXT ROUND ${game.round + 1}`;
+        const result = (game.racePosition || 1) === 1 ? "YOU WIN" : `POS ${game.racePosition || 1}/${fieldSize}`;
+        ui.resultText.innerHTML = gpSummary
+          ? `${result} / +${gpSummary.playerRoundPoints}pt<br>TOTAL ${game.tournament.playerPoints}pt / NEXT ROUND ${game.round + 1}<br>${gpSummary.table}`
+          : `${result} / TOTAL ${formatTime(elapsedMs)} / NEXT ROUND ${game.round + 1}`;
         ui.nextRound.style.display = "inline-block";
         ui.retry.style.display = "none";
       } else if (success) {
         title.textContent = "FINISH";
-        const result = game.rival?.finished ? "YOU LOSE" : "YOU WIN";
-        ui.resultText.textContent = `${result} / TOTAL TIME ${formatTime(elapsedMs)} / DAMAGE ${Math.round(game.damage)}%`;
+        const result = (game.racePosition || 1) === 1 ? "YOU WIN" : `POS ${game.racePosition || 1}/${fieldSize}`;
+        ui.resultText.innerHTML = gpSummary
+          ? `${result} / +${gpSummary.playerRoundPoints}pt / TOTAL ${game.tournament.playerPoints}pt<br>FINAL TIME ${formatTime(elapsedMs)} / DAMAGE ${Math.round(game.damage)}%<br>${gpSummary.table}`
+          : `${result} / TOTAL TIME ${formatTime(elapsedMs)} / DAMAGE ${Math.round(game.damage)}%`;
         if (scoreQualifies(recordScore)) {
           ui.nameEntry.style.display = "block";
           ui.retry.style.display = "none";
@@ -1914,11 +3090,14 @@
         }
       } else {
         title.textContent = reason === "crash" ? "CRASH" : "GAME OVER";
-        ui.resultText.textContent = reason === "crash"
+        ui.resultText.innerHTML = reason === "crash"
           ? `GROUND IMPACT / ROUND ${game.round}`
           : `DAMAGE ${Math.round(game.damage)}% / ROUND ${game.round}`;
+        if (gpSummary) {
+          ui.resultText.innerHTML += `<br>LAST PLACE / +${gpSummary.playerRoundPoints}pt<br>${gpSummary.table}`;
+        }
         if (recordRound >= 1 && scoreQualifies(recordScore)) {
-          ui.resultText.textContent += ` / RECORD round${recordRound}`;
+          ui.resultText.innerHTML += ` / RECORD round${recordRound}`;
           ui.nameEntry.style.display = "block";
           ui.retry.style.display = "none";
         }
@@ -1928,23 +3107,30 @@
     }
 
     async function start() {
-      await loadGhosts();
-      resetGame();
-      raf = requestAnimationFrame(frame);
+      await startRound(1);
+    }
+
+    async function startMainRace() {
+      if (selectedStartRound >= GRAND_PRIX_START_ROUND) {
+        const carry = { totalStartMs: performance.now(), tournament: createTournamentState() };
+        await startRound(selectedStartRound, carry);
+        return;
+      }
+      await startRound(selectedStartRound);
     }
 
     document.getElementById("start").addEventListener("click", start);
+    document.getElementById("start-main").addEventListener("click", startMainRace);
     document.getElementById("retry").addEventListener("click", showTitle);
     document.getElementById("next-round").addEventListener("click", () => {
       if (!game) return;
-      const carry = { totalStartMs: game.totalStartMs };
-      resetGame(game.round + 1, carry);
-      raf = requestAnimationFrame(frame);
+      const carry = { totalStartMs: game.totalStartMs, tournament: game.tournament };
+      startRound(game.round + 1, carry);
     });
     document.getElementById("save-score").addEventListener("click", () => {
       if (!game) return;
       const elapsedMs = performance.now() - game.totalStartMs;
-      const recordRound = game.gateIndex >= game.gates.length && game.round >= 5 ? 5 : Math.max(0, game.round - 1);
+      const recordRound = game.gateIndex >= game.gates.length && game.round >= TOTAL_ROUNDS ? TOTAL_ROUNDS : Math.max(0, game.round - 1);
       if (recordRound < 1) {
         showTitle();
         return;
@@ -1957,6 +3143,10 @@
         body: JSON.stringify({ name, score: encodeScore(recordRound, elapsedMs) }),
       }).finally(showTitle);
     });
+    ui.planePrev.addEventListener("click", () => cycleAircraft(-1));
+    ui.planeNext.addEventListener("click", () => cycleAircraft(1));
+    ui.fieldMode.addEventListener("click", cycleFieldMode);
+    ui.roundMode.addEventListener("click", cycleStartRound);
 
     document.addEventListener("gesturestart", (ev) => ev.preventDefault());
     document.addEventListener("dblclick", (ev) => ev.preventDefault());
@@ -2043,6 +3233,7 @@
     function updateButtonHints() {
       const showHints = useGamepadHints();
       ui.start.textContent = showHints ? `× ${buttonLabels.start}` : buttonLabels.start;
+      ui.startMain.textContent = showHints ? `□ ${buttonLabels.startMain}` : buttonLabels.startMain;
       ui.saveScore.textContent = showHints ? `× ${buttonLabels.saveScore}` : buttonLabels.saveScore;
       ui.nextRound.textContent = showHints ? `× ${buttonLabels.nextRound}` : buttonLabels.nextRound;
       ui.retry.textContent = showHints ? `○ ${buttonLabels.retry}` : buttonLabels.retry;
@@ -2091,6 +3282,13 @@
       const crossOnce = gamepadPressedOnce(pad, 0);
       const circleOnce = gamepadPressedOnce(pad, 1);
       const optionsOnce = gamepadPressedOnce(pad, 9);
+      const leftOnce = gamepadPressedOnce(pad, 14);
+      const rightOnce = gamepadPressedOnce(pad, 15);
+
+      if (isVisible(ui.title)) {
+        if (leftOnce) cycleAircraft(-1);
+        if (rightOnce) cycleAircraft(1);
+      }
 
       if (crossOnce) {
         if (isVisible(ui.title)) {
@@ -2102,6 +3300,10 @@
         } else if (isVisible(ui.retry)) {
           ui.retry.click();
         }
+      }
+
+      if (gamepadPressedOnce(pad, 3) && isVisible(ui.title)) {
+        startMainRace();
       }
 
       if (circleOnce || optionsOnce) {
@@ -2149,6 +3351,33 @@
     });
 
     document.addEventListener("keydown", (ev) => {
+      if (isVisible(ui.title)) {
+        if (ev.key === "ArrowLeft" || ev.key.toLowerCase() === "a") {
+          ev.preventDefault();
+          cycleAircraft(-1);
+          return;
+        }
+        if (ev.key === "ArrowRight" || ev.key.toLowerCase() === "d") {
+          ev.preventDefault();
+          cycleAircraft(1);
+          return;
+        }
+        if (ev.key === "Enter" || ev.code === "Space") {
+          ev.preventDefault();
+          start();
+          return;
+        }
+        if (ev.key === "r" || ev.key === "R") {
+          ev.preventDefault();
+          cycleStartRound();
+          return;
+        }
+        if (ev.key === "3") {
+          ev.preventDefault();
+          startMainRace();
+          return;
+        }
+      }
       if (ev.key === "ArrowLeft" || ev.key.toLowerCase() === "a") keyboardTarget.x = -0.72;
       if (ev.key === "ArrowRight" || ev.key.toLowerCase() === "d") keyboardTarget.x = 0.72;
       if (ev.key === "ArrowUp" || ev.key.toLowerCase() === "w") keyboardTarget.y = -0.86;
@@ -2230,7 +3459,6 @@
     resizeCanvas();
     updateButtonHints();
     pollGamepadUi();
-    loadGhosts();
     showTitle();
 
     function drawSplash() {
