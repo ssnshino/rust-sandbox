@@ -19,7 +19,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 const MAX_AIRRACE_GHOSTS: usize = 100;
-const AIRRACE_ROUNDS_JSON: &str = include_str!("airrace_rounds.json");
+const AIRRACE_ROUNDS_JSON: &str = include_str!("airrace/airrace_rounds.json");
 
 #[derive(Serialize, Deserialize, Clone)]
 struct AirraceGhost {
@@ -28,6 +28,8 @@ struct AirraceGhost {
     time_ms: u32,
     samples: Vec<serde_json::Value>,
     created_at: String,
+    #[serde(default)]
+    status: Option<String>,
 }
 
 struct AirraceGhostStore {
@@ -131,6 +133,9 @@ async fn main() {
         .route("/truckers/refs/:name", get(truckers_ref))
         .route("/ws/truckers",         get(ws_truckers))
         .route("/airrace",             get(airrace_page))
+        .route("/airrace.css",         get(airrace_css))
+        .route("/airrace.js",          get(airrace_js))
+        .route("/airrace/js/:name",    get(airrace_js_module))
         .route("/airrace.webmanifest", get(airrace_manifest))
         .route("/api/airrace/round/:round", get(get_airrace_round_bundle))
         .route("/api/airrace/scores",  get(get_airrace_scores).post(post_airrace_score))
@@ -151,14 +156,31 @@ async fn dungeon_page()  -> Html<String> {
     Html(include_str!("dungeon.html").replace("__BUILD_HASH__", &build_hash))
 }
 async fn fighting_page() -> Html<&'static str> { Html(include_str!("fighting.html")) }
-async fn airrace_page()  -> Html<&'static str> { Html(include_str!("airrace.html")) }
+async fn airrace_page()  -> Html<&'static str> { Html(include_str!("airrace/airrace.html")) }
+async fn airrace_css() -> impl IntoResponse {
+    ([(CONTENT_TYPE, "text/css; charset=utf-8")], include_str!("airrace/airrace.css")).into_response()
+}
+async fn airrace_js() -> impl IntoResponse {
+    ([(CONTENT_TYPE, "application/javascript; charset=utf-8")], include_str!("airrace/airrace.js")).into_response()
+}
+async fn airrace_js_module(Path(name): Path<String>) -> impl IntoResponse {
+    let source = match name.as_str() {
+        "config.js" => include_str!("airrace/js/config.js"),
+        "course.js" => include_str!("airrace/js/course.js"),
+        "aircraft.js" => include_str!("airrace/js/aircraft.js"),
+        "game.js" => include_str!("airrace/js/game.js"),
+        "render.js" => include_str!("airrace/js/render.js"),
+        _ => return StatusCode::NOT_FOUND.into_response(),
+    };
+    ([(CONTENT_TYPE, "application/javascript; charset=utf-8")], source).into_response()
+}
 async fn airrace_manifest() -> impl IntoResponse {
     (
         [
             (CONTENT_TYPE, "application/manifest+json; charset=utf-8"),
             (CACHE_CONTROL, "public, max-age=3600"),
         ],
-        include_str!("airrace.webmanifest"),
+        include_str!("airrace/airrace.webmanifest"),
     ).into_response()
 }
 async fn truckers_page() -> Html<&'static str> { Html(include_str!("truckers/truckers.html")) }
