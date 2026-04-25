@@ -1,6 +1,6 @@
 # ベクター・エアレース 仕様書
 
-最終更新: 2026-04-24 JST
+最終更新: 2026-04-25 JST
 
 ## 1. 概要
 
@@ -14,26 +14,35 @@
 ```mermaid
 flowchart TD
     A[メニュー] --> B[スタート画面]
-    B --> C[ROUND 1]
-    C --> D[ROUND CLEAR]
-    D --> E[ROUND 2-5]
-    E --> F{結果}
-    F -->|ROUND 5 FINISH| G[記録判定]
-    F -->|CRASH / GAME OVER| B
-    G -->|5位以内| H[名前入力]
-    G -->|記録外| B
-    H --> B
+    B --> C["ROUND 1 または START ROUND N"]
+    C --> D[ROUND CLEAR / FINISH / CRASH]
+    D --> E[リザルト画面]
+    E -->|NEXT ROUND| F[次ROUND]
+    E -->|TITLE| B
+    E -->|RECORD UPDATE| G[名前入力]
+    G --> B
 ```
+
+## 2.1 現行実装メモ 2026-04-25
+
+- メインモードは `World Grand Prix` で、`ROUND 1-2` が導入、`ROUND 3-10` が本戦
+- スタート画面はスクロール可能な HTML ページで、`PILOT NAME`、操作モード、機体選択、フィールド試験モード、開始ROUND選択を持つ
+- リザルト画面もスクロール可能で、1位機体プレビュー、ラウンド順位、GP総合順位、名前入力を表示する
+- 自機は 5 機から選択でき、色だけでなくシルエットも異なる
+- ゴーストと CPU は混在可能で、同名エントリーは同一レースへ重複参加させない
+- `FIELD TEST 8 / 12 / 16 / 24` により多機数テストが可能
 
 ## 3. スタート画面
 
-スタート画面は次を表示する。
+スタート画面はスクロール可能な HTML ページで、次を表示する。
 
 - タイトル
-- ゲーム説明
-- ランキング上位5件
-- START ボタン
-- メニューへ戻るリンク
+- パイロット名入力
+- 操作モード選択
+- 機体選択
+- フィールドモード切り替え
+- 開始ROUND切り替え
+- `ROUND 1 START` と `ROUND N START`
 
 ランキングはサーバ側 `airrace_scores.json` に保存する。
 API は `/api/airrace/scores` を使う。
@@ -78,24 +87,30 @@ UI操作は押しっぱなしではなく、ボタンを押した瞬間だけ反
 
 ## 5. ROUND 仕様
 
-全5ROUND制とする。
+現行は全10ROUND制とする。
 
 | ROUND | 方針 |
 |---:|---|
-| 1 | 操作に慣れるため、ゲート間隔を非常に広くし、左右上下の揺さぶりを弱くする |
-| 2 | 少しカーブを増やす |
-| 3 | 標準難度。高度変化も目立たせる |
-| 4 | 上下左右の揺さぶりを強める |
-| 5 | 最終面。ゲート間隔を詰め、上下左右に大きく振る |
+| 1 | 離陸訓練。自機のみ |
+| 2 | 導入レース。緩い高低差と少数ライバル |
+| 3 | USA 開幕戦 |
+| 4 | France River Circuit |
+| 5 | Italy Coastal Sprint |
+| 6 | Netherlands Harbor Wind |
+| 7 | Germany Rhine Industrial |
+| 8 | China Megacity Ring |
+| 9 | UAE Sky Dune Rush |
+| 10 | Japan Grand Final |
 
 ROUND 1 は現在の標準間隔の約3倍から開始し、ROUND が進むごとに間隔を短くする。
 
 ### 5.1 現在のコース方針
 
-- ROUND 1-5 は、固定レイアウトのコースを ROUND ごとに持つ。
-- ROUND 1-3 は、スタートから外周へ流れ、最後に滑走路後方へ回り込んで着陸進入する骨格を共有する。
-- ROUND 4 は左右振りと高低差を大きくした高難度コースとする。
-- ROUND 5 は集大成として、ゲート数を増やし、Uターンを含む難コースとする。
+- ROUND 1-10 は `airrace_rounds.json` の固定レイアウトをラウンド開始時に取得する
+- ROUND 1-2 は導入用で、広めのゲートと短めのレース長を優先する
+- ROUND 3-10 は各国テーマに応じて背景色、遠景、地面表現、高度プロファイルを変える
+- ROUND 9 UAE は市街地ビル群を持つ特設コース
+- 全ラウンドとも最終ゲート通過後は着陸進入フェーズへ移る
 
 ### 5.2 ROUND 別の現在地
 
@@ -112,10 +127,13 @@ ROUND 1 は現在の標準間隔の約3倍から開始し、ROUND が進むご�
 
 ## 6. クリア条件
 
-各ROUNDは、すべてのゲートを順番に通過すると `ROUND CLEAR` となる。
+各ROUNDは、すべてのゲートを順番に通過し、着陸条件を満たすと `ROUND CLEAR` または `FINISH` となる。
 
-ROUND 5 をクリアすると `FINISH` となり、通しタイムをランキング判定する。
-5位以内に入った場合のみ名前入力欄を表示し、保存後にスタート画面へ戻る。
+- ROUND 1-9 は `ROUND CLEAR`
+- ROUND 10 は `FINISH`
+
+リザルト画面では、ラウンド順位、獲得ポイント、GP総合順位を表示する。
+記録更新時のみ名前入力欄を表示し、保存後にスタート画面へ戻る。
 
 ## 7. 失敗条件
 
@@ -148,15 +166,14 @@ CRASH / GAME OVER ではランキング登録は行わない。
 飛行中の計器は Canvas 内に描画する。
 HTML の上部メーターはスマホ画面で表示領域を圧迫するため、ゲーム画面外には出さない。
 
-- 方角メーターは画面上部中央に表示する。
-- ROUND は右上、経過時間はその下に表示する。
-- 次ゲート誘導矢印は方角メーターと重ならないよう、方角メーターより下に表示する。
-- スピードメーターは左上に丸型針メーターとして表示する。
-- 高度計は右側に縦テープ式メーターとして表示する。
-- DAMAGE は必要時に右上へ警告表示する。
-- `← MENU` はゲーム画面内左上にオーバーレイ表示する。
-- `GATE CLEAR` などのメッセージはゲーム画面内下部にオーバーレイ表示する。
-- メッセージ表示欄は操作の邪魔をしないよう `pointer-events: none` とする。
+- 上中央に大きい速度数字を表示する
+- 下中央に速度メーターを表示する
+- 右側に縦テープ式高度計を表示する
+- 左上にラウンド国名つきミニマップを表示する
+- ミニマップ下に参加者一覧を表示する
+- 右上に `ROUND / TIME / DAMAGE / GP` を表示する
+- `GATE CLEAR` などのメッセージは画面中央寄りのカットインとして短時間表示する
+- 次ゲート誘導矢印はスタート説明中は出さず、飛行中のみ表示対象とする
 
 ## 9. 音
 
@@ -205,9 +222,21 @@ iPhone Safari の通常タブでは、URL欄やタブバーをWebページ側か
 
 ## 11. 実装
 
-現時点では `app/src/airrace.html` の単一HTMLプロトタイプとして実装する。
+現行実装は `app/src/airrace/` 配下へ分割している。
+
+- `app/src/airrace/airrace.html`
+- `app/src/airrace/airrace.css`
+- `app/src/airrace/airrace.js`
+- `app/src/airrace/js/config.js`
+- `app/src/airrace/js/course.js`
+- `app/src/airrace/js/game.js`
+- `app/src/airrace/js/render.js`
+- `app/src/airrace/airrace.webmanifest`
+- `app/src/airrace/airrace_rounds.json`
+
 ランキングは `airrace_scores.json` に保存する。
-スコアAPIは `/api/airrace/scores` を使用する。
+ゴーストは `airrace_ghosts.json` に保存する。
+スコアAPIは `/api/airrace/scores`、ラウンドAPIは `/api/airrace/round/:round`、ゴーストAPIは `/api/airrace/ghosts` を使用する。
 WebSocket は使用しない。
 
 ## 12. ゴースト飛行履歴
@@ -217,8 +246,8 @@ WebSocket は使用しない。
 
 ### 12.1 保存タイミング
 
-ROUND CLEAR または ROUND 5 FINISH 時に、その ROUND の飛行サンプルを保存する。
-クラッシュ時はゴーストとしては保存しない。
+ROUND CLEAR または FINISH 時に、その ROUND の飛行サンプルを保存する。
+また、一定サンプル数を満たしていればクラッシュ時も `DNF` ゴーストとして保存できる。
 
 保存する飛行サンプルは約120ms間隔とし、1件の履歴につき最大1200サンプルまで保持する。
 サーバ側では最新100プレイ分を保持し、古い履歴から削除する。

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#06172b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Air Race">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>ベクター・エアレース</title>
+  <link rel="stylesheet" href="/airrace.css">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/favicon.ico">
+  <link rel="manifest" href="/airrace.webmanifest">
+  <script defer src="/airrace/js/config.js"></script>
+  <script defer src="/airrace/js/course.js"></script>
+  <script defer src="/airrace/js/aircraft.js"></script>
+  <script defer src="/airrace/js/game.js"></script>
+  <script defer src="/airrace/js/render.js"></script>
+  <script defer src="/airrace.js"></script>
+</head>
+<body>
+  <div id="app">
+    <a id="back" href="/">← menu</a>
+    <div id="topbar">
+      <div class="meter"><strong>SPEED</strong><span id="speed">320 km/h</span></div>
+      <div class="meter"><strong>ALT</strong><span id="alt">120 m</span></div>
+      <div class="meter"><strong>TIME</strong><span id="time">00.00</span></div>
+    </div>
+
+    <div id="canvas-wrap">
+      <canvas id="c" width="375" height="500"></canvas>
+      <div id="guide">NEXT GATE →</div>
+      <div id="message">左プニコンで旋回と高度。BOOSTで加速。</div>
+      <div id="controls">
+        <div id="stick"><div id="knob"></div></div>
+        <div id="help">← → 旋回<br>↑ ↓ 高度<br>PCは矢印/WASD + Space</div>
+        <button id="boost">BOOST</button>
+      </div>
+      <section id="title">
+        <div class="title-page">
+          <h1>VECTOR<br>AIR RACE</h1>
+          <p class="lead">5機から自機を選んで参戦<br>Round 3 から World Grand Prix 全10コース。</p>
+          <div class="title-card pilot-card">
+            <label class="title-label" for="title-name">PILOT NAME</label>
+            <input id="title-name" maxlength="12" placeholder="名前を入れてね">
+          </div>
+          <div id="control-mode" class="control-mode">
+            <button id="mode-stick" class="active">プニコン</button>
+            <button id="mode-tilt">傾き操作</button>
+            <button id="mode-gamepad">コントローラ</button>
+          </div>
+          <div id="gamepad-status">PS4/PS5 コントローラは接続後にボタンを1回押してね。</div>
+          <div class="title-card">
+            <div class="title-label">AIRCRAFT</div>
+            <div id="plane-select" class="plane-select">
+              <button id="plane-prev" class="plane-nav" type="button">＜</button>
+              <div id="plane-display" class="plane-display active">
+                <canvas id="plane-preview" width="220" height="42"></canvas>
+                <strong id="plane-name"></strong>
+                <span id="plane-summary"></span>
+              </div>
+              <button id="plane-next" class="plane-nav" type="button">＞</button>
+            </div>
+          </div>
+          <div class="title-card title-settings">
+            <button id="field-mode" class="field-mode" type="button">FIELD NORMAL</button>
+            <button id="round-mode" class="round-mode" type="button">START ROUND 3</button>
+          </div>
+          <div class="start-actions">
+            <button id="start">ROUND 1 START</button>
+            <button id="start-main">ROUND 3 START</button>
+          </div>
+        </div>
+      </section>
+      <section id="result">
+        <div class="result-page">
+          <h1>FINISH</h1>
+          <p class="lead" id="result-text"></p>
+          <div id="result-winner" class="result-card winner-card">
+            <div class="title-label">1ST PLACE</div>
+            <canvas id="result-plane-preview" width="220" height="64"></canvas>
+            <strong id="result-winner-name"></strong>
+            <span id="result-winner-aircraft"></span>
+          </div>
+          <div id="result-standings" class="result-card result-list"></div>
+          <div id="result-total" class="result-card result-list"></div>
+          <div id="name-entry">
+            <div>RECORD UPDATE!</div>
+            <input id="name-input" maxlength="12" placeholder="名前">
+            <button id="save-score">SAVE</button>
+          </div>
+          <div class="result-actions">
+            <button id="next-round">NEXT ROUND</button>
+            <button id="retry">TITLE</button>
+          </div>
+        </div>
+      </section>
+      <section id="loading">
+        <div class="loading-panel">
+          <strong id="loading-label">NOW LOADING</strong>
+          <div class="loading-bar"><div id="loading-fill" class="loading-fill"></div></div>
+          <span id="loading-meta" class="loading-meta"></span>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <script>
+</body>
+</html>
