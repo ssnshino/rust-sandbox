@@ -9,12 +9,16 @@ mod truckers;
 
 use axum::{
     extract::{ws::WebSocketUpgrade, Path, Query, State},
-    http::{header::{CACHE_CONTROL, CONTENT_TYPE}, StatusCode},
+    http::{
+        header::{CACHE_CONTROL, CONTENT_ENCODING, CONTENT_TYPE},
+        HeaderMap, HeaderValue, StatusCode,
+    },
     response::{Html, IntoResponse},
     routing::get,
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use std::path::{Path as FsPath, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -137,6 +141,11 @@ async fn main() {
         .route("/airrace.js",          get(airrace_js))
         .route("/airrace/js/:name",    get(airrace_js_module))
         .route("/airrace.webmanifest", get(airrace_manifest))
+        .route("/airrace3d",           get(airrace3d_index))
+        .route("/airrace3d/",          get(airrace3d_index))
+        .route("/airrace3d/:name",     get(airrace3d_root_file))
+        .route("/airrace3d/Build/:name", get(airrace3d_build_file))
+        .route("/airrace3d/TemplateData/:name", get(airrace3d_template_file))
         .route("/api/airrace/round/:round", get(get_airrace_round_bundle))
         .route("/api/airrace/scores",  get(get_airrace_scores).post(post_airrace_score))
         .route("/api/airrace/ghosts",  get(get_airrace_ghosts).post(post_airrace_ghost))
@@ -182,6 +191,72 @@ async fn airrace_manifest() -> impl IntoResponse {
         ],
         include_str!("airrace/airrace.webmanifest"),
     ).into_response()
+}
+async fn airrace3d_index() -> impl IntoResponse {
+    serve_airrace3d_file(PathBuf::from("index.html")).await
+}
+async fn airrace3d_root_file(Path(name): Path<String>) -> impl IntoResponse {
+    serve_airrace3d_file(PathBuf::from(name)).await
+}
+async fn airrace3d_build_file(Path(name): Path<String>) -> impl IntoResponse {
+    serve_airrace3d_file(PathBuf::from("Build").join(name)).await
+}
+async fn airrace3d_template_file(Path(name): Path<String>) -> impl IntoResponse {
+    serve_airrace3d_file(PathBuf::from("TemplateData").join(name)).await
+}
+async fn serve_airrace3d_file(relative_path: PathBuf) -> axum::response::Response {
+    if !is_safe_static_path(&relative_path) {
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+
+    let path = FsPath::new("src").join("airrace3d").join(&relative_path);
+    let bytes = match tokio::fs::read(&path).await {
+        Ok(bytes) => bytes,
+        Err(_) => return StatusCode::NOT_FOUND.into_response(),
+    };
+
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static(content_type_for_path(&relative_path)));
+    headers.insert(CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    if is_gzip_file(&relative_path) {
+        headers.insert(CONTENT_ENCODING, HeaderValue::from_static("gzip"));
+    }
+
+    (headers, bytes).into_response()
+}
+fn is_safe_static_path(path: &FsPath) -> bool {
+    path.components().all(|component| matches!(component, std::path::Component::Normal(_)))
+}
+fn content_type_for_path(path: &FsPath) -> &'static str {
+    let file_name = path.file_name().and_then(|name| name.to_str()).unwrap_or_default();
+    if file_name.ends_with(".js.gz") {
+        return "application/javascript; charset=utf-8";
+    }
+    if file_name.ends_with(".wasm.gz") {
+        return "application/wasm";
+    }
+    if file_name.ends_with(".data.gz") || file_name.ends_with(".symbols.gz") {
+        return "application/octet-stream";
+    }
+
+    match path.extension().and_then(|ext| ext.to_str()).unwrap_or_default() {
+        "html" => "text/html; charset=utf-8",
+        "js" => "application/javascript; charset=utf-8",
+        "wasm" => "application/wasm",
+        "data" => "application/octet-stream",
+        "symbols" => "application/octet-stream",
+        "json" => "application/json; charset=utf-8",
+        "css" => "text/css; charset=utf-8",
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "ico" => "image/x-icon",
+        "br" => "application/octet-stream",
+        "gz" => "application/gzip",
+        _ => "application/octet-stream",
+    }
+}
+fn is_gzip_file(path: &FsPath) -> bool {
+    path.extension().and_then(|ext| ext.to_str()) == Some("gz")
 }
 async fn truckers_page() -> Html<&'static str> { Html(include_str!("truckers/truckers.html")) }
 async fn truckers_css() -> impl IntoResponse {
