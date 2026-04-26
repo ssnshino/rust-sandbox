@@ -5,6 +5,7 @@
 ## ドキュメント
 
 - [dev-workflow.md](./dev-workflow.md) — 開発・デプロイ手順
+- [snapshots/airrace3d_snapshot_20260426_235137.md](./snapshots/airrace3d_snapshot_20260426_235137.md) — AirRace Unity 3D 2026-04-26 23:51:37 JST スナップショット
 
 ## ゲーム一覧
 
@@ -14,7 +15,7 @@
 | Breakout | [breakout.md](./breakout.md) | `/breakout`, `/ws/breakout`, `/api/breakout/scores` |
 | あやかダンジョン × 平安京エイリアン | [dungeon.md](./dungeon.md) | `/dungeon`, `/ws/dungeon`, `/api/dungeon/scores` |
 | 宇宙トラック野郎 | [truckers_v2.md](./truckers_v2.md) / [旧仕様](./truckers.md) | `/truckers`, `/truckers/refs/:name`, `/ws/truckers` |
-| ベクター・エアレース | [airrace.md](./airrace.md) | `/airrace` |
+| ベクター・エアレース | [airrace.md](./airrace.md) / [Unity 3D版](./airrace_unity.md) / [Unity作業ログ](./airrace_unity_worklog.md) | `/airrace`, `/airrace3d` |
 
 ## 共通アーキテクチャ
 
@@ -59,7 +60,10 @@ rust-sandbox/
 │   ├── dungeon.md          # あやかダンジョン仕様書
 │   ├── truckers.md         # 宇宙トラック野郎 旧仕様書
 │   ├── truckers_v2.md      # 宇宙トラック野郎 v2 仕様書
-│   └── airrace.md          # ベクター・エアレース仕様書
+│   ├── airrace.md          # ベクター・エアレース仕様書
+│   ├── airrace_unity.md    # AirRace Unity 3D 仕様書
+│   ├── airrace_unity_worklog.md # AirRace Unity 3D 作業ログ
+│   └── snapshots/
 └── app/
     ├── Cargo.toml
     └── src/
