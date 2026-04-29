@@ -93,7 +93,7 @@
 <body>
   <div class="container">
     <div class="header">
-      <div class="neon-title">🕹️ ゲームセンター しのみ屋 🕹️</div>
+      <div class="neon-title" data-i18n="site_title">🕹️ ゲームセンター しのみ屋 🕹️</div>
       <div class="subtitle" data-i18n="subtitle">レトロ風オンラインゲームセンター</div>
       <div class="insert-coin" data-i18n="insert_coin">▶ INSERT COIN ◀</div>
     </div>
@@ -172,6 +172,7 @@
 <script>
 const I18N = {
   ja: {
+    site_title:     '🕹️ ゲームセンター しのみ屋 🕹️',
     subtitle:       'レトロ風オンラインゲームセンター',
     insert_coin:    '▶ INSERT COIN ◀',
     game_select:    '── GAME SELECT ──',
@@ -195,6 +196,7 @@ const I18N = {
     footer:         'ゲームセンター しのみ屋 ©2026 \u00a0|\u00a0 Powered by Rust + axum + WebSocket',
   },
   en: {
+    site_title:     '🕹️ Game Center Shinomiya 🕹️',
     subtitle:       'Retro-style Online Game Center',
     insert_coin:    '▶ INSERT COIN ◀',
     game_select:    '── GAME SELECT ──',
@@ -227,6 +229,7 @@ function applyLang(){
   document.querySelectorAll('[data-i18n]').forEach(el => {
     el.textContent = t(el.dataset.i18n);
   });
+  document.title = t('site_title');
   document.getElementById('btn-lang').textContent = lang === 'ja' ? '🇯🇵 / 🇬🇧' : '🇬🇧 / 🇯🇵';
   document.documentElement.lang = lang;
 }
