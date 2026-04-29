@@ -71,6 +71,24 @@ ktsys-pubserver 上で `git pull && docker compose up --build -d` が自動実�
 
 ---
 
+## 標準ルーティン（Rust Sandbox）
+
+基本は毎回この順で実施する:
+
+1. ローカルで feature ブランチ作成して実装
+2. feature ブランチで commit / push
+3. `dev` にマージして push
+4. `base` で `dev` を pull
+5. `docker compose -f compose.dev.yaml up -d --build` で反映
+6. `dev -> main` の PR を作成
+7. PR マージは最終確認後に実施（毎回ユーザー確認を取る）
+
+補足:
+- 「今回はマージまで可」の明示がある場合のみ、PRマージまで実施する。
+- 指示がない場合は PR 作成で止める。
+
+---
+
 ## NG パターン
 
 - Mac のローカルクローンで直接編集して `dev:main` に force-push → **本番に未検証コードが飛ぶ**

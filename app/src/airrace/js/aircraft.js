@@ -13,8 +13,8 @@
     function renderPlaneSelect() {
       if (!ui.planeDisplay) return;
       const plane = selectedAircraft();
-      if (ui.planeName) ui.planeName.textContent = plane.name;
-      if (ui.planeSummary) ui.planeSummary.textContent = plane.summary;
+      if (ui.planeName) ui.planeName.textContent = aircraftDisplayName(plane);
+      if (ui.planeSummary) ui.planeSummary.textContent = aircraftDisplaySummary(plane);
       renderPlanePreview(plane);
       renderFieldMode();
       renderStartRound();
@@ -126,4 +126,3 @@
       }
       return samples[samples.length - 1];
     }
-
