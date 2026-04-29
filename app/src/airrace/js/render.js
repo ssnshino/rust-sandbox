@@ -679,7 +679,7 @@
         ctx.font = "20px DotGothic16";
         ctx.fillStyle = "#fef3c7";
         ctx.textBaseline = "middle";
-        ctx.fillText("着陸せよ", centerX, Math.max(72, H * 0.17));
+        ctx.fillText(t("landingBanner"), centerX, Math.max(72, H * 0.17));
         ctx.restore();
       }
     }
@@ -726,7 +726,7 @@
       ctx.shadowBlur = 18;
       ctx.font = "24px DotGothic16";
       ctx.fillStyle = lit >= 4 ? "#bbf7d0" : "#fecaca";
-      ctx.fillText(lit >= 4 ? "GO!" : "READY...", centerX, panelY + panelH + 96);
+      ctx.fillText(lit >= 4 ? t("go") : t("ready"), centerX, panelY + panelH + 96);
       ctx.restore();
     }
 
@@ -836,8 +836,10 @@
         ctx.fillStyle = isGhost ? "rgba(191, 219, 254, 0.96)" : "rgba(254, 202, 202, 0.96)";
         ctx.font = `${Math.max(9, 10 * p.s + 1)}px DotGothic16`;
         ctx.textAlign = "center";
-        const aircraftLabel = aircraft.name.replace("号", "");
-        const typeLabel = isGhost ? "GHOST" : "CPU";
+        const aircraftLabel = currentLang === "ja"
+          ? aircraft.name.replace("号", "")
+          : (aircraft.nameEn || aircraft.name);
+        const typeLabel = isGhost ? t("ghost") : t("cpu");
         ctx.fillText(`[${typeLabel}] ${rival.name} / ${aircraftLabel}`, p.x, p.y - size - 8);
       }
     }
@@ -1035,7 +1037,7 @@
       const playerDist = gate ? distance2d(gate.x, gate.z, game.planeX, game.planeZ) : 0;
       const playerProgress = racerProgressValue(game.gateIndex, playerDist);
       entries.push({
-        label: "YOU",
+        label: t("you"),
         kind: "player",
         progress: playerProgress,
         gatePassed: game.phase === "landing" ? game.gates.length : game.gateIndex,
@@ -1084,7 +1086,9 @@
         ctx.strokeStyle = isYou ? "rgba(20, 16, 4, 0.96)" : "rgba(2, 6, 23, 0.92)";
         ctx.fillStyle = labelColor;
         const name = entry.label.length > 10 ? `${entry.label.slice(0, 10)}` : entry.label;
-        const line = isYou ? `>${entry.position}. YOU G${entry.gatePassed}<` : `${entry.position}. ${name} G${entry.gatePassed}`;
+        const line = isYou
+          ? `>${entry.position}. ${t("you")} G${entry.gatePassed}<`
+          : `${entry.position}. ${name} G${entry.gatePassed}`;
         if (isYou) {
           ctx.lineWidth = 4;
         } else {
@@ -1107,7 +1111,9 @@
     function drawBottomHudText() {
       const snapshot = game.hudSnapshot || {};
       const fieldSize = snapshot.fieldSize || currentFieldSize();
-      const gateLabel = game.phase === "landing" ? "RUNWAY" : `GATE ${Math.min(game.gateIndex + 1, game.gates.length)}`;
+      const gateLabel = game.phase === "landing"
+        ? t("runway")
+        : t("gate", { index: Math.min(game.gateIndex + 1, game.gates.length) });
       const primary = game.phase === "landing"
         ? "FINAL APPROACH"
         : `${gateLabel} / POS ${game.racePosition || 1}/${fieldSize} / GAP ${Math.round((snapshot.progressGap || 0) * 0.01)}`;
@@ -1172,7 +1178,7 @@
           game.altitude = 34;
           ui.guide.style.display = "none";
           hitSound("gate");
-          setMessage("GREEN! BOOSTで離陸だ！", 1300);
+          setMessage(t("greenBoost"), 1300);
         }
         return;
       }
@@ -1217,12 +1223,12 @@
           gate.passed = true;
           game.gateIndex += 1;
           hitSound("gate");
-          setMessage(`GATE ${game.gateIndex} CLEAR!`, 900);
+          setMessage(t("gateClear", { index: game.gateIndex }), 900);
         } else {
           game.damage = Math.min(100, game.damage + 12);
           game.gateIndex += 1;
           hitSound("pylon");
-          setMessage("ゲートミス！ +12 DAMAGE", 1200);
+          setMessage(t("gateMiss"), 1200);
         }
       }
 
@@ -1236,7 +1242,7 @@
             pylon.hit = true;
             game.damage = Math.min(100, game.damage + 18);
             hitSound("pylon");
-            setMessage("パイロン接触！機体を立て直せ。", 1300);
+            setMessage(t("pylonHit"), 1300);
           }
         }
       }
@@ -1252,22 +1258,22 @@
           item.hit = true;
           game.damage = Math.min(100, game.damage + 24);
           hitSound("pylon");
-          setMessage("高層ビル接触！市街地を抜けろ！", 1400);
+          setMessage(t("towerHit"), 1400);
         }
       }
 
       if (game.altitude < 45) {
-        setMessage("高度低下！引き起こせ！", 500);
+        setMessage(t("altitudeWarn"), 500);
       }
 
       if (game.altitude <= minAlt + 1 && game.phase !== "countdown") {
         const nowMs = performance.now();
         if (!game.groundHitAt) {
           game.groundHitAt = nowMs;
-          setMessage("GROUND WARNING!", 500);
+          setMessage(t("groundWarning"), 500);
         } else if (nowMs - game.groundHitAt > 320) {
           hitSound("crash");
-          setMessage("GROUND IMPACT!", 1200);
+          setMessage(t("groundImpact"), 1200);
           finish(false, "crash");
           return;
         }
@@ -1389,7 +1395,7 @@
         z: game.planeZ,
         heading: game.heading,
       };
-      setMessage("着陸せよ。滑走路中心へ進入！", 2600);
+      setMessage(t("landingPrompt"), 2600);
     }
 
     function landingProgress() {
@@ -1410,22 +1416,22 @@
       const progress = landingProgress();
       const lateral = Math.abs(landingLateral());
       if (progress > 160 && game.altitude < 46 && lateral < 105 && game.speed < 620) {
-        setMessage("LANDING OK!", 1200);
+        setMessage(t("landingOk"), 1200);
         finishRound();
         return;
       }
       if (progress > 2450 || game.altitude <= 1) {
         hitSound("crash");
-        setMessage("FAILED LANDING!", 1200);
+        setMessage(t("failedLanding"), 1200);
         finish(false, "crash");
         return;
       }
       if (progress > 900 && game.speed > 620) {
-        setMessage("速度が速すぎる！減速して接地！", 500);
+        setMessage(t("tooFast"), 500);
       } else if (progress > 900 && lateral > 110) {
-        setMessage("滑走路中心へ戻せ！", 500);
+        setMessage(t("returnCenter"), 500);
       } else if (progress > 900 && game.altitude > 80) {
-        setMessage("高度を下げて着陸姿勢！", 500);
+        setMessage(t("lowerAltitude"), 500);
       }
     }
 
