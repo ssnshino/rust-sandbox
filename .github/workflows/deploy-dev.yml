@@ -13,6 +13,7 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_DEV_HOST }}
+          port: ${{ secrets.DEPLOY_DEV_PORT }}
           username: shino
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
