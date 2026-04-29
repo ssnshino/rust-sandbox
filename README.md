@@ -29,16 +29,24 @@ Rust + axum で動く WebSocket ゲーム実験コンテナ。
 ## 開発フロー
 
 ```bash
-# dev ブランチで開発・動作確認
+# ローカルで dev ブランチを開発
 git checkout dev
-docker compose -f compose.dev.yaml up --build -d
+git add <変更ファイル>
+git commit -m "..."
+git push origin dev
 
-# rust 関連を修正したら以下を実行 (2026-04-18 13:35 add)
-docker compose -f compose.dev.yaml restart rust-sandbox
-
-# main にマージ → GitHub Actions が自動デプロイ
+# dev -> main で PR 作成・マージ
 gh pr create --base main
 ```
+
+`dev` への push で GitHub Actions が base 環境 (`rust-sandbox.wos.ktsys.jp`) を自動更新し、`main` への merge で本番 (`games.lab.ktsys.jp`) を自動更新する。
+
+必要な GitHub Secrets:
+
+- `DEPLOY_DEV_HOST` (base のホスト)
+- `DEPLOY_HOST` (ktsys-pubserver のホスト)
+- `DEPLOY_SSH_KEY` (shino ユーザーで接続可能な秘密鍵)
+
 
 ## 構成
 
@@ -48,7 +56,8 @@ rust-sandbox/
 ├── compose.yaml          # 本番用
 ├── compose.dev.yaml      # 開発用
 ├── .github/workflows/
-│   └── deploy.yml        # main push → 自動デプロイ
+│   ├── deploy-dev.yml    # dev push → base 自動デプロイ
+│   └── deploy.yml        # main push → 本番自動デプロイ
 ├── docs/                 # 仕様書
 └── app/                  # Rust プロジェクト
 ```
