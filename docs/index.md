@@ -32,10 +32,8 @@
 ### 開発フロー
 
 ```
-ローカルで dev ブランチ開発
-  → dev push
-  → GitHub Actions (deploy-dev.yml) が base へ自動デプロイ
-  → base で動作確認
+dev ブランチで開発
+  → compose.dev.yaml で base 機動作確認
   → PR → main マージ
   → GitHub Actions (deploy.yml) が ktsys-pubserver に SSH デプロイ
 ```
@@ -54,7 +52,6 @@ rust-sandbox/
 ├── compose.yaml            # 本番用（container_network, VIRTUAL_HOST=games.lab.ktsys.jp）
 ├── compose.dev.yaml        # 開発用（wos-proxy-network, port 18081:3000）
 ├── .github/workflows/
-│   ├── deploy-dev.yml      # dev push → base 自動デプロイ
 │   └── deploy.yml          # main push → ktsys-pubserver 自動デプロイ
 ├── docs/
 │   ├── index.md            # この文書（インデックス）

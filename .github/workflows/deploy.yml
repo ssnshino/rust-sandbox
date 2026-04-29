@@ -16,8 +16,6 @@ jobs:
           username: shino
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            cd /home/shino/source/repos/upstream/rust-sandbox
-            git fetch origin main
-            git checkout main
-            git reset --hard origin/main
+            cd /home/shino/work/upstream/rust-sandbox
+            git pull origin main
             docker compose up --build -d

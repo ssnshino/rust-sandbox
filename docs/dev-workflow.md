@@ -3,10 +3,9 @@
 ## 基本の流れ
 
 ```
-ローカルで修正
+base で修正
+  → rust-sandbox.wos.ktsys.jp で動作確認
   → git push origin dev
-  → GitHub Actions が base (rust-sandbox.wos.ktsys.jp) に自動デプロイ
-  → base で動作確認
   → GitHub で PR（dev → main）
   → マージ → GitHub Actions が games.lab.ktsys.jp に自動デプロイ
 ```
@@ -20,29 +19,39 @@
 
 ## 手順詳細
 
-### 1. ローカルで修正する
+### 1. base で修正する
 
 ```bash
-# ローカル
-cd ~/source/repos/upstream/rust-sandbox
+# base サーバーにログイン
+ssh base
+
+# リポジトリに移動（dev ブランチ）
+cd ~/work/upstream/rust-sandbox
 git checkout dev
 ```
 
-### 2. dev ブランチに push
+コードを編集したら、dev コンテナを起動し直して反映：
+
+```bash
+docker compose -f compose.dev.yaml up -d
+```
+
+`app/` は bind mount されていて、コンテナ内の `cargo run` が自動で再コンパイルする。
+タイトル画面右下の build 短縮ハッシュが更新されたかを見ると、ブラウザが古い配信物を見ていないか切り分けしやすい。
+
+### 2. 動作確認
+
+ブラウザで `http://rust-sandbox.wos.ktsys.jp` にアクセスして確認。
+
+問題があれば 1. に戻って修正。
+
+### 3. dev ブランチに push
 
 ```bash
 git add <変更ファイル>
 git commit -m "fix: ..."
 git push origin dev
 ```
-
-push 後、`deploy-dev.yml` が動いて base 側に `compose.dev.yaml` で自動デプロイされる。
-
-### 3. base で動作確認
-
-ブラウザで `http://rust-sandbox.wos.ktsys.jp` にアクセスして確認。
-
-問題があれば 1. に戻って修正し、再度 push。
 
 ### 4. PR を作成 → main にマージ
 
@@ -64,8 +73,8 @@ ktsys-pubserver 上で `git pull && docker compose up --build -d` が自動実�
 
 ## NG パターン
 
-- `dev` を通さず `main` に直接 push → **本番へ即反映される**
-- force-push で履歴を壊す → **ロールバックが難しくなる**
+- Mac のローカルクローンで直接編集して `dev:main` に force-push → **本番に未検証コードが飛ぶ**
+- base で確認せずに push → **同上**
 
 ## ktsys-pubserver で手動操作が必要な場合
 
@@ -73,7 +82,7 @@ ktsys-pubserver 上で `git pull && docker compose up --build -d` が自動実�
 
 ```bash
 ssh ktsys-pubserver
-cd ~/source/repos/upstream/rust-sandbox
+cd ~/work/upstream/rust-sandbox
 git pull origin main
 docker compose up --build -d
 ```
