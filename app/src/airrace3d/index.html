@@ -11,6 +11,7 @@
     <div id="airrace-debug">
       <div class="airrace-debug-title">AIRRACE 3D LOADING</div>
       <pre id="airrace-debug-log">booting...</pre>
+      <div id="airrace-debug-stats">progress: 0% / speed: -- / eta: --</div>
     </div>
     <div id="unity-container" class="unity-desktop">
       <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
@@ -31,6 +32,12 @@
       var canvas = document.querySelector("#unity-canvas");
       var debugPanel = document.querySelector("#airrace-debug");
       var debugLog = document.querySelector("#airrace-debug-log");
+      var debugStats = document.querySelector("#airrace-debug-stats");
+      var progressState = {
+        startedAt: 0,
+        lastProgress: 0,
+        lastTs: 0
+      };
 
       function airraceDebug(message) {
         var line = "[" + new Date().toLocaleTimeString() + "] " + message;
@@ -115,6 +122,8 @@
       document.querySelector("#unity-loading-bar").style.display = "block";
       airraceWebglReport();
       airraceDebug("loading Unity WebGL files...");
+      progressState.startedAt = performance.now();
+      progressState.lastTs = progressState.startedAt;
 
       var script = document.createElement("script");
       script.src = loaderUrl;
@@ -122,6 +131,16 @@
         airraceDebug("loader ready, creating Unity instance...");
         createUnityInstance(canvas, config, (progress) => {
           document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
+          var now = performance.now();
+          var elapsed = Math.max((now - progressState.startedAt) / 1000, 0.001);
+          var pct = Math.max(0, Math.min(100, Math.round(progress * 100)));
+          var avgRate = progress / elapsed;
+          var etaSec = avgRate > 0.0001 ? Math.max((1 - progress) / avgRate, 0) : null;
+          var etaLabel = etaSec == null ? "--" : (etaSec > 99 ? "99s+" : (Math.round(etaSec) + "s"));
+          var speedLabel = avgRate > 0.0001 ? (Math.round(avgRate * 1000) / 10) + "%/s" : "--";
+          debugStats.textContent = "progress: " + pct + "% / speed: " + speedLabel + " / eta: " + etaLabel;
+          progressState.lastProgress = progress;
+          progressState.lastTs = now;
           if (progress >= 0.99) airraceDebug("Unity files loaded, starting runtime...");
         }).then((unityInstance) => {
           document.querySelector("#unity-loading-bar").style.display = "none";
@@ -166,6 +185,11 @@
       #airrace-debug-log {
         margin: 0;
         white-space: pre-wrap;
+      }
+      #airrace-debug-stats {
+        margin-top: 8px;
+        color: #b8eaff;
+        font-size: 12px;
       }
     </style>
   </body>
