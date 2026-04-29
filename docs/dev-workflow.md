@@ -38,12 +38,6 @@ git push origin dev
 
 push 後、`deploy-dev.yml` が動いて base 側に `compose.dev.yaml` で自動デプロイされる。
 
-事前に GitHub Secrets を設定しておく:
-
-- `DEPLOY_DEV_HOST`
-- `DEPLOY_DEV_PORT`
-- `DEPLOY_SSH_KEY`
-
 ### 3. base で動作確認
 
 ブラウザで `http://rust-sandbox.wos.ktsys.jp` にアクセスして確認。

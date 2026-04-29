@@ -44,7 +44,6 @@ gh pr create --base main
 必要な GitHub Secrets:
 
 - `DEPLOY_DEV_HOST` (base のホスト)
-- `DEPLOY_DEV_PORT` (base の SSH ポート)
 - `DEPLOY_HOST` (ktsys-pubserver のホスト)
 - `DEPLOY_SSH_KEY` (shino ユーザーで接続可能な秘密鍵)
 
