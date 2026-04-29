@@ -217,7 +217,10 @@ async fn serve_airrace3d_file(relative_path: PathBuf) -> axum::response::Respons
 
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static(content_type_for_path(&relative_path)));
-    headers.insert(CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    headers.insert(
+        CACHE_CONTROL,
+        HeaderValue::from_static(cache_control_for_airrace3d_path(&relative_path)),
+    );
     if is_gzip_file(&relative_path) {
         headers.insert(CONTENT_ENCODING, HeaderValue::from_static("gzip"));
     }
@@ -257,6 +260,13 @@ fn content_type_for_path(path: &FsPath) -> &'static str {
 }
 fn is_gzip_file(path: &FsPath) -> bool {
     path.extension().and_then(|ext| ext.to_str()) == Some("gz")
+}
+fn cache_control_for_airrace3d_path(path: &FsPath) -> &'static str {
+    let p = path.to_string_lossy();
+    if p.starts_with("Build/") || p.starts_with("TemplateData/") {
+        return "public, max-age=31536000, immutable";
+    }
+    "no-store"
 }
 async fn truckers_page() -> Html<&'static str> { Html(include_str!("truckers/truckers.html")) }
 async fn truckers_css() -> impl IntoResponse {
