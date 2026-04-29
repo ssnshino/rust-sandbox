@@ -21,7 +21,8 @@
 </head>
 <body>
   <div id="app">
-    <a id="back" href="/">← menu</a>
+    <a id="back" href="/">←MENU</a>
+    <button id="btn-lang" type="button">🇯🇵 / 🇬🇧</button>
     <div id="topbar">
       <div class="meter"><strong>SPEED</strong><span id="speed">320 km/h</span></div>
       <div class="meter"><strong>ALT</strong><span id="alt">120 m</span></div>
@@ -39,10 +40,10 @@
       </div>
       <section id="title">
         <div class="title-page">
-          <h1>VECTOR<br>AIR RACE</h1>
-          <p class="lead">5機から自機を選んで参戦<br>Round 3 から World Grand Prix 全10コース。</p>
+          <h1 id="title-main-heading">VECTOR<br>AIR RACE</h1>
+          <p id="title-main-lead" class="lead">5機から自機を選んで参戦<br>Round 3 から World Grand Prix 全10コース。</p>
           <div class="title-card pilot-card">
-            <label class="title-label" for="title-name">PILOT NAME</label>
+            <label id="title-pilot-label" class="title-label" for="title-name">PILOT NAME</label>
             <input id="title-name" maxlength="12" placeholder="名前を入れてね">
           </div>
           <div id="control-mode" class="control-mode">
@@ -74,11 +75,11 @@
         </div>
       </section>
       <section id="result">
-        <div class="result-page">
+          <div class="result-page">
           <h1>FINISH</h1>
           <p class="lead" id="result-text"></p>
           <div id="result-winner" class="result-card winner-card">
-            <div class="title-label">1ST PLACE</div>
+            <div id="result-first-place-label" class="title-label">1ST PLACE</div>
             <canvas id="result-plane-preview" width="220" height="64"></canvas>
             <strong id="result-winner-name"></strong>
             <span id="result-winner-aircraft"></span>
@@ -86,7 +87,7 @@
           <div id="result-standings" class="result-card result-list"></div>
           <div id="result-total" class="result-card result-list"></div>
           <div id="name-entry">
-            <div>RECORD UPDATE!</div>
+            <div id="result-record-update">RECORD UPDATE!</div>
             <input id="name-input" maxlength="12" placeholder="名前">
             <button id="save-score">SAVE</button>
           </div>

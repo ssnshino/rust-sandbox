@@ -71,7 +71,7 @@
       const entries = [{
         kind: "player",
         id: "player",
-        name: "YOU",
+        name: t("you"),
         aircraft: game.aircraft,
         finalTime: playerTime,
         dnf: !success,
@@ -114,14 +114,14 @@
       });
       const roundRows = standings.map((entry) => ({
         position: entry.position,
-        name: entry.kind === "player" ? "YOU" : entry.name,
+        name: entry.kind === "player" ? t("you") : entry.name,
         kind: entry.kind,
         aircraft: entry.aircraft,
         points: pointsForPosition(entry.position),
         dnf: entry.dnf,
       }));
       const tableRows = [
-        { name: "YOU", points: game.tournament.playerPoints || 0, kind: "player", aircraft: game.aircraft },
+        { name: t("you"), points: game.tournament.playerPoints || 0, kind: "player", aircraft: game.aircraft },
         ...game.tournament.rivals.map((rival) => ({
           name: rival.name,
           points: rival.points || 0,
@@ -192,13 +192,13 @@
       syncPilotNameInput();
       updateButtonHints();
       drawSplash();
-      ui.message.textContent = "左プニコンで旋回と高度。BOOSTで加速。";
+      ui.message.textContent = t("defaultMessage");
       ui.message.style.display = "block";
     }
 
     async function startRound(round, carry = null) {
       const token = ++loadingToken;
-      const label = round === 1 ? "START LOADING" : `ROUND ${round} LOADING`;
+      const label = round === 1 ? t("loadingStart") : t("loadingRound", { round });
       setLoadingState(true, label, 0.08, "prepare request");
       try {
         const bundle = await fetchRoundBundle(round, (progress, meta) => {
@@ -215,7 +215,7 @@
         console.error(err);
         setLoadingState(false);
         showTitle(true);
-        setMessage(`ROUND ${round} LOAD FAILED`, 1800);
+        setMessage(t("loadFailed", { round }), 1800);
       }
     }
 

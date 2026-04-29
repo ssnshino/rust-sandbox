@@ -33,13 +33,22 @@
     }
 
     const ui = {
+      back: document.getElementById("back"),
+      lang: document.getElementById("btn-lang"),
       speed: document.getElementById("speed"),
       alt: document.getElementById("alt"),
       time: document.getElementById("time"),
       message: document.getElementById("message"),
+      help: document.getElementById("help"),
+      boost: document.getElementById("boost"),
       title: document.getElementById("title"),
+      titleMainHeading: document.getElementById("title-main-heading"),
+      titleMainLead: document.getElementById("title-main-lead"),
+      titlePilotLabel: document.getElementById("title-pilot-label"),
       result: document.getElementById("result"),
       resultText: document.getElementById("result-text"),
+      resultFirstPlaceLabel: document.getElementById("result-first-place-label"),
+      resultRecordUpdate: document.getElementById("result-record-update"),
       resultWinner: document.getElementById("result-winner"),
       resultPlanePreview: document.getElementById("result-plane-preview"),
       resultWinnerName: document.getElementById("result-winner-name"),
@@ -77,6 +86,222 @@
       guide: document.getElementById("guide"),
     };
 
+    const I18N = {
+      ja: {
+        pageTitle: "ベクター・エアレース",
+        backMenu: "←MENU",
+        langButton: "🇯🇵 / 🇬🇧",
+        guideNext: "NEXT GATE →",
+        defaultMessage: "左プニコンで旋回と高度。BOOSTで加速。",
+        helpText: "← → 旋回<br>↑ ↓ 高度<br>PCは矢印/WASD + Space",
+        boost: "BOOST",
+        titleHeading: "VECTOR<br>AIR RACE",
+        titleLead: "5機から自機を選んで参戦<br>Round 3 から World Grand Prix 全10コース。",
+        pilotNameLabel: "PILOT NAME",
+        pilotNamePlaceholder: "名前を入れてね",
+        modeStick: "プニコン",
+        modeTilt: "傾き操作",
+        modeGamepad: "コントローラ",
+        gamepadGuide: "PS4/PS5 コントローラは接続後にボタンを1回押してね。",
+        aircraftLabel: "AIRCRAFT",
+        firstPlace: "1ST PLACE",
+        recordUpdate: "RECORD UPDATE!",
+        scoreNamePlaceholder: "名前",
+        loadingNow: "NOW LOADING",
+        loadingStart: "START LOADING",
+        loadingRound: "ROUND {round} LOADING",
+        loadFailed: "ROUND {round} LOAD FAILED",
+        fieldNormal: "FIELD NORMAL",
+        fieldTest: "FIELD TEST {count}",
+        roundMode: "START ROUND {round}",
+        startRound: "ROUND {round} START",
+        save: "SAVE",
+        nextRound: "NEXT ROUND",
+        title: "TITLE",
+        you: "YOU",
+        runway: "RUNWAY",
+        gate: "GATE {index}",
+        lowAltitude: "高度低下！地面効果で機体が暴れるぞ。",
+        greenBoost: "GREEN! BOOSTで離陸だ！",
+        gateClear: "GATE {index} CLEAR!",
+        gateMiss: "ゲートミス！ +12 DAMAGE",
+        pylonHit: "パイロン接触！機体を立て直せ。",
+        towerHit: "高層ビル接触！市街地を抜けろ！",
+        altitudeWarn: "高度低下！引き起こせ！",
+        groundWarning: "GROUND WARNING!",
+        groundImpact: "GROUND IMPACT!",
+        landingPrompt: "着陸せよ。滑走路中心へ進入！",
+        tooFast: "速度が速すぎる！減速して接地！",
+        returnCenter: "滑走路中心へ戻せ！",
+        lowerAltitude: "高度を下げて着陸姿勢！",
+        landingOk: "LANDING OK!",
+        failedLanding: "FAILED LANDING!",
+        landingBanner: "着陸せよ",
+        ready: "READY...",
+        go: "GO!",
+        roundClear: "ROUND {round} CLEAR",
+        youWin: "YOU WIN",
+        yourPos: "YOU POS {pos}/{field}",
+        roundResult: "ROUND RESULT",
+        grandPrix: "GRAND PRIX",
+        finish: "FINISH",
+        result: "RESULT",
+        crash: "CRASH",
+        gameOver: "GAME OVER",
+        groundImpactRound: "GROUND IMPACT / ROUND {round}",
+        damageRound: "DAMAGE {damage}% / ROUND {round}",
+        lastPlacePoints: "LAST PLACE / +{points}pt",
+        totalPoints: "TOTAL {points}pt",
+        totalTime: "TOTAL TIME {time}",
+        finalTime: "FINAL TIME {time}",
+        damage: "DAMAGE {damage}%",
+        nextRoundInfo: "NEXT ROUND {round}",
+        recordRound: "RECORD round{round}",
+        cpu: "CPU",
+        ghost: "GHOST",
+      },
+      en: {
+        pageTitle: "Vector Air Race",
+        backMenu: "←MENU",
+        langButton: "🇬🇧 / 🇯🇵",
+        guideNext: "NEXT GATE →",
+        defaultMessage: "Use left stick for turn/altitude. BOOST to accelerate.",
+        helpText: "← → Turn<br>↑ ↓ Altitude<br>PC: Arrows/WASD + Space",
+        boost: "BOOST",
+        titleHeading: "VECTOR<br>AIR RACE",
+        titleLead: "Pick 1 of 5 aircraft.<br>World Grand Prix starts from Round 3 (10 courses).",
+        pilotNameLabel: "PILOT NAME",
+        pilotNamePlaceholder: "Enter your name",
+        modeStick: "Virtual Stick",
+        modeTilt: "Tilt",
+        modeGamepad: "Controller",
+        gamepadGuide: "Connect PS4/PS5 controller, then press any button once.",
+        aircraftLabel: "AIRCRAFT",
+        firstPlace: "1ST PLACE",
+        recordUpdate: "RECORD UPDATE!",
+        scoreNamePlaceholder: "Name",
+        loadingNow: "NOW LOADING",
+        loadingStart: "START LOADING",
+        loadingRound: "ROUND {round} LOADING",
+        loadFailed: "ROUND {round} LOAD FAILED",
+        fieldNormal: "FIELD NORMAL",
+        fieldTest: "FIELD TEST {count}",
+        roundMode: "START ROUND {round}",
+        startRound: "ROUND {round} START",
+        save: "SAVE",
+        nextRound: "NEXT ROUND",
+        title: "TITLE",
+        you: "YOU",
+        runway: "RUNWAY",
+        gate: "GATE {index}",
+        lowAltitude: "LOW ALTITUDE! Ground effect is destabilizing your aircraft.",
+        greenBoost: "GREEN! BOOST FOR TAKEOFF!",
+        gateClear: "GATE {index} CLEAR!",
+        gateMiss: "MISSED GATE! +12 DAMAGE",
+        pylonHit: "PYLON HIT! Recover your aircraft!",
+        towerHit: "TOWER HIT! Break through the city!",
+        altitudeWarn: "LOW ALTITUDE! PULL UP!",
+        groundWarning: "GROUND WARNING!",
+        groundImpact: "GROUND IMPACT!",
+        landingPrompt: "LAND NOW. Align to runway center!",
+        tooFast: "TOO FAST! REDUCE SPEED BEFORE TOUCHDOWN!",
+        returnCenter: "RETURN TO RUNWAY CENTER!",
+        lowerAltitude: "LOWER ALTITUDE FOR LANDING!",
+        landingOk: "LANDING OK!",
+        failedLanding: "FAILED LANDING!",
+        landingBanner: "LAND NOW",
+        ready: "READY...",
+        go: "GO!",
+        roundClear: "ROUND {round} CLEAR",
+        youWin: "YOU WIN",
+        yourPos: "YOU POS {pos}/{field}",
+        roundResult: "ROUND RESULT",
+        grandPrix: "GRAND PRIX",
+        finish: "FINISH",
+        result: "RESULT",
+        crash: "CRASH",
+        gameOver: "GAME OVER",
+        groundImpactRound: "GROUND IMPACT / ROUND {round}",
+        damageRound: "DAMAGE {damage}% / ROUND {round}",
+        lastPlacePoints: "LAST PLACE / +{points}pt",
+        totalPoints: "TOTAL {points}pt",
+        totalTime: "TOTAL TIME {time}",
+        finalTime: "FINAL TIME {time}",
+        damage: "DAMAGE {damage}%",
+        nextRoundInfo: "NEXT ROUND {round}",
+        recordRound: "RECORD round{round}",
+        cpu: "CPU",
+        ghost: "GHOST",
+      },
+    };
+
+    let currentLang = localStorage.getItem("airrace_lang") || localStorage.getItem("gc_lang") || "ja";
+    if (!I18N[currentLang]) currentLang = "ja";
+
+    function t(key, vars = null) {
+      const table = I18N[currentLang] || I18N.ja;
+      let text = table[key] ?? I18N.ja[key] ?? key;
+      if (vars && typeof text === "string") {
+        for (const [name, value] of Object.entries(vars)) {
+          text = text.replaceAll(`{${name}}`, String(value));
+        }
+      }
+      return text;
+    }
+
+    function setLang(nextLang) {
+      if (!I18N[nextLang]) return;
+      currentLang = nextLang;
+      localStorage.setItem("airrace_lang", currentLang);
+      localStorage.setItem("gc_lang", currentLang);
+      applyLanguage();
+    }
+
+    function aircraftDisplayName(aircraft) {
+      if (!aircraft) return "";
+      return currentLang === "ja" ? aircraft.name : (aircraft.nameEn || aircraft.name);
+    }
+
+    function aircraftDisplaySummary(aircraft) {
+      if (!aircraft) return "";
+      return currentLang === "ja" ? aircraft.summary : (aircraft.summaryEn || aircraft.summary);
+    }
+
+    function applyLanguage() {
+      document.documentElement.lang = currentLang;
+      document.title = t("pageTitle");
+      if (ui.back) ui.back.textContent = t("backMenu");
+      if (ui.lang) ui.lang.textContent = t("langButton");
+      if (ui.guide && ui.guide.style.display !== "block") ui.guide.textContent = t("guideNext");
+      if (ui.boost) ui.boost.textContent = t("boost");
+      if (ui.help) ui.help.innerHTML = t("helpText");
+      if (ui.titleMainHeading) ui.titleMainHeading.innerHTML = t("titleHeading");
+      if (ui.titleMainLead) ui.titleMainLead.innerHTML = t("titleLead");
+      if (ui.titlePilotLabel) ui.titlePilotLabel.textContent = t("pilotNameLabel");
+      if (ui.titleNameInput) ui.titleNameInput.placeholder = t("pilotNamePlaceholder");
+      if (ui.nameInput) ui.nameInput.placeholder = t("scoreNamePlaceholder");
+      if (ui.modeStick) ui.modeStick.textContent = t("modeStick");
+      if (ui.modeTilt) ui.modeTilt.textContent = t("modeTilt");
+      if (ui.modeGamepad) ui.modeGamepad.textContent = t("modeGamepad");
+      if (ui.resultFirstPlaceLabel) ui.resultFirstPlaceLabel.textContent = t("firstPlace");
+      if (ui.resultRecordUpdate) ui.resultRecordUpdate.textContent = t("recordUpdate");
+      renderFieldMode();
+      renderStartRound();
+      updateButtonHints();
+      renderPlaneSelect();
+      updateGamepadStatus();
+      if (!game) {
+        ui.message.textContent = t("defaultMessage");
+        ui.message.style.display = "block";
+      }
+    }
+
+    if (ui.lang) {
+      ui.lang.addEventListener("click", () => {
+        setLang(currentLang === "ja" ? "en" : "ja");
+      });
+    }
+
     const input = {
       x: 0,
       y: 0,
@@ -102,18 +327,20 @@
     let loadingToken = 0;
 
     const buttonLabels = {
-      start: "ROUND 1 START",
-      startMain: "ROUND 3 START",
-      saveScore: "SAVE",
-      nextRound: "NEXT ROUND",
-      retry: "TITLE",
+      start: t("startRound", { round: 1 }),
+      startMain: t("startRound", { round: 3 }),
+      saveScore: t("save"),
+      nextRound: t("nextRound"),
+      retry: t("title"),
     };
 
     const AIRCRAFTS = [
       {
         id: "skylancer",
         name: "スカイランサー号",
+        nameEn: "Skylancer",
         summary: "平均的な優等生。初見コースの基準機。",
+        summaryEn: "Balanced all-rounder. Best baseline for new courses.",
         speedMul: 1.0,
         boostMul: 1.0,
         turnMul: 1.0,
@@ -125,7 +352,9 @@
       {
         id: "thunderbolt",
         name: "サンダーボルト号",
+        nameEn: "Thunderbolt",
         summary: "きびきび旋回。テクニカル向け。",
+        summaryEn: "Sharp turning. Great for technical sections.",
         speedMul: 0.94,
         boostMul: 0.94,
         turnMul: 1.24,
@@ -137,7 +366,9 @@
       {
         id: "shootingstar",
         name: "シューティングスター号",
+        nameEn: "Shooting Star",
         summary: "高速番長。直線と大カーブで強い。",
+        summaryEn: "Top speed specialist. Dominates straights and long bends.",
         speedMul: 1.08,
         boostMul: 1.16,
         turnMul: 0.82,
@@ -149,7 +380,9 @@
       {
         id: "spiralfang",
         name: "スパイラルファング号",
+        nameEn: "Spiral Fang",
         summary: "ピーキーな軽量機。反応最速。",
+        summaryEn: "Twitchy lightweight. Fastest response.",
         speedMul: 0.98,
         boostMul: 0.98,
         turnMul: 1.32,
@@ -161,7 +394,9 @@
       {
         id: "ironhawk",
         name: "アイアンホーク号",
+        nameEn: "Iron Hawk",
         summary: "重いけど安定。崩れにくい。",
+        summaryEn: "Heavy but stable. Hard to destabilize.",
         speedMul: 1.03,
         boostMul: 1.08,
         turnMul: 0.9,
@@ -177,11 +412,11 @@
     const USE_GHOST_RIVALS = true;
     const POINT_TABLE = [10, 8, 6, 4, 2];
     const FIELD_MODES = [
-      { id: "normal", label: "FIELD NORMAL", round2Size: 3, gpSize: 5 },
-      { id: "test8", label: "FIELD TEST 8", round2Size: 8, gpSize: 8 },
-      { id: "test12", label: "FIELD TEST 12", round2Size: 12, gpSize: 12 },
-      { id: "test16", label: "FIELD TEST 16", round2Size: 16, gpSize: 16 },
-      { id: "test24", label: "FIELD TEST 24", round2Size: 24, gpSize: 24 },
+      { id: "normal", round2Size: 3, gpSize: 5 },
+      { id: "test8", round2Size: 8, gpSize: 8 },
+      { id: "test12", round2Size: 12, gpSize: 12 },
+      { id: "test16", round2Size: 16, gpSize: 16 },
+      { id: "test24", round2Size: 24, gpSize: 24 },
     ];
     const RIVAL_ARCHETYPES = [
       {
@@ -269,7 +504,11 @@
     function renderFieldMode() {
       if (!ui.fieldMode) return;
       const mode = selectedFieldMode();
-      ui.fieldMode.textContent = mode.label;
+      if (mode.id === "normal") {
+        ui.fieldMode.textContent = t("fieldNormal");
+      } else {
+        ui.fieldMode.textContent = t("fieldTest", { count: mode.gpSize });
+      }
     }
 
     function cycleStartRound() {
@@ -280,8 +519,12 @@
 
     function renderStartRound() {
       if (selectedStartRound > TOTAL_ROUNDS) selectedStartRound = TOTAL_ROUNDS;
-      buttonLabels.startMain = `ROUND ${selectedStartRound} START`;
-      if (ui.roundMode) ui.roundMode.textContent = `START ROUND ${selectedStartRound}`;
+      buttonLabels.start = t("startRound", { round: 1 });
+      buttonLabels.startMain = t("startRound", { round: selectedStartRound });
+      buttonLabels.saveScore = t("save");
+      buttonLabels.nextRound = t("nextRound");
+      buttonLabels.retry = t("title");
+      if (ui.roundMode) ui.roundMode.textContent = t("roundMode", { round: selectedStartRound });
       updateButtonHints();
     }
 
@@ -334,13 +577,13 @@
     function tournamentStatusText(tournament) {
       if (!tournament) return "";
       const rows = [
-        { name: "YOU", points: tournament.playerPoints || 0 },
+        { name: t("you"), points: tournament.playerPoints || 0 },
         ...tournament.rivals.map((rival) => ({ name: rival.name, points: rival.points || 0 })),
       ].sort((a, b) => b.points - a.points);
       return rows.map((row, index) => `${index + 1}.${row.name} ${row.points}pt`).join(" / ");
     }
 
-    function setLoadingState(visible, label = "NOW LOADING", progress = 0, meta = "") {
+    function setLoadingState(visible, label = t("loadingNow"), progress = 0, meta = "") {
       if (!ui.loading) return;
       ui.loading.style.display = visible ? "flex" : "none";
       if (ui.loadingLabel) ui.loadingLabel.textContent = label;
@@ -396,58 +639,28 @@
     function roundBriefing(round) {
       const mode = selectedFieldMode();
       const round2Rivals = Math.max(0, mode.round2Size - 1);
-      const gpRivals = Math.max(0, mode.gpSize - 1);
-      const briefings = [
-        {
-          title: "ROUND 1 / 離陸訓練",
-          difficulty: 1,
-          text: "ライバルなし。大きいゲートを順番にくぐって、まずは離陸と旋回に慣れよう。",
-        },
-        {
-          title: "ROUND 2 / 高度変化",
-          difficulty: 2,
-          text: `ここから${mode.round2Size}機レース。${round2Rivals}機を相手に、ゆるい高低差と順位争いを覚えよう。`,
-        },
-        {
-          title: "ROUND 3 / USA DESERT OPENING",
-          difficulty: 3,
-          text: `アメリカ砂漠ラウンド。長い直線と赤土キャニオンで World Grand Prix 開幕だ。${mode.gpSize}機で一気に出る。`,
-        },
-        {
-          title: "ROUND 4 / FRANCE RIVER CIRCUIT",
-          difficulty: 4,
-          text: `フランス河川都市ラウンド。中速カーブをつないで、ライン取りで差を作るテクニカル戦。`,
-        },
-        {
-          title: "ROUND 5 / ITALY COASTAL SPRINT",
-          difficulty: 5,
-          text: "イタリア海岸ラウンド。海沿いのハイスピード区間で、BOOSTを気持ちよく使える高速戦。",
-        },
-        {
-          title: "ROUND 6 / NETHERLANDS HARBOR WIND",
-          difficulty: 6,
-          text: "オランダ港湾ラウンド。低い空と細かな向き変えで、落ち着いた操縦が効く。",
-        },
-        {
-          title: "ROUND 7 / GERMANY RHINE INDUSTRIAL",
-          difficulty: 7,
-          text: "ドイツ工業地帯ラウンド。中速の切り返しと重めの流れで、安定感のある機体が光る。",
-        },
-        {
-          title: "ROUND 8 / CHINA MEGACITY RING",
-          difficulty: 8,
-          text: "中国メガシティラウンド。高層都市を大きく回る高速外周で、視界も速度感も一気に上がる。",
-        },
-        {
-          title: "ROUND 9 / UAE SKY DUNE RUSH",
-          difficulty: 9,
-          text: "UAE 砂丘ラウンド。高速直線から一気に曲げる見せ場コース。決勝前に差を動かす最後の山場。",
-        },
-        {
-          title: "ROUND 10 / JAPAN GRAND FINAL",
-          difficulty: 10,
-          text: "最終戦 JAPAN。テクニカル区間と高速区間の両方をまとめて取り切って、総合優勝を決めろ。",
-        },
+      const briefings = currentLang === "ja" ? [
+        { title: "ROUND 1 / 離陸訓練", difficulty: 1, text: "ライバルなし。大きいゲートを順番にくぐって、まずは離陸と旋回に慣れよう。" },
+        { title: "ROUND 2 / 高度変化", difficulty: 2, text: `ここから${mode.round2Size}機レース。${round2Rivals}機を相手に、ゆるい高低差と順位争いを覚えよう。` },
+        { title: "ROUND 3 / USA DESERT OPENING", difficulty: 3, text: `アメリカ砂漠ラウンド。長い直線と赤土キャニオンで World Grand Prix 開幕だ。${mode.gpSize}機で一気に出る。` },
+        { title: "ROUND 4 / FRANCE RIVER CIRCUIT", difficulty: 4, text: "フランス河川都市ラウンド。中速カーブをつないで、ライン取りで差を作るテクニカル戦。" },
+        { title: "ROUND 5 / ITALY COASTAL SPRINT", difficulty: 5, text: "イタリア海岸ラウンド。海沿いのハイスピード区間で、BOOSTを気持ちよく使える高速戦。" },
+        { title: "ROUND 6 / NETHERLANDS HARBOR WIND", difficulty: 6, text: "オランダ港湾ラウンド。低い空と細かな向き変えで、落ち着いた操縦が効く。" },
+        { title: "ROUND 7 / GERMANY RHINE INDUSTRIAL", difficulty: 7, text: "ドイツ工業地帯ラウンド。中速の切り返しと重めの流れで、安定感のある機体が光る。" },
+        { title: "ROUND 8 / CHINA MEGACITY RING", difficulty: 8, text: "中国メガシティラウンド。高層都市を大きく回る高速外周で、視界も速度感も一気に上がる。" },
+        { title: "ROUND 9 / UAE SKY DUNE RUSH", difficulty: 9, text: "UAE 砂丘ラウンド。高速直線から一気に曲げる見せ場コース。決勝前に差を動かす最後の山場。" },
+        { title: "ROUND 10 / JAPAN GRAND FINAL", difficulty: 10, text: "最終戦 JAPAN。テクニカル区間と高速区間の両方をまとめて取り切って、総合優勝を決めろ。" },
+      ] : [
+        { title: "ROUND 1 / TAKEOFF TRAINING", difficulty: 1, text: "No rivals. Fly through big gates in order and learn takeoff plus turning." },
+        { title: "ROUND 2 / ALTITUDE SHIFT", difficulty: 2, text: `${mode.round2Size}-plane race starts here. Learn mild elevation changes and position battle against ${round2Rivals} rivals.` },
+        { title: "ROUND 3 / USA DESERT OPENING", difficulty: 3, text: `World Grand Prix begins in the US desert. Long straights and red canyon lines with ${mode.gpSize} planes.` },
+        { title: "ROUND 4 / FRANCE RIVER CIRCUIT", difficulty: 4, text: "French river city round. Mid-speed linked turns where line choice creates separation." },
+        { title: "ROUND 5 / ITALY COASTAL SPRINT", difficulty: 5, text: "Italian coast round. High-speed seaside lanes that reward confident BOOST use." },
+        { title: "ROUND 6 / NETHERLANDS HARBOR WIND", difficulty: 6, text: "Dutch harbor round. Low sky and fine heading changes reward calm control." },
+        { title: "ROUND 7 / GERMANY RHINE INDUSTRIAL", difficulty: 7, text: "German industrial round. Mid-speed direction changes where stable aircraft shine." },
+        { title: "ROUND 8 / CHINA MEGACITY RING", difficulty: 8, text: "China megacity round. Fast outer loop around towers boosts both visibility and speed feel." },
+        { title: "ROUND 9 / UAE SKY DUNE RUSH", difficulty: 9, text: "UAE dune round. Dramatic high-speed approach into hard turns before the final." },
+        { title: "ROUND 10 / JAPAN GRAND FINAL", difficulty: 10, text: "Final stage JAPAN. Master both technical and high-speed sectors to win overall." },
       ];
       return briefings[Math.max(0, Math.min(briefings.length - 1, round - 1))];
     }

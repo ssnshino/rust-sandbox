@@ -48,7 +48,10 @@
         : (guide && (guide.arrow === "↻" || guide.arrow === "↺" || guide.dist > 700 || gateLateral > 240));
       if (guideActivePhase && offRoute && guide) {
         ui.guide.style.display = "block";
-        ui.guide.innerHTML = `<span class="guide-arrow">${guide.arrow}</span><span class="guide-meta">${game.phase === "landing" ? "RUNWAY" : `GATE ${game.gateIndex + 1}`} / ${Math.round(guide.dist)}m</span>`;
+        const label = game.phase === "landing"
+          ? t("runway")
+          : t("gate", { index: game.gateIndex + 1 });
+        ui.guide.innerHTML = `<span class="guide-arrow">${guide.arrow}</span><span class="guide-meta">${label} / ${Math.round(guide.dist)}m</span>`;
       } else {
         ui.guide.style.display = "none";
       }
@@ -72,7 +75,7 @@
         && !game.lowAltitudeWarned
         && now > game.messageUntil + 220) {
         game.lowAltitudeWarned = true;
-        setMessage("高度低下！地面効果で機体が暴れるぞ。", 700);
+        setMessage(t("lowAltitude"), 700);
       }
     }
 
@@ -93,8 +96,8 @@
         return;
       }
       ui.resultWinner.style.display = "flex";
-      ui.resultWinnerName.textContent = entry.kind === "player" ? "YOU" : (entry.name || "---");
-      ui.resultWinnerAircraft.textContent = entry.aircraft?.name || "";
+      ui.resultWinnerName.textContent = entry.kind === "player" ? t("you") : (entry.name || "---");
+      ui.resultWinnerAircraft.textContent = aircraftDisplayName(entry.aircraft);
       const preview = ui.resultPlanePreview;
       const previewCtx = preview.getContext("2d");
       previewCtx.clearRect(0, 0, preview.width, preview.height);
@@ -133,7 +136,7 @@
           <span class="result-podium-rank">${ordinalLabel(index + 1)}</span>
           <canvas class="result-podium-canvas" width="96" height="36" data-podium-index="${index}"></canvas>
           <span class="result-podium-name">${escapeHtml(row.name)}</span>
-          <span class="result-podium-aircraft">${escapeHtml(row.aircraft?.name || "")}</span>
+          <span class="result-podium-aircraft">${escapeHtml(aircraftDisplayName(row.aircraft) || "")}</span>
         </div>
       `).join("")}</div>`;
       if (header) {
@@ -161,7 +164,7 @@
     }
 
     function resultRowHtml(row) {
-      const aircraftName = row.aircraft?.name ? `<span class="result-line-meta">${escapeHtml(row.aircraft.name)}</span>` : "";
+      const aircraftName = row.aircraft ? `<span class="result-line-meta">${escapeHtml(aircraftDisplayName(row.aircraft))}</span>` : "";
       const dnf = row.dnf ? ` <span class="result-line-meta">DNF</span>` : "";
       const points = Number.isFinite(row.points) ? `+${row.points}pt` : "";
       return `<div class="result-line ${row.kind === "player" ? "you" : ""}">
@@ -172,7 +175,7 @@
     }
 
     function totalRowHtml(row, index) {
-      const aircraftName = row.aircraft?.name ? `<span class="result-line-meta">${escapeHtml(row.aircraft.name)}</span>` : "";
+      const aircraftName = row.aircraft ? `<span class="result-line-meta">${escapeHtml(aircraftDisplayName(row.aircraft))}</span>` : "";
       return `<div class="result-line ${row.kind === "player" ? "you" : ""}">
         <span>${index + 1}.</span>
         <span class="result-line-name">${escapeHtml(row.name)} ${aircraftName}</span>
@@ -181,7 +184,7 @@
     }
 
     function finishRowHtml(row) {
-      const aircraftName = row.aircraft?.name ? `<span class="result-line-meta">${escapeHtml(row.aircraft.name)}</span>` : "";
+      const aircraftName = row.aircraft ? `<span class="result-line-meta">${escapeHtml(aircraftDisplayName(row.aircraft))}</span>` : "";
       const timeLabel = row.dnf ? "DNF" : `${formatTime((row.finalTime || 0) * 1000)}`;
       return `<div class="result-line ${row.kind === "player" ? "you" : ""}">
         <span>${row.position}.</span>
@@ -226,28 +229,32 @@
       if (ui.resultStandings) ui.resultStandings.innerHTML = "";
       if (ui.resultTotal) ui.resultTotal.innerHTML = "";
       if (reason === "round_clear") {
-        title.textContent = `ROUND ${game.round} CLEAR`;
-        const result = (game.racePosition || 1) === 1 ? "<strong>YOU WIN</strong>" : `<strong>YOU</strong> POS ${game.racePosition || 1}/${fieldSize}`;
+        title.textContent = t("roundClear", { round: game.round });
+        const result = (game.racePosition || 1) === 1
+          ? `<strong>${t("youWin")}</strong>`
+          : `<strong>${t("yourPos", { pos: game.racePosition || 1, field: fieldSize })}</strong>`;
         renderResultWinner((gpSummary?.roundRows || [])[0] || raceStandings(true, elapsedMs / 1000)[0]);
-        renderResultRows(ui.resultStandings, "ROUND RESULT", gpSummary?.roundRows || [], resultRowHtml);
-        renderResultRows(ui.resultTotal, "GRAND PRIX", gpSummary?.tableRows || [], totalRowHtml);
+        renderResultRows(ui.resultStandings, t("roundResult"), gpSummary?.roundRows || [], resultRowHtml);
+        renderResultRows(ui.resultTotal, t("grandPrix"), gpSummary?.tableRows || [], totalRowHtml);
         renderPodiumAircraft(ui.resultTotal, gpSummary?.tableRows || []);
         ui.resultText.innerHTML = gpSummary
-          ? `${result}<br><strong>+${gpSummary.playerRoundPoints}pt</strong><br>TOTAL ${game.tournament.playerPoints}pt / NEXT ROUND ${game.round + 1}`
-          : `${result} / TOTAL ${formatTime(elapsedMs)} / NEXT ROUND ${game.round + 1}`;
+          ? `${result}<br><strong>+${gpSummary.playerRoundPoints}pt</strong><br>${t("totalPoints", { points: game.tournament.playerPoints })} / ${t("nextRoundInfo", { round: game.round + 1 })}`
+          : `${result} / ${t("totalTime", { time: formatTime(elapsedMs) })} / ${t("nextRoundInfo", { round: game.round + 1 })}`;
         ui.nextRound.style.display = "inline-block";
         ui.retry.style.display = "none";
       } else if (success) {
-        title.textContent = "FINISH";
-        const result = (game.racePosition || 1) === 1 ? "<strong>YOU WIN</strong>" : `<strong>YOU</strong> POS ${game.racePosition || 1}/${fieldSize}`;
+        title.textContent = t("finish");
+        const result = (game.racePosition || 1) === 1
+          ? `<strong>${t("youWin")}</strong>`
+          : `<strong>${t("yourPos", { pos: game.racePosition || 1, field: fieldSize })}</strong>`;
         const finalStandings = raceStandings(true, elapsedMs / 1000);
         renderResultWinner((gpSummary?.roundRows || [])[0] || finalStandings[0]);
-        renderResultRows(ui.resultStandings, gpSummary ? "ROUND RESULT" : "RESULT", gpSummary?.roundRows || finalStandings, gpSummary ? resultRowHtml : finishRowHtml);
-        renderResultRows(ui.resultTotal, "GRAND PRIX", gpSummary?.tableRows || [], totalRowHtml);
+        renderResultRows(ui.resultStandings, gpSummary ? t("roundResult") : t("result"), gpSummary?.roundRows || finalStandings, gpSummary ? resultRowHtml : finishRowHtml);
+        renderResultRows(ui.resultTotal, t("grandPrix"), gpSummary?.tableRows || [], totalRowHtml);
         renderPodiumAircraft(ui.resultTotal, gpSummary?.tableRows || []);
         ui.resultText.innerHTML = gpSummary
-          ? `${result}<br><strong>+${gpSummary.playerRoundPoints}pt</strong><br>TOTAL ${game.tournament.playerPoints}pt<br>FINAL TIME ${formatTime(elapsedMs)} / DAMAGE ${Math.round(game.damage)}%`
-          : `${result} / TOTAL TIME ${formatTime(elapsedMs)} / DAMAGE ${Math.round(game.damage)}%`;
+          ? `${result}<br><strong>+${gpSummary.playerRoundPoints}pt</strong><br>${t("totalPoints", { points: game.tournament.playerPoints })}<br>${t("finalTime", { time: formatTime(elapsedMs) })} / ${t("damage", { damage: Math.round(game.damage) })}`
+          : `${result} / ${t("totalTime", { time: formatTime(elapsedMs) })} / ${t("damage", { damage: Math.round(game.damage) })}`;
         if (scoreQualifies(recordScore)) {
           ui.nameEntry.style.display = "block";
           ui.retry.style.display = "none";
@@ -255,19 +262,19 @@
           ui.nameInput.focus();
         }
       } else {
-        title.textContent = reason === "crash" ? "CRASH" : "GAME OVER";
+        title.textContent = reason === "crash" ? t("crash") : t("gameOver");
         renderResultWinner(null);
-        renderResultRows(ui.resultStandings, "ROUND RESULT", gpSummary?.roundRows || [], resultRowHtml);
-        renderResultRows(ui.resultTotal, "GRAND PRIX", gpSummary?.tableRows || [], totalRowHtml);
+        renderResultRows(ui.resultStandings, t("roundResult"), gpSummary?.roundRows || [], resultRowHtml);
+        renderResultRows(ui.resultTotal, t("grandPrix"), gpSummary?.tableRows || [], totalRowHtml);
         renderPodiumAircraft(ui.resultTotal, gpSummary?.tableRows || []);
         ui.resultText.innerHTML = reason === "crash"
-          ? `GROUND IMPACT / ROUND ${game.round}`
-          : `DAMAGE ${Math.round(game.damage)}% / ROUND ${game.round}`;
+          ? t("groundImpactRound", { round: game.round })
+          : t("damageRound", { damage: Math.round(game.damage), round: game.round });
         if (gpSummary) {
-          ui.resultText.innerHTML += `<br>LAST PLACE / +${gpSummary.playerRoundPoints}pt`;
+          ui.resultText.innerHTML += `<br>${t("lastPlacePoints", { points: gpSummary.playerRoundPoints })}`;
         }
         if (recordRound >= 1 && scoreQualifies(recordScore)) {
-          ui.resultText.innerHTML += ` / RECORD round${recordRound}`;
+          ui.resultText.innerHTML += ` / ${t("recordRound", { round: recordRound })}`;
           ui.nameEntry.style.display = "block";
           ui.retry.style.display = "none";
         }
@@ -398,7 +405,7 @@
         gamepadName = pad.id || "Gamepad";
         ui.gamepadStatus.textContent = `GAMEPAD: ${gamepadName}`;
       } else {
-        ui.gamepadStatus.textContent = "PS4/PS5 コントローラは接続後にボタンを1回押してね。";
+        ui.gamepadStatus.textContent = t("gamepadGuide");
       }
       updateButtonHints();
     }
@@ -634,6 +641,7 @@
     });
 
     resizeCanvas();
+    applyLanguage();
     updateButtonHints();
     pollGamepadUi();
     showTitle(true);
