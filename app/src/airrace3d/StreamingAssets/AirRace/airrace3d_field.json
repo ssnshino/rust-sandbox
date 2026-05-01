@@ -1,0 +1,117 @@
+{
+  "version": "airrace3d-field-v1",
+  "globalField": {
+    "minX": -10000,
+    "maxX": 8500,
+    "minZ": -2200,
+    "maxZ": 7600,
+    "groundY": 0,
+    "margin": 900,
+    "gridSpacing": 220,
+    "gridColor": "rgba(152,210,195,0.20)",
+    "gridAxisColor": "rgba(222,246,232,0.38)"
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "skyTop": "#5B88C6",
+      "skyHorizon": "#C8E7FF",
+      "cameraBackground": "#2D628D",
+      "fogColor": "#A3D1EE",
+      "fogStart": 2400,
+      "fogEnd": 9800,
+      "groundColor": "#314F2E",
+      "coastColor": "#4C7FA8",
+      "features": [
+        {
+          "type": "hill",
+          "x": -1600,
+          "y": 0,
+          "z": 3600,
+          "radius": 720,
+          "height": 280,
+          "color": "#45653E",
+          "accent": "#88AE6B"
+        },
+        {
+          "type": "mountain",
+          "x": 2200,
+          "y": 0,
+          "z": 2850,
+          "radius": 460,
+          "height": 980,
+          "color": "#5E6A61",
+          "accent": "#BFC8BD"
+        },
+        {
+          "type": "field",
+          "x": -2800,
+          "y": 0,
+          "z": 1200,
+          "width": 2300,
+          "length": 1650,
+          "rotY": -12,
+          "color": "#6F8E42",
+          "alpha": 0.58
+        },
+        {
+          "type": "field",
+          "x": -900,
+          "y": 0,
+          "z": 1700,
+          "width": 1600,
+          "length": 920,
+          "rotY": 14,
+          "color": "#84A34E",
+          "alpha": 0.52
+        },
+        {
+          "type": "river",
+          "x": 3380,
+          "y": 0,
+          "z": 1360,
+          "width": 430,
+          "length": 6200,
+          "rotY": 18,
+          "color": "#3E7BA5",
+          "alpha": 0.68
+        },
+        {
+          "type": "coast",
+          "x": 4650,
+          "y": 0,
+          "z": -220,
+          "width": 2200,
+          "length": 4900,
+          "rotY": 16,
+          "color": "#5F92B5",
+          "alpha": 0.46
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "skyTop": "#5A87C2",
+      "skyHorizon": "#C2E1FF",
+      "cameraBackground": "#2B5D86",
+      "fogColor": "#A3CFEB",
+      "fogStart": 2500,
+      "fogEnd": 9900,
+      "groundColor": "#34542F",
+      "coastColor": "#4B80A9",
+      "features": []
+    },
+    {
+      "round": 3,
+      "skyTop": "#5678B7",
+      "skyHorizon": "#B8DBFF",
+      "cameraBackground": "#284D78",
+      "fogColor": "#9EC7E6",
+      "fogStart": 2600,
+      "fogEnd": 10300,
+      "groundColor": "#36542D",
+      "coastColor": "#4A80A8",
+      "features": []
+    }
+  ]
+}
