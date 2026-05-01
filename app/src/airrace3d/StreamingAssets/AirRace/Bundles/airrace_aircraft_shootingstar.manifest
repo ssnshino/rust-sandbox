@@ -1,0 +1,39 @@
+ManifestFileVersion: 0
+UnityVersion: 6000.4.3f1
+CRC: 3534018720
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: d97f11521e637966c1b4652f70a9e118
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 0fc04d86981490a6c3b1f141d0261725
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 97d68b1ee426b262eaaa9504193fb89a
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 108
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: 29527501a0b54aa5bf2a7bc51b05852b, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/AirRace/Factory/AircraftPrefabs/ShootingStarPrefab.prefab
+Dependencies: []
