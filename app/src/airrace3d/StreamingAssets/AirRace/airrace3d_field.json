@@ -1,0 +1,10 @@
+{
+  "version": "airrace3d-field-fallback-1",
+  "globalField": {
+    "minX": -6000.0,
+    "maxX": 6000.0,
+    "minZ": -2000.0,
+    "maxZ": 14000.0,
+    "margin": 640.0
+  }
+}
