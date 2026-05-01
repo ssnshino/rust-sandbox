@@ -1,0 +1,76 @@
+{
+  "version": "airrace3d-aircraft-v1",
+  "defaultAircraftId": "skylancer",
+  "aircrafts": [
+    {
+      "id": "skylancer",
+      "name": "スカイランサー号",
+      "nameEn": "Skylancer",
+      "summary": "平均的な優等生。初見コースの基準機。",
+      "summaryEn": "Balanced all-rounder. Best baseline for new courses.",
+      "speedMul": 1.0,
+      "boostMul": 1.0,
+      "turnMul": 1.0,
+      "climbMul": 1.0,
+      "color": "rgba(125, 211, 252, 0.78)",
+      "stroke": "#E0F2FE",
+      "shape": "standard"
+    },
+    {
+      "id": "thunderbolt",
+      "name": "サンダーボルト号",
+      "nameEn": "Thunderbolt",
+      "summary": "きびきび旋回。テクニカル向け。",
+      "summaryEn": "Sharp turning. Great for technical sections.",
+      "speedMul": 0.94,
+      "boostMul": 0.94,
+      "turnMul": 1.24,
+      "climbMul": 1.08,
+      "color": "rgba(250, 204, 21, 0.78)",
+      "stroke": "#FEF3C7",
+      "shape": "broad"
+    },
+    {
+      "id": "shootingstar",
+      "name": "シューティングスター号",
+      "nameEn": "Shooting Star",
+      "summary": "高速番長。直線と大カーブで強い。",
+      "summaryEn": "Top speed specialist. Dominates straights and long bends.",
+      "speedMul": 1.08,
+      "boostMul": 1.16,
+      "turnMul": 0.82,
+      "climbMul": 0.94,
+      "color": "rgba(248, 113, 113, 0.80)",
+      "stroke": "#FEE2E2",
+      "shape": "dart"
+    },
+    {
+      "id": "spiralfang",
+      "name": "スパイラルファング号",
+      "nameEn": "Spiral Fang",
+      "summary": "ピーキーな軽量機。反応最速。",
+      "summaryEn": "Twitchy lightweight. Fastest response.",
+      "speedMul": 0.98,
+      "boostMul": 0.98,
+      "turnMul": 1.32,
+      "climbMul": 1.14,
+      "color": "rgba(192, 132, 252, 0.82)",
+      "stroke": "#F3E8FF",
+      "shape": "fang"
+    },
+    {
+      "id": "ironhawk",
+      "name": "アイアンホーク号",
+      "nameEn": "Iron Hawk",
+      "summary": "重いけど安定。崩れにくい。",
+      "summaryEn": "Heavy but stable. Hard to destabilize.",
+      "speedMul": 1.03,
+      "boostMul": 1.08,
+      "turnMul": 0.90,
+      "climbMul": 0.92,
+      "color": "rgba(74, 222, 128, 0.76)",
+      "stroke": "#DCFCE7",
+      "shape": "heavy"
+    }
+  ]
+}
