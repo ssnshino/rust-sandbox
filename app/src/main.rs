@@ -143,9 +143,12 @@ async fn main() {
         .route("/airrace.webmanifest", get(airrace_manifest))
         .route("/airrace3d",           get(airrace3d_index))
         .route("/airrace3d/",          get(airrace3d_index))
+        .route("/airrace3d/StreamingAssets/*path", get(airrace3d_streaming_file))
         .route("/airrace3d/:name",     get(airrace3d_root_file))
         .route("/airrace3d/Build/:name", get(airrace3d_build_file))
         .route("/airrace3d/TemplateData/:name", get(airrace3d_template_file))
+        .route("/api/airrace3d/aircraft-catalog", get(airrace3d_aircraft_catalog))
+        .route("/api/airrace3d/aircraft-models", get(airrace3d_aircraft_models))
         .route("/api/airrace/round/:round", get(get_airrace_round_bundle))
         .route("/api/airrace/scores",  get(get_airrace_scores).post(post_airrace_score))
         .route("/api/airrace/ghosts",  get(get_airrace_ghosts).post(post_airrace_ghost))
@@ -198,11 +201,32 @@ async fn airrace3d_index() -> impl IntoResponse {
 async fn airrace3d_root_file(Path(name): Path<String>) -> impl IntoResponse {
     serve_airrace3d_file(PathBuf::from(name)).await
 }
+async fn airrace3d_streaming_file(Path(path): Path<String>) -> impl IntoResponse {
+    serve_airrace3d_file(PathBuf::from("StreamingAssets").join(path)).await
+}
 async fn airrace3d_build_file(Path(name): Path<String>) -> impl IntoResponse {
     serve_airrace3d_file(PathBuf::from("Build").join(name)).await
 }
 async fn airrace3d_template_file(Path(name): Path<String>) -> impl IntoResponse {
     serve_airrace3d_file(PathBuf::from("TemplateData").join(name)).await
+}
+async fn airrace3d_aircraft_catalog() -> impl IntoResponse {
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        include_str!("airrace3d/StreamingAssets/AirRace/aircraft_catalog.json"),
+    ).into_response()
+}
+async fn airrace3d_aircraft_models() -> impl IntoResponse {
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        include_str!("airrace3d/StreamingAssets/AirRace/aircraft_models.json"),
+    ).into_response()
 }
 async fn serve_airrace3d_file(relative_path: PathBuf) -> axum::response::Response {
     if !is_safe_static_path(&relative_path) {
