@@ -1,59 +1,78 @@
 {
-  "version": "airrace3d-models-v1",
+  "version": "airrace3d-models-v2",
   "models": [
     {
       "id": "standard",
       "parts": [
-        { "name": "Nose", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.0, "z": 1.12 }, "scale": { "x": 0.44, "y": 0.40, "z": 1.62 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "Cockpit", "primitive": "sphere", "material": "accent", "position": { "x": 0.0, "y": 0.24, "z": 0.42 }, "scale": { "x": 0.52, "y": 0.28, "z": 0.62 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "LeftWing", "primitive": "cube", "material": "wing", "position": { "x": -0.92, "y": -0.02, "z": 0.05 }, "scale": { "x": 1.55, "y": 0.08, "z": 0.58 }, "rotation": { "x": 0, "y": 0, "z": -6 } },
-        { "name": "RightWing", "primitive": "cube", "material": "wing", "position": { "x": 0.92, "y": -0.02, "z": 0.05 }, "scale": { "x": 1.55, "y": 0.08, "z": 0.58 }, "rotation": { "x": 0, "y": 0, "z": 6 } },
-        { "name": "Tail", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.10, "z": -0.85 }, "scale": { "x": 0.22, "y": 0.72, "z": 0.36 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "TailWing", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.00, "z": -1.00 }, "scale": { "x": 1.05, "y": 0.07, "z": 0.32 }, "rotation": { "x": 0, "y": 0, "z": 0 } }
+        { "name": "FuselageFront", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.0, "z": 0.92 }, "scale": { "x": 0.48, "y": 0.40, "z": 1.34 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "FuselageRear", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.0, "z": -0.18 }, "scale": { "x": 0.40, "y": 0.34, "z": 0.98 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "Nose", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.0, "z": 1.80 }, "scale": { "x": 0.30, "y": 0.26, "z": 0.96 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "Cockpit", "primitive": "sphere", "material": "accent", "position": { "x": 0.0, "y": 0.24, "z": 0.52 }, "scale": { "x": 0.44, "y": 0.26, "z": 0.52 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "LeftWing", "primitive": "cube", "material": "wing", "position": { "x": -0.98, "y": -0.03, "z": 0.14 }, "scale": { "x": 1.58, "y": 0.09, "z": 0.54 }, "rotation": { "x": 0, "y": 0, "z": -8 } },
+        { "name": "RightWing", "primitive": "cube", "material": "wing", "position": { "x": 0.98, "y": -0.03, "z": 0.14 }, "scale": { "x": 1.58, "y": 0.09, "z": 0.54 }, "rotation": { "x": 0, "y": 0, "z": 8 } },
+        { "name": "LeftWingTip", "primitive": "cube", "material": "wing", "position": { "x": -1.72, "y": -0.02, "z": 0.26 }, "scale": { "x": 0.28, "y": 0.06, "z": 0.42 }, "rotation": { "x": 0, "y": 0, "z": -18 } },
+        { "name": "RightWingTip", "primitive": "cube", "material": "wing", "position": { "x": 1.72, "y": -0.02, "z": 0.26 }, "scale": { "x": 0.28, "y": 0.06, "z": 0.42 }, "rotation": { "x": 0, "y": 0, "z": 18 } },
+        { "name": "TailFin", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.22, "z": -1.08 }, "scale": { "x": 0.18, "y": 0.72, "z": 0.34 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "TailWing", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.0, "z": -1.18 }, "scale": { "x": 1.06, "y": 0.08, "z": 0.30 }, "rotation": { "x": 0, "y": 0, "z": 0 } }
       ]
     },
     {
       "id": "broad",
       "parts": [
-        { "name": "Nose", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.0, "z": 1.02 }, "scale": { "x": 0.56, "y": 0.46, "z": 1.52 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "Cockpit", "primitive": "sphere", "material": "accent", "position": { "x": 0.0, "y": 0.26, "z": 0.32 }, "scale": { "x": 0.56, "y": 0.30, "z": 0.68 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "LeftWing", "primitive": "cube", "material": "wing", "position": { "x": -1.08, "y": -0.01, "z": 0.00 }, "scale": { "x": 1.86, "y": 0.09, "z": 0.66 }, "rotation": { "x": 0, "y": 0, "z": -4 } },
-        { "name": "RightWing", "primitive": "cube", "material": "wing", "position": { "x": 1.08, "y": -0.01, "z": 0.00 }, "scale": { "x": 1.86, "y": 0.09, "z": 0.66 }, "rotation": { "x": 0, "y": 0, "z": 4 } },
-        { "name": "Tail", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.14, "z": -0.90 }, "scale": { "x": 0.24, "y": 0.74, "z": 0.34 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "TailWing", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.00, "z": -1.04 }, "scale": { "x": 1.20, "y": 0.08, "z": 0.34 }, "rotation": { "x": 0, "y": 0, "z": 0 } }
+        { "name": "BodyCore", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.0, "z": 0.80 }, "scale": { "x": 0.82, "y": 0.56, "z": 1.26 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "NoseBlunt", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.0, "z": 1.58 }, "scale": { "x": 0.62, "y": 0.48, "z": 0.96 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "CockpitWide", "primitive": "sphere", "material": "accent", "position": { "x": 0.0, "y": 0.30, "z": 0.46 }, "scale": { "x": 0.62, "y": 0.32, "z": 0.62 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "LeftWing", "primitive": "cube", "material": "wing", "position": { "x": -1.42, "y": -0.04, "z": 0.04 }, "scale": { "x": 2.36, "y": 0.13, "z": 0.94 }, "rotation": { "x": 0, "y": 0, "z": -3 } },
+        { "name": "RightWing", "primitive": "cube", "material": "wing", "position": { "x": 1.42, "y": -0.04, "z": 0.04 }, "scale": { "x": 2.36, "y": 0.13, "z": 0.94 }, "rotation": { "x": 0, "y": 0, "z": 3 } },
+        { "name": "LeftEngine", "primitive": "cylinder", "material": "body", "position": { "x": -0.72, "y": -0.16, "z": 0.10 }, "scale": { "x": 0.24, "y": 0.34, "z": 0.24 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "RightEngine", "primitive": "cylinder", "material": "body", "position": { "x": 0.72, "y": -0.16, "z": 0.10 }, "scale": { "x": 0.24, "y": 0.34, "z": 0.24 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "TailFin", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.26, "z": -1.10 }, "scale": { "x": 0.24, "y": 0.86, "z": 0.40 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "TailWing", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.0, "z": -1.22 }, "scale": { "x": 1.38, "y": 0.10, "z": 0.38 }, "rotation": { "x": 0, "y": 0, "z": 0 } }
       ]
     },
     {
       "id": "dart",
       "parts": [
-        { "name": "Nose", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": -0.01, "z": 1.30 }, "scale": { "x": 0.34, "y": 0.34, "z": 1.94 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "Cockpit", "primitive": "sphere", "material": "accent", "position": { "x": 0.0, "y": 0.18, "z": 0.38 }, "scale": { "x": 0.42, "y": 0.24, "z": 0.54 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "LeftWing", "primitive": "cube", "material": "wing", "position": { "x": -0.74, "y": -0.02, "z": 0.18 }, "scale": { "x": 1.34, "y": 0.07, "z": 0.46 }, "rotation": { "x": 0, "y": 0, "z": -10 } },
-        { "name": "RightWing", "primitive": "cube", "material": "wing", "position": { "x": 0.74, "y": -0.02, "z": 0.18 }, "scale": { "x": 1.34, "y": 0.07, "z": 0.46 }, "rotation": { "x": 0, "y": 0, "z": 10 } },
-        { "name": "Tail", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.12, "z": -0.96 }, "scale": { "x": 0.18, "y": 0.70, "z": 0.30 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "TailWing", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.00, "z": -1.08 }, "scale": { "x": 0.92, "y": 0.06, "z": 0.28 }, "rotation": { "x": 0, "y": 0, "z": 0 } }
+        { "name": "NoseNeedle", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": -0.02, "z": 1.98 }, "scale": { "x": 0.22, "y": 0.22, "z": 1.88 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "BodyTube", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.0, "z": 0.76 }, "scale": { "x": 0.34, "y": 0.30, "z": 1.58 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "CockpitNarrow", "primitive": "sphere", "material": "accent", "position": { "x": 0.0, "y": 0.18, "z": 0.58 }, "scale": { "x": 0.34, "y": 0.20, "z": 0.44 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "LeftWing", "primitive": "cube", "material": "wing", "position": { "x": -0.84, "y": -0.03, "z": 0.14 }, "scale": { "x": 1.58, "y": 0.06, "z": 0.28 }, "rotation": { "x": 0, "y": 0, "z": -28 } },
+        { "name": "RightWing", "primitive": "cube", "material": "wing", "position": { "x": 0.84, "y": -0.03, "z": 0.14 }, "scale": { "x": 1.58, "y": 0.06, "z": 0.28 }, "rotation": { "x": 0, "y": 0, "z": 28 } },
+        { "name": "LeftCanard", "primitive": "cube", "material": "wing", "position": { "x": -0.42, "y": 0.00, "z": 1.06 }, "scale": { "x": 0.52, "y": 0.04, "z": 0.18 }, "rotation": { "x": 0, "y": 0, "z": -22 } },
+        { "name": "RightCanard", "primitive": "cube", "material": "wing", "position": { "x": 0.42, "y": 0.00, "z": 1.06 }, "scale": { "x": 0.52, "y": 0.04, "z": 0.18 }, "rotation": { "x": 0, "y": 0, "z": 22 } },
+        { "name": "TailFinLeft", "primitive": "cube", "material": "wing", "position": { "x": -0.16, "y": 0.24, "z": -1.08 }, "scale": { "x": 0.08, "y": 0.56, "z": 0.22 }, "rotation": { "x": 0, "y": 0, "z": -4 } },
+        { "name": "TailFinRight", "primitive": "cube", "material": "wing", "position": { "x": 0.16, "y": 0.24, "z": -1.08 }, "scale": { "x": 0.08, "y": 0.56, "z": 0.22 }, "rotation": { "x": 0, "y": 0, "z": 4 } },
+        { "name": "TailBlade", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": -0.02, "z": -1.22 }, "scale": { "x": 0.72, "y": 0.04, "z": 0.20 }, "rotation": { "x": 0, "y": 0, "z": 0 } }
       ]
     },
     {
       "id": "fang",
       "parts": [
-        { "name": "Nose", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.00, "z": 1.18 }, "scale": { "x": 0.40, "y": 0.38, "z": 1.72 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "Cockpit", "primitive": "sphere", "material": "accent", "position": { "x": 0.0, "y": 0.20, "z": 0.28 }, "scale": { "x": 0.48, "y": 0.26, "z": 0.58 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "LeftWing", "primitive": "cube", "material": "wing", "position": { "x": -0.84, "y": -0.02, "z": -0.06 }, "scale": { "x": 1.48, "y": 0.07, "z": 0.56 }, "rotation": { "x": 0, "y": 0, "z": 12 } },
-        { "name": "RightWing", "primitive": "cube", "material": "wing", "position": { "x": 0.84, "y": -0.02, "z": -0.06 }, "scale": { "x": 1.48, "y": 0.07, "z": 0.56 }, "rotation": { "x": 0, "y": 0, "z": -12 } },
-        { "name": "Tail", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.14, "z": -0.90 }, "scale": { "x": 0.20, "y": 0.82, "z": 0.30 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "TailWing", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": -0.02, "z": -1.00 }, "scale": { "x": 0.96, "y": 0.06, "z": 0.26 }, "rotation": { "x": 0, "y": 0, "z": 0 } }
+        { "name": "NoseFang", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.00, "z": 1.70 }, "scale": { "x": 0.30, "y": 0.28, "z": 1.42 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "BodyCore", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.00, "z": 0.66 }, "scale": { "x": 0.46, "y": 0.36, "z": 1.40 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "Spine", "primitive": "cube", "material": "accent", "position": { "x": 0.0, "y": 0.28, "z": -0.12 }, "scale": { "x": 0.12, "y": 0.24, "z": 0.72 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "Cockpit", "primitive": "sphere", "material": "accent", "position": { "x": 0.0, "y": 0.22, "z": 0.38 }, "scale": { "x": 0.42, "y": 0.24, "z": 0.50 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "LeftWing", "primitive": "cube", "material": "wing", "position": { "x": -0.92, "y": -0.03, "z": -0.08 }, "scale": { "x": 1.64, "y": 0.07, "z": 0.48 }, "rotation": { "x": 0, "y": 0, "z": 18 } },
+        { "name": "RightWing", "primitive": "cube", "material": "wing", "position": { "x": 0.92, "y": -0.03, "z": -0.08 }, "scale": { "x": 1.64, "y": 0.07, "z": 0.48 }, "rotation": { "x": 0, "y": 0, "z": -18 } },
+        { "name": "LeftBlade", "primitive": "cube", "material": "wing", "position": { "x": -1.42, "y": 0.00, "z": 0.22 }, "scale": { "x": 0.44, "y": 0.05, "z": 0.16 }, "rotation": { "x": 0, "y": 0, "z": 36 } },
+        { "name": "RightBlade", "primitive": "cube", "material": "wing", "position": { "x": 1.42, "y": 0.00, "z": 0.22 }, "scale": { "x": 0.44, "y": 0.05, "z": 0.16 }, "rotation": { "x": 0, "y": 0, "z": -36 } },
+        { "name": "TailFin", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.32, "z": -1.02 }, "scale": { "x": 0.16, "y": 0.94, "z": 0.26 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "LeftTailWing", "primitive": "cube", "material": "wing", "position": { "x": -0.32, "y": -0.02, "z": -1.12 }, "scale": { "x": 0.58, "y": 0.05, "z": 0.22 }, "rotation": { "x": 0, "y": 0, "z": -8 } },
+        { "name": "RightTailWing", "primitive": "cube", "material": "wing", "position": { "x": 0.32, "y": -0.02, "z": -1.12 }, "scale": { "x": 0.58, "y": 0.05, "z": 0.22 }, "rotation": { "x": 0, "y": 0, "z": 8 } }
       ]
     },
     {
       "id": "heavy",
       "parts": [
-        { "name": "Nose", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.00, "z": 1.02 }, "scale": { "x": 0.62, "y": 0.52, "z": 1.54 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "Cockpit", "primitive": "sphere", "material": "accent", "position": { "x": 0.0, "y": 0.30, "z": 0.30 }, "scale": { "x": 0.62, "y": 0.36, "z": 0.72 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "LeftWing", "primitive": "cube", "material": "wing", "position": { "x": -1.22, "y": -0.03, "z": -0.02 }, "scale": { "x": 2.08, "y": 0.10, "z": 0.72 }, "rotation": { "x": 0, "y": 0, "z": -3 } },
-        { "name": "RightWing", "primitive": "cube", "material": "wing", "position": { "x": 1.22, "y": -0.03, "z": -0.02 }, "scale": { "x": 2.08, "y": 0.10, "z": 0.72 }, "rotation": { "x": 0, "y": 0, "z": 3 } },
-        { "name": "Tail", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.22, "z": -0.92 }, "scale": { "x": 0.30, "y": 0.92, "z": 0.40 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
-        { "name": "TailWing", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": -0.02, "z": -1.08 }, "scale": { "x": 1.32, "y": 0.09, "z": 0.38 }, "rotation": { "x": 0, "y": 0, "z": 0 } }
+        { "name": "BodyChunk", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.00, "z": 0.62 }, "scale": { "x": 1.02, "y": 0.72, "z": 1.56 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "NoseBlock", "primitive": "cube", "material": "body", "position": { "x": 0.0, "y": 0.00, "z": 1.58 }, "scale": { "x": 0.80, "y": 0.60, "z": 0.88 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "CockpitBulb", "primitive": "sphere", "material": "accent", "position": { "x": 0.0, "y": 0.32, "z": 0.56 }, "scale": { "x": 0.68, "y": 0.34, "z": 0.66 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "LeftWing", "primitive": "cube", "material": "wing", "position": { "x": -1.54, "y": -0.06, "z": 0.02 }, "scale": { "x": 2.44, "y": 0.16, "z": 0.96 }, "rotation": { "x": 0, "y": 0, "z": -2 } },
+        { "name": "RightWing", "primitive": "cube", "material": "wing", "position": { "x": 1.54, "y": -0.06, "z": 0.02 }, "scale": { "x": 2.44, "y": 0.16, "z": 0.96 }, "rotation": { "x": 0, "y": 0, "z": 2 } },
+        { "name": "LeftPod", "primitive": "cylinder", "material": "body", "position": { "x": -0.88, "y": -0.16, "z": 0.20 }, "scale": { "x": 0.26, "y": 0.56, "z": 0.26 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "RightPod", "primitive": "cylinder", "material": "body", "position": { "x": 0.88, "y": -0.16, "z": 0.20 }, "scale": { "x": 0.26, "y": 0.56, "z": 0.26 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "TailFin", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": 0.34, "z": -1.12 }, "scale": { "x": 0.30, "y": 1.02, "z": 0.50 }, "rotation": { "x": 0, "y": 0, "z": 0 } },
+        { "name": "TailWing", "primitive": "cube", "material": "wing", "position": { "x": 0.0, "y": -0.02, "z": -1.26 }, "scale": { "x": 1.48, "y": 0.12, "z": 0.42 }, "rotation": { "x": 0, "y": 0, "z": 0 } }
       ]
     }
   ]
