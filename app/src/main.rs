@@ -147,8 +147,13 @@ async fn main() {
         .route("/airrace3d/:name",     get(airrace3d_root_file))
         .route("/airrace3d/Build/:name", get(airrace3d_build_file))
         .route("/airrace3d/TemplateData/:name", get(airrace3d_template_file))
+        .route("/api/airrace3d/course-catalog", get(airrace3d_course_catalog))
+        .route("/api/airrace3d/field-catalog", get(airrace3d_field_catalog))
+        .route("/api/airrace3d/world-object-catalog", get(airrace3d_world_object_catalog))
+        .route("/api/airrace3d/round-world-catalog", get(airrace3d_round_world_catalog))
         .route("/api/airrace3d/aircraft-catalog", get(airrace3d_aircraft_catalog))
         .route("/api/airrace3d/aircraft-models", get(airrace3d_aircraft_models))
+        .route("/api/airrace3d/aircraft-prefab-catalog", get(airrace3d_aircraft_prefab_catalog))
         .route("/api/airrace/round/:round", get(get_airrace_round_bundle))
         .route("/api/airrace/scores",  get(get_airrace_scores).post(post_airrace_score))
         .route("/api/airrace/ghosts",  get(get_airrace_ghosts).post(post_airrace_ghost))
@@ -210,6 +215,42 @@ async fn airrace3d_build_file(Path(name): Path<String>) -> impl IntoResponse {
 async fn airrace3d_template_file(Path(name): Path<String>) -> impl IntoResponse {
     serve_airrace3d_file(PathBuf::from("TemplateData").join(name)).await
 }
+async fn airrace3d_course_catalog() -> impl IntoResponse {
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        AIRRACE_ROUNDS_JSON,
+    ).into_response()
+}
+async fn airrace3d_field_catalog() -> impl IntoResponse {
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        include_str!("airrace3d/StreamingAssets/AirRace/airrace3d_field.json"),
+    ).into_response()
+}
+async fn airrace3d_world_object_catalog() -> impl IntoResponse {
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        include_str!("airrace3d/StreamingAssets/AirRace/world_object_catalog.json"),
+    ).into_response()
+}
+async fn airrace3d_round_world_catalog() -> impl IntoResponse {
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        include_str!("airrace3d/StreamingAssets/AirRace/round_world_catalog.json"),
+    ).into_response()
+}
 async fn airrace3d_aircraft_catalog() -> impl IntoResponse {
     (
         [
@@ -226,6 +267,15 @@ async fn airrace3d_aircraft_models() -> impl IntoResponse {
             (CACHE_CONTROL, "no-store"),
         ],
         include_str!("airrace3d/StreamingAssets/AirRace/aircraft_models.json"),
+    ).into_response()
+}
+async fn airrace3d_aircraft_prefab_catalog() -> impl IntoResponse {
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        include_str!("airrace3d/StreamingAssets/AirRace/aircraft_prefab_catalog.json"),
     ).into_response()
 }
 async fn serve_airrace3d_file(relative_path: PathBuf) -> axum::response::Response {
