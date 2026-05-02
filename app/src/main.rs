@@ -141,6 +141,9 @@ async fn main() {
         .route("/airrace.js",          get(airrace_js))
         .route("/airrace/js/:name",    get(airrace_js_module))
         .route("/airrace.webmanifest", get(airrace_manifest))
+        .route("/airrace3d", get(airrace3d_index))
+        .route("/airrace3d/", get(airrace3d_index))
+        .route("/airrace3d/*path", get(airrace3d_static))
         .route("/api/airrace3d/round-index", get(airrace3d_round_index))
         .route("/api/airrace3d/course/:round", get(airrace3d_course_round))
         .route("/api/airrace3d/field-catalog", get(airrace3d_field_catalog))
@@ -195,6 +198,18 @@ async fn airrace_manifest() -> impl IntoResponse {
         ],
         include_str!("airrace/airrace.webmanifest"),
     ).into_response()
+}
+
+async fn airrace3d_index() -> impl IntoResponse {
+    match std::fs::read("src/airrace3d/index.html") {
+        Ok(bytes) => {
+            let mut headers = HeaderMap::new();
+            headers.insert(CONTENT_TYPE, HeaderValue::from_static("text/html; charset=utf-8"));
+            headers.insert(CACHE_CONTROL, HeaderValue::from_static("no-store"));
+            (headers, bytes).into_response()
+        }
+        Err(_) => StatusCode::NOT_FOUND.into_response(),
+    }
 }
 async fn airrace3d_round_index() -> impl IntoResponse {
     let Ok(root) = serde_json::from_str::<serde_json::Value>(AIRRACE_ROUNDS_JSON) else {
@@ -330,6 +345,25 @@ async fn airrace3d_streaming_asset(Path(path): Path<String>) -> impl IntoRespons
     (headers, bytes).into_response()
 }
 
+async fn airrace3d_static(Path(path): Path<String>) -> impl IntoResponse {
+    let rel = sanitize_relative_path(&path);
+    let Some(rel) = rel else {
+        return StatusCode::BAD_REQUEST.into_response();
+    };
+    let full = FsPath::new("src/airrace3d").join(rel);
+    let Ok(bytes) = std::fs::read(&full) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let mime = content_type_for_path(&full);
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static(mime));
+    headers.insert(CACHE_CONTROL, HeaderValue::from_static("public, max-age=300"));
+    if let Some(enc) = content_encoding_for_path(&full) {
+        headers.insert(CONTENT_ENCODING, HeaderValue::from_static(enc));
+    }
+    (headers, bytes).into_response()
+}
+
 fn sanitize_relative_path(input: &str) -> Option<PathBuf> {
     let trimmed = input.trim_start_matches('/');
     if trimmed.is_empty() {
@@ -354,6 +388,14 @@ fn content_type_for_path(path: &FsPath) -> &'static str {
     let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_ascii_lowercase();
     if name.ends_with(".json") || name.ends_with(".json.gz") || name.ends_with(".json.br") {
         "application/json; charset=utf-8"
+    } else if name.ends_with(".html") {
+        "text/html; charset=utf-8"
+    } else if name.ends_with(".css") {
+        "text/css; charset=utf-8"
+    } else if name.ends_with(".png") {
+        "image/png"
+    } else if name.ends_with(".ico") {
+        "image/x-icon"
     } else if name.ends_with(".js") || name.ends_with(".js.gz") || name.ends_with(".js.br") {
         "application/javascript; charset=utf-8"
     } else if name.ends_with(".wasm") || name.ends_with(".wasm.gz") || name.ends_with(".wasm.br") {
