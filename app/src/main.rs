@@ -18,7 +18,7 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use std::path::{Path as FsPath, PathBuf};
+use std::path::{Component, Path as FsPath, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -141,6 +141,15 @@ async fn main() {
         .route("/airrace.js",          get(airrace_js))
         .route("/airrace/js/:name",    get(airrace_js_module))
         .route("/airrace.webmanifest", get(airrace_manifest))
+        .route("/api/airrace3d/round-index", get(airrace3d_round_index))
+        .route("/api/airrace3d/course/:round", get(airrace3d_course_round))
+        .route("/api/airrace3d/field-catalog", get(airrace3d_field_catalog))
+        .route("/api/airrace3d/world-object-catalog", get(airrace3d_world_object_catalog))
+        .route("/api/airrace3d/round-world-catalog", get(airrace3d_round_world_catalog))
+        .route("/api/airrace3d/aircraft-catalog", get(airrace3d_aircraft_catalog))
+        .route("/api/airrace3d/aircraft-models", get(airrace3d_aircraft_models))
+        .route("/api/airrace3d/aircraft-prefab-catalog", get(airrace3d_aircraft_prefab_catalog))
+        .route("/airrace3d/StreamingAssets/*path", get(airrace3d_streaming_asset))
         .route("/api/airrace/round/:round", get(get_airrace_round_bundle))
         .route("/api/airrace/scores",  get(get_airrace_scores).post(post_airrace_score))
         .route("/api/airrace/ghosts",  get(get_airrace_ghosts).post(post_airrace_ghost))
@@ -186,6 +195,174 @@ async fn airrace_manifest() -> impl IntoResponse {
         ],
         include_str!("airrace/airrace.webmanifest"),
     ).into_response()
+}
+async fn airrace3d_round_index() -> impl IntoResponse {
+    let Ok(root) = serde_json::from_str::<serde_json::Value>(AIRRACE_ROUNDS_JSON) else {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
+    let Some(map) = root.as_object() else {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
+    let mut rounds: Vec<u32> = map.keys().filter_map(|k| k.parse::<u32>().ok()).collect();
+    rounds.sort_unstable();
+    let final_round = rounds.last().copied().unwrap_or(1);
+    let payload = serde_json::json!({
+        "finalRound": final_round,
+        "rounds": rounds,
+    });
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        payload.to_string(),
+    ).into_response()
+}
+
+async fn airrace3d_course_round(Path(round): Path<u32>) -> impl IntoResponse {
+    let key = round.to_string();
+    let Ok(root) = serde_json::from_str::<serde_json::Value>(AIRRACE_ROUNDS_JSON) else {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
+    let Some(course) = root.get(key.as_str()) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let mut course = course.clone();
+    if let Some(obj) = course.as_object_mut() {
+        if obj.get("country").and_then(|v| v.as_str()).unwrap_or("").is_empty() {
+            obj.insert("country".to_string(), serde_json::Value::String(format!("ROUND {}", round)));
+        }
+        if obj.get("title").and_then(|v| v.as_str()).unwrap_or("").is_empty() {
+            obj.insert("title".to_string(), serde_json::Value::String(format!("Round {}", round)));
+        }
+    }
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        course.to_string(),
+    ).into_response()
+}
+
+async fn airrace3d_field_catalog() -> impl IntoResponse {
+    let body = r#"{"version":"airrace3d-field-v1","globalField":{"minX":-32000,"maxX":32000,"minZ":-32000,"maxZ":32000,"margin":640},"overrides":[]}"#;
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        body,
+    ).into_response()
+}
+
+async fn airrace3d_world_object_catalog() -> impl IntoResponse {
+    let body = r#"{"version":"airrace3d-world-v1","objects":[]}"#;
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        body,
+    ).into_response()
+}
+
+async fn airrace3d_round_world_catalog() -> impl IntoResponse {
+    let body = include_str!("airrace3d/StreamingAssets/AirRace/round_world_catalog.json");
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        body,
+    ).into_response()
+}
+
+async fn airrace3d_aircraft_catalog() -> impl IntoResponse {
+    let body = r#"{"version":"airrace3d-aircraft-v1","defaultAircraftId":"skylancer","aircrafts":[{"id":"skylancer","nameJa":"スカイランサー","nameEn":"Skylancer","summaryJa":"標準機","summaryEn":"Standard","handling":0.5,"maxSpeed":0.5,"boostMultiplier":1.0,"rollResponse":1.0,"pitchResponse":1.0}]}"#;
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        body,
+    ).into_response()
+}
+
+async fn airrace3d_aircraft_models() -> impl IntoResponse {
+    let body = r#"{"version":"airrace3d-aircraft-models-v1","models":[]}"#;
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        body,
+    ).into_response()
+}
+
+async fn airrace3d_aircraft_prefab_catalog() -> impl IntoResponse {
+    let body = include_str!("airrace3d/StreamingAssets/AirRace/aircraft_prefab_catalog.json");
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        body,
+    ).into_response()
+}
+
+async fn airrace3d_streaming_asset(Path(path): Path<String>) -> impl IntoResponse {
+    let rel = sanitize_relative_path(&path);
+    let Some(rel) = rel else {
+        return StatusCode::BAD_REQUEST.into_response();
+    };
+    let full = FsPath::new("src/airrace3d/StreamingAssets").join(rel);
+    let Ok(bytes) = std::fs::read(&full) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let mime = content_type_for_path(&full);
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static(mime));
+    headers.insert(CACHE_CONTROL, HeaderValue::from_static("public, max-age=300"));
+    if let Some(enc) = content_encoding_for_path(&full) {
+        headers.insert(CONTENT_ENCODING, HeaderValue::from_static(enc));
+    }
+    (headers, bytes).into_response()
+}
+
+fn sanitize_relative_path(input: &str) -> Option<PathBuf> {
+    let trimmed = input.trim_start_matches('/');
+    if trimmed.is_empty() {
+        return None;
+    }
+    let path = FsPath::new(trimmed);
+    for c in path.components() {
+        match c {
+            Component::Normal(_) => {}
+            _ => return None,
+        }
+    }
+    Some(path.to_path_buf())
+}
+
+fn content_encoding_for_path(path: &FsPath) -> Option<&'static str> {
+    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or_default().to_ascii_lowercase();
+    if ext == "gz" { Some("gzip") } else if ext == "br" { Some("br") } else { None }
+}
+
+fn content_type_for_path(path: &FsPath) -> &'static str {
+    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_ascii_lowercase();
+    if name.ends_with(".json") || name.ends_with(".json.gz") || name.ends_with(".json.br") {
+        "application/json; charset=utf-8"
+    } else if name.ends_with(".js") || name.ends_with(".js.gz") || name.ends_with(".js.br") {
+        "application/javascript; charset=utf-8"
+    } else if name.ends_with(".wasm") || name.ends_with(".wasm.gz") || name.ends_with(".wasm.br") {
+        "application/wasm"
+    } else if name.ends_with(".bundle") || name.contains("airrace_") {
+        "application/octet-stream"
+    } else {
+        "application/octet-stream"
+    }
 }
 async fn truckers_page() -> Html<&'static str> { Html(include_str!("truckers/truckers.html")) }
 async fn truckers_css() -> impl IntoResponse {

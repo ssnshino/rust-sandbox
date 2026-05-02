@@ -1,0 +1,33 @@
+{
+  "version": "airrace3d-round-world-v2",
+  "worlds": [
+    {
+      "round": 1,
+      "bundlePath": "AirRace/Bundles/airrace_round_world_01_round1worldprefab",
+      "prefabName": "Round1WorldPrefab",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "rotX": 0,
+      "rotY": 0,
+      "rotZ": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "scaleZ": 1
+    },
+    {
+      "round": 2,
+      "bundlePath": "AirRace/Bundles/airrace_round_world_02_round2spacecolonyworldprefab",
+      "prefabName": "Round2SpaceColonyWorldPrefab",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "rotX": 0,
+      "rotY": 0,
+      "rotZ": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "scaleZ": 1
+    }
+  ]
+}
