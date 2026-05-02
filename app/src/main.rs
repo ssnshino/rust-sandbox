@@ -141,21 +141,6 @@ async fn main() {
         .route("/airrace.js",          get(airrace_js))
         .route("/airrace/js/:name",    get(airrace_js_module))
         .route("/airrace.webmanifest", get(airrace_manifest))
-        .route("/airrace3d",           get(airrace3d_index))
-        .route("/airrace3d/",          get(airrace3d_index))
-        .route("/airrace3d/StreamingAssets/*path", get(airrace3d_streaming_file))
-        .route("/airrace3d/:name",     get(airrace3d_root_file))
-        .route("/airrace3d/Build/:name", get(airrace3d_build_file))
-        .route("/airrace3d/TemplateData/:name", get(airrace3d_template_file))
-        .route("/api/airrace3d/course-catalog", get(airrace3d_course_catalog))
-        .route("/api/airrace3d/round-index", get(airrace3d_round_index))
-        .route("/api/airrace3d/course/:round", get(airrace3d_course_round))
-        .route("/api/airrace3d/field-catalog", get(airrace3d_field_catalog))
-        .route("/api/airrace3d/world-object-catalog", get(airrace3d_world_object_catalog))
-        .route("/api/airrace3d/round-world-catalog", get(airrace3d_round_world_catalog))
-        .route("/api/airrace3d/aircraft-catalog", get(airrace3d_aircraft_catalog))
-        .route("/api/airrace3d/aircraft-models", get(airrace3d_aircraft_models))
-        .route("/api/airrace3d/aircraft-prefab-catalog", get(airrace3d_aircraft_prefab_catalog))
         .route("/api/airrace/round/:round", get(get_airrace_round_bundle))
         .route("/api/airrace/scores",  get(get_airrace_scores).post(post_airrace_score))
         .route("/api/airrace/ghosts",  get(get_airrace_ghosts).post(post_airrace_ghost))
@@ -265,57 +250,75 @@ async fn airrace3d_course_round(Path(round): Path<u32>) -> impl IntoResponse {
     ).into_response()
 }
 async fn airrace3d_field_catalog() -> impl IntoResponse {
+    let fallback = r#"{"version":"airrace3d-field-fallback-1","globalField":{"minX":-16000,"maxX":16000,"minZ":-16000,"maxZ":16000,"margin":640},"overrides":[]}"#;
+    let body = std::fs::read_to_string("src/airrace3d/StreamingAssets/AirRace/airrace3d_field.json")
+        .unwrap_or_else(|_| fallback.to_string());
     (
         [
             (CONTENT_TYPE, "application/json; charset=utf-8"),
             (CACHE_CONTROL, "no-store"),
         ],
-        include_str!("airrace3d/StreamingAssets/AirRace/airrace3d_field.json"),
+        body,
     ).into_response()
 }
 async fn airrace3d_world_object_catalog() -> impl IntoResponse {
+    let fallback = r#"{"version":"airrace3d-world-objects-fallback-1","objects":[]}"#;
+    let body = std::fs::read_to_string("src/airrace3d/StreamingAssets/AirRace/world_object_catalog.json")
+        .unwrap_or_else(|_| fallback.to_string());
     (
         [
             (CONTENT_TYPE, "application/json; charset=utf-8"),
             (CACHE_CONTROL, "no-store"),
         ],
-        include_str!("airrace3d/StreamingAssets/AirRace/world_object_catalog.json"),
+        body,
     ).into_response()
 }
 async fn airrace3d_round_world_catalog() -> impl IntoResponse {
+    let fallback = r#"{"version":"airrace3d-round-world-fallback-1","worlds":[]}"#;
+    let body = std::fs::read_to_string("src/airrace3d/StreamingAssets/AirRace/round_world_catalog.json")
+        .unwrap_or_else(|_| fallback.to_string());
     (
         [
             (CONTENT_TYPE, "application/json; charset=utf-8"),
             (CACHE_CONTROL, "no-store"),
         ],
-        include_str!("airrace3d/StreamingAssets/AirRace/round_world_catalog.json"),
+        body,
     ).into_response()
 }
 async fn airrace3d_aircraft_catalog() -> impl IntoResponse {
+    let fallback = r#"{"version":"airrace3d-aircraft-fallback-1","defaultAircraftId":"skylancer","aircrafts":[{"id":"skylancer","nameJa":"スカイランサー","nameEn":"Skylancer","summaryJa":"標準機","summaryEn":"Standard","handling":0.5,"maxSpeed":0.5,"boostMultiplier":1.0,"rollResponse":1.0,"pitchResponse":1.0}]}"#;
+    let body = std::fs::read_to_string("src/airrace3d/StreamingAssets/AirRace/aircraft_catalog.json")
+        .unwrap_or_else(|_| fallback.to_string());
     (
         [
             (CONTENT_TYPE, "application/json; charset=utf-8"),
             (CACHE_CONTROL, "no-store"),
         ],
-        include_str!("airrace3d/StreamingAssets/AirRace/aircraft_catalog.json"),
+        body,
     ).into_response()
 }
 async fn airrace3d_aircraft_models() -> impl IntoResponse {
+    let fallback = r#"{"version":"airrace3d-aircraft-models-fallback-1","models":[]}"#;
+    let body = std::fs::read_to_string("src/airrace3d/StreamingAssets/AirRace/aircraft_models.json")
+        .unwrap_or_else(|_| fallback.to_string());
     (
         [
             (CONTENT_TYPE, "application/json; charset=utf-8"),
             (CACHE_CONTROL, "no-store"),
         ],
-        include_str!("airrace3d/StreamingAssets/AirRace/aircraft_models.json"),
+        body,
     ).into_response()
 }
 async fn airrace3d_aircraft_prefab_catalog() -> impl IntoResponse {
+    let fallback = r#"{"version":"airrace3d-aircraft-prefabs-fallback-1","prefabs":[]}"#;
+    let body = std::fs::read_to_string("src/airrace3d/StreamingAssets/AirRace/aircraft_prefab_catalog.json")
+        .unwrap_or_else(|_| fallback.to_string());
     (
         [
             (CONTENT_TYPE, "application/json; charset=utf-8"),
             (CACHE_CONTROL, "no-store"),
         ],
-        include_str!("airrace3d/StreamingAssets/AirRace/aircraft_prefab_catalog.json"),
+        body,
     ).into_response()
 }
 async fn serve_airrace3d_file(relative_path: PathBuf) -> axum::response::Response {
