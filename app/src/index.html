@@ -100,61 +100,13 @@
 
     <h2 data-i18n="game_select">── UNITY GAME SELECT ──</h2>
     <div class="cards">
-      <a class="card" href="/pong">
-        <span class="card-icon">🏓</span>
-        <div>
-          <div class="card-title" data-i18n="pong1p_title">Pong — シングル</div>
-          <div class="card-desc"  data-i18n="pong1p_desc">WebSocket でサーバー同期する CPU 対戦 Pong</div>
-        </div>
-        <span class="badge live" data-count-key="pong_single">1P • --</span>
-      </a>
-      <a class="card" href="/pong?mode=2p">
-        <span class="card-icon">⚔️</span>
-        <div>
-          <div class="card-title" data-i18n="pong2p_title">Pong — 2P 対戦</div>
-          <div class="card-desc"  data-i18n="pong2p_desc">別の端末・別タブで同時接続してリアルタイム対戦</div>
-        </div>
-        <span class="badge live" data-count-key="pong_2p" data-waiting-key="pong_2p_waiting">2P • --</span>
-      </a>
-      <a class="card" href="/breakout">
-        <span class="card-icon">🧱</span>
-        <div>
-          <div class="card-title" data-i18n="breakout_title">Breakout</div>
-          <div class="card-desc"  data-i18n="breakout_desc">サーバーサイド物理演算のブロック崩し。マウス / キー / タッチ対応</div>
-        </div>
-        <span class="badge live" data-count-key="breakout">1P • --</span>
-      </a>
-      <a class="card" href="/dungeon">
-        <span class="card-icon">🏯</span>
-        <div>
-          <div class="card-title" data-i18n="dungeon_title">あやかダンジョン</div>
-          <div class="card-desc"  data-i18n="dungeon_desc">平安京エイリアン × あやかダンジョン。穴を掘ってエイリアンを倒せ！最大4人対応</div>
-        </div>
-        <span class="badge live" data-count-key="dungeon">--</span>
-      </a>
-      <a class="card" href="/fighting">
-        <span class="card-icon">🥊</span>
-        <div>
-          <div class="card-title" data-i18n="fighting_title">あやかファイティング</div>
-          <div class="card-desc"  data-i18n="fighting_desc">イーアルカンフー風格闘ゲーム。5ステージCPU戦、ガード・斜めジャンプ・2P対戦あり</div>
-        </div>
-        <span class="badge live" data-count-key="fighting" data-waiting-key="fighting_2p_waiting">--</span>
-      </a>
-      <a class="card" href="/truckers">
-        <span class="card-icon">🚛</span>
-        <div>
-          <div class="card-title" data-i18n="truckers_title">中型宇宙トラック野郎</div>
-          <div class="card-desc"  data-i18n="truckers_desc">アステロイドベルトで配達！黄道12ステーションを巡って何周できるか競え！</div>
-        </div>
-        <span class="badge new live" data-count-key="truckers">NEW • --</span>
-      </a>
-      <a class="card" href="/airrace">
+      <a class="card" href="/airrace3d/">
         <span class="card-icon">✈️</span>
         <div>
-          <div class="card-title" data-i18n="airrace_title">ベクター・エアレース</div>
-          <div class="card-desc"  data-i18n="airrace_desc">ワイヤーフレーム風の擬似3D飛行機レース。ゲートをくぐってタイムを削れ！</div>
+          <div class="card-title" data-i18n="airrace3d_title">AIRRACE 3D</div>
+          <div class="card-desc"  data-i18n="airrace3d_desc">Unity WebGL版。機体選択とラウンド配信対応</div>
         </div>
-        <span class="badge new">PROTO</span>
+        <span class="badge new">UNITY</span>
       </a>
     </div>
 
@@ -168,21 +120,8 @@ const I18N = {
     subtitle:       'UNITY3Dオンラインゲームセンター',
     insert_coin:    '▶ INSERT COIN ◀',
     game_select:    '── UNITY GAME SELECT ──',
-    pong1p_title:   'Pong — シングル',
-    pong1p_desc:    'WebSocket でサーバー同期する CPU 対戦 Pong',
-    pong2p_title:   'Pong — 2P 対戦',
-    pong2p_desc:    '別の端末・別タブで同時接続してリアルタイム対戦',
-    breakout_title: 'Breakout',
-    breakout_desc:  'サーバーサイド物理演算のブロック崩し。マウス / キー / タッチ対応',
-    dungeon_title:  'あやかダンジョン',
-    dungeon_desc:   '平安京エイリアン × あやかダンジョン。穴を掘ってエイリアンを倒せ！最大4人対応',
-    fighting_title:  'あやかファイティング',
-    fighting_desc:   'イーアルカンフー風格闘ゲーム。5ステージCPU戦、ガード・斜めジャンプ・2P対戦あり',
-    truckers_title:  '中型宇宙トラック野郎',
-    truckers_desc:   'アステロイドベルトで配達！黄道12ステーションを巡って何周できるか競え！',
-    airrace_title:   'ベクター・エアレース',
-    airrace_desc:    'ワイヤーフレーム風の擬似3D飛行機レース。ゲートをくぐってタイムを削れ！',
-    waiting:        '待ちあり',
+    airrace3d_title: 'AIRRACE 3D',
+    airrace3d_desc:  'Unity WebGL版。機体選択とラウンド配信対応',
     footer:         'ゲームセンターしのみ屋２号店 ©2026 \u00a0|\u00a0 Powered by Rust + axum + WebSocket',
   },
   en: {
@@ -190,21 +129,8 @@ const I18N = {
     subtitle:       'Unity 3D Online Game Center',
     insert_coin:    '▶ INSERT COIN ◀',
     game_select:    '── UNITY GAME SELECT ──',
-    pong1p_title:   'Pong — Single',
-    pong1p_desc:    'Server-synced Pong vs CPU via WebSocket',
-    pong2p_title:   'Pong — 2P Battle',
-    pong2p_desc:    'Real-time multiplayer Pong from any device or tab',
-    breakout_title: 'Breakout',
-    breakout_desc:  'Server-side physics brick breaker. Mouse / keyboard / touch',
-    dungeon_title:  'Ayaka Dungeon',
-    dungeon_desc:   'Heian-kyo Alien × Ayaka Dungeon. Dig holes and trap aliens! Up to 4 players',
-    fighting_title:  'Ayaka Fighting',
-    fighting_desc:   'Ee-Ar Kung Fu style fighter. 5-stage CPU mode, guard, diagonal jump, 2P battle',
-    truckers_title:  'Space Truckers',
-    truckers_desc:   'Deliver cargo across the asteroid belt! Visit all 12 zodiac stations!',
-    airrace_title:   'Vector Air Race',
-    airrace_desc:    'Pseudo-3D wireframe air racing. Hit the gates and shave your time!',
-    waiting:        'Waiting',
+    airrace3d_title: 'AIRRACE 3D',
+    airrace3d_desc:  'Unity WebGL edition with aircraft selection and round streaming',
     footer:         'Game Center Shinomiya Branch 2 ©2026 \u00a0|\u00a0 Powered by Rust + axum + WebSocket',
   }
 };
