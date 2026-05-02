@@ -294,7 +294,17 @@ async fn airrace3d_round_world_catalog() -> impl IntoResponse {
 }
 
 async fn airrace3d_aircraft_catalog() -> impl IntoResponse {
-    let body = r#"{"version":"airrace3d-aircraft-v1","defaultAircraftId":"skylancer","aircrafts":[{"id":"skylancer","nameJa":"スカイランサー","nameEn":"Skylancer","summaryJa":"標準機","summaryEn":"Standard","handling":0.5,"maxSpeed":0.5,"boostMultiplier":1.0,"rollResponse":1.0,"pitchResponse":1.0}]}"#;
+    let body = r#"{
+  "version":"airrace3d-aircraft-v2",
+  "defaultAircraftId":"skylancer",
+  "aircrafts":[
+    {"id":"skylancer","nameJa":"スカイランサー","nameEn":"Skylancer","summaryJa":"標準機","summaryEn":"Standard","handling":0.50,"maxSpeed":0.50,"boostMultiplier":1.00,"rollResponse":1.00,"pitchResponse":1.00},
+    {"id":"thunderbolt","nameJa":"サンダーボルト号","nameEn":"Thunderbolt","summaryJa":"キビキビ旋回","summaryEn":"Agile turner","handling":0.70,"maxSpeed":0.42,"boostMultiplier":1.02,"rollResponse":1.18,"pitchResponse":1.08},
+    {"id":"shootingstar","nameJa":"シューティングスター号","nameEn":"Shooting Star","summaryJa":"高速特化","summaryEn":"Top-speed focused","handling":0.38,"maxSpeed":0.72,"boostMultiplier":1.14,"rollResponse":0.88,"pitchResponse":0.86},
+    {"id":"spiralfang","nameJa":"スパイラルファング号","nameEn":"Spiral Fang","summaryJa":"ピーキー操作","summaryEn":"Peaky control","handling":0.66,"maxSpeed":0.60,"boostMultiplier":1.06,"rollResponse":1.28,"pitchResponse":1.16},
+    {"id":"ironhawk","nameJa":"アイアンホーク号","nameEn":"Iron Hawk","summaryJa":"重厚安定型","summaryEn":"Stable heavy frame","handling":0.44,"maxSpeed":0.56,"boostMultiplier":1.08,"rollResponse":0.92,"pitchResponse":0.94}
+  ]
+}"#;
     (
         [
             (CONTENT_TYPE, "application/json; charset=utf-8"),
