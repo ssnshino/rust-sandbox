@@ -148,6 +148,8 @@ async fn main() {
         .route("/airrace3d/Build/:name", get(airrace3d_build_file))
         .route("/airrace3d/TemplateData/:name", get(airrace3d_template_file))
         .route("/api/airrace3d/course-catalog", get(airrace3d_course_catalog))
+        .route("/api/airrace3d/round-index", get(airrace3d_round_index))
+        .route("/api/airrace3d/course/:round", get(airrace3d_course_round))
         .route("/api/airrace3d/field-catalog", get(airrace3d_field_catalog))
         .route("/api/airrace3d/world-object-catalog", get(airrace3d_world_object_catalog))
         .route("/api/airrace3d/round-world-catalog", get(airrace3d_round_world_catalog))
@@ -222,6 +224,44 @@ async fn airrace3d_course_catalog() -> impl IntoResponse {
             (CACHE_CONTROL, "no-store"),
         ],
         AIRRACE_ROUNDS_JSON,
+    ).into_response()
+}
+async fn airrace3d_round_index() -> impl IntoResponse {
+    let Ok(root) = serde_json::from_str::<serde_json::Value>(AIRRACE_ROUNDS_JSON) else {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
+    let Some(map) = root.as_object() else {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
+    let mut rounds: Vec<u32> = map.keys().filter_map(|k| k.parse::<u32>().ok()).collect();
+    rounds.sort_unstable();
+    let final_round = rounds.last().copied().unwrap_or(1);
+    let payload = serde_json::json!({
+        "finalRound": final_round,
+        "rounds": rounds,
+    });
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        payload.to_string(),
+    ).into_response()
+}
+async fn airrace3d_course_round(Path(round): Path<u32>) -> impl IntoResponse {
+    let key = round.to_string();
+    let Ok(root) = serde_json::from_str::<serde_json::Value>(AIRRACE_ROUNDS_JSON) else {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
+    let Some(course) = root.get(key.as_str()) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    (
+        [
+            (CONTENT_TYPE, "application/json; charset=utf-8"),
+            (CACHE_CONTROL, "no-store"),
+        ],
+        course.to_string(),
     ).into_response()
 }
 async fn airrace3d_field_catalog() -> impl IntoResponse {
