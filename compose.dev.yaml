@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: ayano-lab-unity-rust-games
     working_dir: /workspace/app
-    command: ["./target/debug/rust-sandbox"]
+    command: ["cargo", "run"]
     ports:
       - "18091:3000"
     volumes:
