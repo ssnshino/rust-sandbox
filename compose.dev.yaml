@@ -3,15 +3,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ayano-lab-rust-sandbox
+    container_name: ayano-lab-unity-rust-games
     working_dir: /workspace/app
-    command: ["cargo", "run"]
+    command: ["./target/debug/rust-sandbox"]
     ports:
-      - "18081:3000"
+      - "18091:3000"
     volumes:
       - ./app:/workspace/app
     environment:
-      - VIRTUAL_HOST=rust-sandbox.wos.ktsys.jp
+      - VIRTUAL_HOST=unity-rust-games.wos.ktsys.jp
       - VIRTUAL_PORT=3000
       - CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
     networks:
