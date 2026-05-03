@@ -284,7 +284,7 @@ async fn airrace3d_round_world_catalog() -> impl IntoResponse {
 }
 
 async fn airrace3d_aircraft_catalog() -> impl IntoResponse {
-    let body = r#"{
+    let body = r##"{
   "version":"airrace3d-aircraft-v3",
   "defaultAircraftId":"skylancer",
   "aircrafts":[
@@ -294,7 +294,7 @@ async fn airrace3d_aircraft_catalog() -> impl IntoResponse {
     {"id":"spiralfang","name":"スパイラルファング号","nameEn":"Spiral Fang","summary":"ピーキーな軽量機。反応最速。","summaryEn":"Twitchy lightweight. Fastest response.","speedMul":0.98,"boostMul":0.98,"turnMul":1.32,"climbMul":1.14,"color":"rgba(192, 132, 252, 0.82)","stroke":"#f3e8ff","shape":"fang"},
     {"id":"ironhawk","name":"アイアンホーク号","nameEn":"Iron Hawk","summary":"重いけど安定。崩れにくい。","summaryEn":"Heavy but stable. Hard to destabilize.","speedMul":1.03,"boostMul":1.08,"turnMul":0.90,"climbMul":0.92,"color":"rgba(74, 222, 128, 0.76)","stroke":"#dcfce7","shape":"heavy"}
   ]
-}"#;
+}"##;
     (
         [
             (CONTENT_TYPE, "application/json; charset=utf-8"),
