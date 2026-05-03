@@ -55,12 +55,12 @@
       }
 
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/2b568df9c41a18541d50df32da1892d1.loader.js";
+      var loaderUrl = buildUrl + "/4108fa3f486e2d8bdeb517be501c61bd.loader.js";
       var config = {
         arguments: [],
-        dataUrl: buildUrl + "/89d336a2c61cdf0342a4f55455cce5ca.data.gz",
+        dataUrl: buildUrl + "/e991b3302c9cb699d45688187de5ec5b.data.gz",
         frameworkUrl: buildUrl + "/e3ccb49e391ddd2ea95f277d8509ef9f.framework.js.gz",
-        codeUrl: buildUrl + "/3bb3e5778b32d1c4142abc65c1518175.wasm.gz",
+        codeUrl: buildUrl + "/de2eac5b28cf32b174cc9ef35299466e.wasm.gz",
         symbolsUrl: buildUrl + "/aca759fcc5b053cf2cceb95c3e7686c4.symbols.json.gz",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "shino",
