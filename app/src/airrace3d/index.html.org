@@ -58,7 +58,7 @@
       var loaderUrl = buildUrl + "/4108fa3f486e2d8bdeb517be501c61bd.loader.js";
       var config = {
         arguments: [],
-        dataUrl: buildUrl + "/e991b3302c9cb699d45688187de5ec5b.data.gz",
+        dataUrl: buildUrl + "/25dc8bf0ee9b44be70e99768bfe99b39.data.gz",
         frameworkUrl: buildUrl + "/e3ccb49e391ddd2ea95f277d8509ef9f.framework.js.gz",
         codeUrl: buildUrl + "/de2eac5b28cf32b174cc9ef35299466e.wasm.gz",
         symbolsUrl: buildUrl + "/aca759fcc5b053cf2cceb95c3e7686c4.symbols.json.gz",
