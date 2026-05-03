@@ -198,3 +198,18 @@ Scope: This chat session only
 - No hidden forcing on base when pull conflicts.
 - Keep detailed operation logs with exact sequence.
 
+[07] Explicit incident addendum (host scope mistake) — appended by user request
+- Incident:
+  - Sub-agent verification task included checks against:
+    - https://games.lab.ktsys.jp
+    - https://rust-sandbox.wos.ktsys.jp
+  - This was out of scope for this Unity app verification.
+- User-stated correct scope:
+  - Unity app verification target is:
+    - https://unity-rust-games.wos.ktsys.jp only
+- Impact:
+  - Produced irrelevant 404 results from unrelated hosts.
+  - Added unnecessary delay and user frustration.
+- Corrective rule (must apply for this app):
+  - For all startup/API/runtime checks of this Unity app, do not query rust-sandbox or games.lab.
+  - Use unity-rust-games.wos.ktsys.jp as the single verification host.

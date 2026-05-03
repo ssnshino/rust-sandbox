@@ -150,7 +150,6 @@ async fn main() {
         .route("/api/airrace3d/world-object-catalog", get(airrace3d_world_object_catalog))
         .route("/api/airrace3d/round-world-catalog", get(airrace3d_round_world_catalog))
         .route("/api/airrace3d/aircraft-catalog", get(airrace3d_aircraft_catalog))
-        .route("/api/airrace3d/aircraft-models", get(airrace3d_aircraft_models))
         .route("/api/airrace3d/aircraft-prefab-catalog", get(airrace3d_aircraft_prefab_catalog))
         .route("/airrace3d/StreamingAssets/*path", get(airrace3d_streaming_asset))
         .route("/api/airrace/round/:round", get(get_airrace_round_bundle))
@@ -160,7 +159,7 @@ async fn main() {
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    println!("rust-sandbox listening on :3000");
+    println!("unity-rust-games listening on :3000");
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -242,15 +241,6 @@ async fn airrace3d_course_round(Path(round): Path<u32>) -> impl IntoResponse {
     let Some(course) = root.get(key.as_str()) else {
         return StatusCode::NOT_FOUND.into_response();
     };
-    let mut course = course.clone();
-    if let Some(obj) = course.as_object_mut() {
-        if obj.get("country").and_then(|v| v.as_str()).unwrap_or("").is_empty() {
-            obj.insert("country".to_string(), serde_json::Value::String(format!("ROUND {}", round)));
-        }
-        if obj.get("title").and_then(|v| v.as_str()).unwrap_or("").is_empty() {
-            obj.insert("title".to_string(), serde_json::Value::String(format!("Round {}", round)));
-        }
-    }
     (
         [
             (CONTENT_TYPE, "application/json; charset=utf-8"),
@@ -295,27 +285,16 @@ async fn airrace3d_round_world_catalog() -> impl IntoResponse {
 
 async fn airrace3d_aircraft_catalog() -> impl IntoResponse {
     let body = r#"{
-  "version":"airrace3d-aircraft-v2",
+  "version":"airrace3d-aircraft-v3",
   "defaultAircraftId":"skylancer",
   "aircrafts":[
-    {"id":"skylancer","nameJa":"スカイランサー","nameEn":"Skylancer","summaryJa":"標準機","summaryEn":"Standard","handling":0.50,"maxSpeed":0.50,"boostMultiplier":1.00,"rollResponse":1.00,"pitchResponse":1.00},
-    {"id":"thunderbolt","nameJa":"サンダーボルト号","nameEn":"Thunderbolt","summaryJa":"キビキビ旋回","summaryEn":"Agile turner","handling":0.70,"maxSpeed":0.42,"boostMultiplier":1.02,"rollResponse":1.18,"pitchResponse":1.08},
-    {"id":"shootingstar","nameJa":"シューティングスター号","nameEn":"Shooting Star","summaryJa":"高速特化","summaryEn":"Top-speed focused","handling":0.38,"maxSpeed":0.72,"boostMultiplier":1.14,"rollResponse":0.88,"pitchResponse":0.86},
-    {"id":"spiralfang","nameJa":"スパイラルファング号","nameEn":"Spiral Fang","summaryJa":"ピーキー操作","summaryEn":"Peaky control","handling":0.66,"maxSpeed":0.60,"boostMultiplier":1.06,"rollResponse":1.28,"pitchResponse":1.16},
-    {"id":"ironhawk","nameJa":"アイアンホーク号","nameEn":"Iron Hawk","summaryJa":"重厚安定型","summaryEn":"Stable heavy frame","handling":0.44,"maxSpeed":0.56,"boostMultiplier":1.08,"rollResponse":0.92,"pitchResponse":0.94}
+    {"id":"skylancer","name":"スカイランサー号","nameEn":"Skylancer","summary":"平均的な優等生。初見コースの基準機。","summaryEn":"Balanced all-rounder. Best baseline for new courses.","speedMul":1.00,"boostMul":1.00,"turnMul":1.00,"climbMul":1.00,"color":"rgba(125, 211, 252, 0.78)","stroke":"#e0f2fe","shape":"standard"},
+    {"id":"thunderbolt","name":"サンダーボルト号","nameEn":"Thunderbolt","summary":"きびきび旋回。テクニカル向け。","summaryEn":"Sharp turning. Great for technical sections.","speedMul":0.94,"boostMul":0.94,"turnMul":1.24,"climbMul":1.08,"color":"rgba(250, 204, 21, 0.78)","stroke":"#fef3c7","shape":"wide"},
+    {"id":"shootingstar","name":"シューティングスター号","nameEn":"Shooting Star","summary":"高速番長。直線と大カーブで強い。","summaryEn":"Top speed specialist. Dominates straights and long bends.","speedMul":1.08,"boostMul":1.16,"turnMul":0.82,"climbMul":0.94,"color":"rgba(248, 113, 113, 0.80)","stroke":"#fee2e2","shape":"dart"},
+    {"id":"spiralfang","name":"スパイラルファング号","nameEn":"Spiral Fang","summary":"ピーキーな軽量機。反応最速。","summaryEn":"Twitchy lightweight. Fastest response.","speedMul":0.98,"boostMul":0.98,"turnMul":1.32,"climbMul":1.14,"color":"rgba(192, 132, 252, 0.82)","stroke":"#f3e8ff","shape":"fang"},
+    {"id":"ironhawk","name":"アイアンホーク号","nameEn":"Iron Hawk","summary":"重いけど安定。崩れにくい。","summaryEn":"Heavy but stable. Hard to destabilize.","speedMul":1.03,"boostMul":1.08,"turnMul":0.90,"climbMul":0.92,"color":"rgba(74, 222, 128, 0.76)","stroke":"#dcfce7","shape":"heavy"}
   ]
 }"#;
-    (
-        [
-            (CONTENT_TYPE, "application/json; charset=utf-8"),
-            (CACHE_CONTROL, "no-store"),
-        ],
-        body,
-    ).into_response()
-}
-
-async fn airrace3d_aircraft_models() -> impl IntoResponse {
-    let body = r#"{"version":"airrace3d-aircraft-models-v1","models":[]}"#;
     (
         [
             (CONTENT_TYPE, "application/json; charset=utf-8"),
