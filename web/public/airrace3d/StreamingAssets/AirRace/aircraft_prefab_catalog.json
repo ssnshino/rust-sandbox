@@ -1,0 +1,75 @@
+{
+    "version": "airrace3d-aircraft-prefab-20260504062846",
+    "prefabs": [
+        {
+            "aircraftId": "ironhawk",
+            "bundlePath": "AirRace/Bundles/airrace_aircraft_ironhawk",
+            "prefabName": "IronHawkPrefab",
+            "localX": 0.0,
+            "localY": 0.0,
+            "localZ": 0.0,
+            "rotX": 0.0,
+            "rotY": 0.0,
+            "rotZ": 0.0,
+            "scaleX": 1.0,
+            "scaleY": 1.0,
+            "scaleZ": 1.0
+        },
+        {
+            "aircraftId": "shootingstar",
+            "bundlePath": "AirRace/Bundles/airrace_aircraft_shootingstar",
+            "prefabName": "ShootingStarPrefab",
+            "localX": 0.0,
+            "localY": 0.0,
+            "localZ": 0.0,
+            "rotX": 0.0,
+            "rotY": 0.0,
+            "rotZ": 0.0,
+            "scaleX": 1.0,
+            "scaleY": 1.0,
+            "scaleZ": 1.0
+        },
+        {
+            "aircraftId": "skylancer",
+            "bundlePath": "AirRace/Bundles/airrace_aircraft_skylancer",
+            "prefabName": "SkyLancerPrefab",
+            "localX": 0.0,
+            "localY": 0.0,
+            "localZ": 0.0,
+            "rotX": 0.0,
+            "rotY": 0.0,
+            "rotZ": 0.0,
+            "scaleX": 1.0,
+            "scaleY": 1.0,
+            "scaleZ": 1.0
+        },
+        {
+            "aircraftId": "spiralfang",
+            "bundlePath": "AirRace/Bundles/airrace_aircraft_spiralfang",
+            "prefabName": "SpiralFangPrefab",
+            "localX": 0.0,
+            "localY": 0.0,
+            "localZ": 0.0,
+            "rotX": 0.0,
+            "rotY": 0.0,
+            "rotZ": 0.0,
+            "scaleX": 1.0,
+            "scaleY": 1.0,
+            "scaleZ": 1.0
+        },
+        {
+            "aircraftId": "thunderbolt",
+            "bundlePath": "AirRace/Bundles/airrace_aircraft_thunderbolt",
+            "prefabName": "ThunderboltPrefab",
+            "localX": 0.0,
+            "localY": 0.0,
+            "localZ": 0.0,
+            "rotX": 0.0,
+            "rotY": 0.0,
+            "rotZ": 0.0,
+            "scaleX": 1.0,
+            "scaleY": 1.0,
+            "scaleZ": 1.0
+        }
+    ]
+}

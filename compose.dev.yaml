@@ -11,13 +11,12 @@ services:
     volumes:
       - ./web:/workspace/web
       - ./app/src/airrace:/workspace/app/src/airrace:ro
-      - ./app/src/airrace3d:/workspace/app/src/airrace3d:ro
       - /workspace/web/node_modules
     environment:
       - VIRTUAL_HOST=airrace-web.wos.ktsys.jp
       - VIRTUAL_PORT=3000
       - AIRRACE_DATA_ROOT=/workspace/app/src/airrace
-      - AIRRACE3D_ROOT=/workspace/app/src/airrace3d
+      - AIRRACE3D_ROOT=/workspace/web/public/airrace3d
     networks:
       - default
       - wos-proxy-network

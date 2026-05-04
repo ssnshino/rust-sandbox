@@ -1,0 +1,27 @@
+ManifestFileVersion: 0
+UnityVersion: 6000.4.3f1
+CRC: 4149805
+HashAppended: 0
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: airrace_aircraft_ironhawk
+      Dependencies: {}
+    Info_1:
+      Name: airrace_aircraft_shootingstar
+      Dependencies: {}
+    Info_2:
+      Name: airrace_aircraft_skylancer
+      Dependencies: {}
+    Info_3:
+      Name: airrace_aircraft_spiralfang
+      Dependencies: {}
+    Info_4:
+      Name: airrace_aircraft_thunderbolt
+      Dependencies: {}
+    Info_5:
+      Name: airrace_round_world_01_round1worldprefab
+      Dependencies: {}
+    Info_6:
+      Name: airrace_round_world_02_round2spacecolonyworldprefab
+      Dependencies: {}

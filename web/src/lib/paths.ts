@@ -8,7 +8,7 @@ const repoRoot = path.resolve(webRoot, "..");
 export const config = {
   port: Number(process.env.PORT ?? "3000"),
   host: process.env.HOST ?? "0.0.0.0",
-  airrace3dRoot: path.resolve(process.env.AIRRACE3D_ROOT ?? path.join(repoRoot, "app/src/airrace3d")),
+  airrace3dRoot: path.resolve(process.env.AIRRACE3D_ROOT ?? path.join(webRoot, "public/airrace3d")),
   airraceDataRoot: path.resolve(process.env.AIRRACE_DATA_ROOT ?? path.join(repoRoot, "app/src/airrace")),
 };
 
