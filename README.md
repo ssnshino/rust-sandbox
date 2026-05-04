@@ -10,6 +10,7 @@ Unity WebGL ゲーム配信と、将来の Rust realtime/game-engine 実験を�
 - サーバリポジトリ: このリポジトリ
 - 現行 Rust app: `app/`
 - Node Web コンテナ計画: [docs/airrace3d_node_web_container_plan.md](docs/airrace3d_node_web_container_plan.md)
+- WebGL / AssetBundle 反映手順: [docs/airrace3d_webgl_assetbundle_release.md](docs/airrace3d_webgl_assetbundle_release.md)
 
 ## 開発環境
 
@@ -38,6 +39,14 @@ npm run dev
 - `http://localhost:18093/healthz`
 - `http://localhost:18093/airrace3d/`
 - `http://localhost:18093/api/airrace3d/round-index`
+
+## AirRace3D WebGL 反映
+
+公開物の正規配置は `web/public/airrace3d`。
+
+Unity の Factory prefab、RoundWorld prefab、Material を変更した場合、WebGL ビルドだけでは AssetBundle に反映されない。`AirRace/WebGL/Build Rust Server Package` を実行して、AssetBundle、catalog、WebGL 本体をまとめて生成する。
+
+詳しい手順は [docs/airrace3d_webgl_assetbundle_release.md](docs/airrace3d_webgl_assetbundle_release.md) を参照する。
 
 ## 方針
 

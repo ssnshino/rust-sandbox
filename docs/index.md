@@ -7,3 +7,4 @@
 ## Current Plans
 
 - [airrace3d_node_web_container_plan.md](./airrace3d_node_web_container_plan.md) — AirRace3D Node Web コンテナ追加計画
+- [airrace3d_webgl_assetbundle_release.md](./airrace3d_webgl_assetbundle_release.md) — AirRace3D WebGL / AssetBundle 反映手順
