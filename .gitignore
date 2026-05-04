@@ -5,3 +5,6 @@ app/target/
 
 .DS_Store
 ._.DS_Store
+
+web/node_modules/
+web/dist/

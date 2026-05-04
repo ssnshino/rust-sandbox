@@ -1,4 +1,27 @@
 services:
+  airrace-web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    container_name: ayano-lab-unity-rust-games-web
+    working_dir: /workspace/web
+    command: ["npm", "run", "dev"]
+    ports:
+      - "18092:3000"
+    volumes:
+      - ./web:/workspace/web
+      - ./app/src/airrace:/workspace/app/src/airrace:ro
+      - ./app/src/airrace3d:/workspace/app/src/airrace3d:ro
+      - /workspace/web/node_modules
+    environment:
+      - VIRTUAL_HOST=airrace-web.wos.ktsys.jp
+      - VIRTUAL_PORT=3000
+      - AIRRACE_DATA_ROOT=/workspace/app/src/airrace
+      - AIRRACE3D_ROOT=/workspace/app/src/airrace3d
+    networks:
+      - default
+      - wos-proxy-network
+
   rust-sandbox:
     build:
       context: .

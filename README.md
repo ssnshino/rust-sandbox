@@ -1,54 +1,47 @@
-# rust-sandbox
+# unity-rust-games
 
-Rust + axum で動く WebSocket ゲーム実験コンテナ。
+Unity WebGL ゲーム配信と、将来の Rust realtime/game-engine 実験をまとめるリポジトリ。
 
-## ゲーム
+現状は Rust/axum の既存コンテナが Web 配信、軽量 API、旧ゲーム実験をまとめて担当している。今後は AirRace3D の WebGL/AssetBundle/JSON API 配信を Node.js Web コンテナへ分離し、Rust はマルチユーザー同期やゲームエンジン用途へ寄せていく。
 
-| ゲーム | URL |
-|-------|-----|
-| Pong（vs CPU / 2P） | `/pong` |
-| Breakout | `/breakout` |
-| あやかダンジョン | `/dungeon` |
+## 現在の主要対象
 
-## 仕様書
+- Unity クライアント: `/Volumes/SSD250GBUSB/source/unity/airraceUnity`
+- サーバリポジトリ: このリポジトリ
+- 現行 Rust app: `app/`
+- Node Web コンテナ計画: [docs/airrace3d_node_web_container_plan.md](docs/airrace3d_node_web_container_plan.md)
 
-`docs/` フォルダを参照。
-
-- [docs/index.md](docs/index.md) — 全体インデックス・共通アーキテクチャ
-- [docs/pong.md](docs/pong.md) — Pong 仕様書
-- [docs/breakout.md](docs/breakout.md) — Breakout 仕様書
-- [docs/dungeon.md](docs/dungeon.md) — あやかダンジョン仕様書
-
-## 環境
-
-| 環境 | compose ファイル | URL |
-|------|----------------|-----|
-| 本番 (ktsys-pubserver) | `compose.yaml` | https://games.lab.ktsys.jp |
-| 開発 (base) | `compose.dev.yaml` | http://rust-sandbox.wos.ktsys.jp |
-
-## 開発フロー
+## 開発環境
 
 ```bash
-# dev ブランチで開発・動作確認
-git checkout dev
 docker compose -f compose.dev.yaml up --build -d
-
-# rust 関連を修正したら以下を実行 (2026-04-18 13:35 add)
-docker compose -f compose.dev.yaml restart rust-sandbox
-
-# main にマージ → GitHub Actions が自動デプロイ
-gh pr create --base main
 ```
 
-## 構成
+現行の compose は Rust コンテナ中心。Node Web コンテナは段階的に追加する。
 
+Node Web コンテナだけ起動する場合:
+
+```bash
+docker compose -f compose.dev.yaml up --build airrace-web
 ```
-rust-sandbox/
-├── Dockerfile
-├── compose.yaml          # 本番用
-├── compose.dev.yaml      # 開発用
-├── .github/workflows/
-│   └── deploy.yml        # main push → 自動デプロイ
-├── docs/                 # 仕様書
-└── app/                  # Rust プロジェクト
+
+ローカル Node で直接確認する場合:
+
+```bash
+cd web
+npm install
+npm run dev
 ```
+
+確認 URL:
+
+- `http://localhost:18092/healthz`
+- `http://localhost:18092/airrace3d/`
+- `http://localhost:18092/api/airrace3d/round-index`
+
+## 方針
+
+- `unity-rust-games` というリポジトリ名は維持する。
+- WebGL ビルド、AssetBundle、JSON カタログ、軽 API は Node.js/Fastify 側へ移す。
+- Rust は将来の `/ws/airrace3d`、room/match/state sync などに集中させる。
+- 古い clone 元ドキュメントは整理済み。コードを正として扱う。

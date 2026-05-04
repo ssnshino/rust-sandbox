@@ -1,4 +1,25 @@
 services:
+  airrace-web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    container_name: games-airrace-web
+    working_dir: /workspace/web
+    command: ["npm", "run", "start"]
+    volumes:
+      - ./app/src/airrace:/workspace/app/src/airrace:ro
+      - ./app/src/airrace3d:/workspace/app/src/airrace3d:ro
+    environment:
+      - VIRTUAL_HOST=airrace3d.games.lab.ktsys.jp
+      - VIRTUAL_PORT=3000
+      - LETSENCRYPT_HOST=airrace3d.games.lab.ktsys.jp
+      - LETSENCRYPT_EMAIL=ken-tozawa@ktsys.jp
+      - AIRRACE_DATA_ROOT=/workspace/app/src/airrace
+      - AIRRACE3D_ROOT=/workspace/app/src/airrace3d
+    restart: unless-stopped
+    networks:
+      - container_network
+
   rust-sandbox:
     build:
       context: .
