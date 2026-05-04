@@ -7,7 +7,7 @@ services:
     working_dir: /workspace/web
     command: ["npm", "run", "dev"]
     ports:
-      - "18092:3000"
+      - "18093:3000"
     volumes:
       - ./web:/workspace/web
       - ./app/src/airrace:/workspace/app/src/airrace:ro

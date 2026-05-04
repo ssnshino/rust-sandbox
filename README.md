@@ -35,9 +35,9 @@ npm run dev
 
 確認 URL:
 
-- `http://localhost:18092/healthz`
-- `http://localhost:18092/airrace3d/`
-- `http://localhost:18092/api/airrace3d/round-index`
+- `http://localhost:18093/healthz`
+- `http://localhost:18093/airrace3d/`
+- `http://localhost:18093/api/airrace3d/round-index`
 
 ## 方針
 
