@@ -17,6 +17,33 @@ const aircraftCatalog = {
   ],
 };
 
+const aircraftPrefabCatalog = {
+  version: "airrace3d-aircraft-prefab-fallback-v1",
+  prefabs: [
+    aircraftPrefab("skylancer", "airrace_aircraft_skylancer", "SkyLancerPrefab"),
+    aircraftPrefab("thunderbolt", "airrace_aircraft_thunderbolt", "ThunderboltPrefab"),
+    aircraftPrefab("shootingstar", "airrace_aircraft_shootingstar", "ShootingStarPrefab"),
+    aircraftPrefab("spiralfang", "airrace_aircraft_spiralfang", "SpiralFangPrefab"),
+    aircraftPrefab("ironhawk", "airrace_aircraft_ironhawk", "IronHawkPrefab"),
+  ],
+};
+
+const roundWorldCatalog = {
+  version: "airrace3d-round-world-fallback-v1",
+  worlds: [
+    roundWorld(1, "round1", "airrace_round_world_01_round1worldprefab", "Round1WorldPrefab"),
+    roundWorld(2, "round2_space_colony", "airrace_round_world_02_round2spacecolonyworldprefab", "Round2SpaceColonyWorldPrefab"),
+    roundWorld(3, "round1", "airrace_round_world_01_round1worldprefab", "Round1WorldPrefab"),
+    roundWorld(4, "round1", "airrace_round_world_01_round1worldprefab", "Round1WorldPrefab"),
+    roundWorld(5, "round1", "airrace_round_world_01_round1worldprefab", "Round1WorldPrefab"),
+    roundWorld(6, "round1", "airrace_round_world_01_round1worldprefab", "Round1WorldPrefab"),
+    roundWorld(7, "round1", "airrace_round_world_01_round1worldprefab", "Round1WorldPrefab"),
+    roundWorld(8, "round1", "airrace_round_world_01_round1worldprefab", "Round1WorldPrefab"),
+    roundWorld(9, "round1", "airrace_round_world_01_round1worldprefab", "Round1WorldPrefab"),
+    roundWorld(10, "round1", "airrace_round_world_01_round1worldprefab", "Round1WorldPrefab"),
+  ],
+};
+
 export async function registerAirRace3dRoutes(app: FastifyInstance) {
   app.get("/api/airrace3d/round-index", async (_request, reply) => {
     const rounds = await loadRounds();
@@ -46,7 +73,7 @@ export async function registerAirRace3dRoutes(app: FastifyInstance) {
   });
 
   app.get("/api/airrace3d/round-world-catalog", async (_request, reply) => {
-    return sendCatalog(reply, "round_world_catalog.json");
+    return sendCatalogOrFallback(reply, "round_world_catalog.json", roundWorldCatalog);
   });
 
   app.get("/api/airrace3d/aircraft-catalog", async (_request, reply) => {
@@ -55,7 +82,7 @@ export async function registerAirRace3dRoutes(app: FastifyInstance) {
   });
 
   app.get("/api/airrace3d/aircraft-prefab-catalog", async (_request, reply) => {
-    return sendCatalog(reply, "aircraft_prefab_catalog.json");
+    return sendCatalogOrFallback(reply, "aircraft_prefab_catalog.json", aircraftPrefabCatalog);
   });
 
   app.get("/airrace3d", async (_request, reply) => sendAirRaceFile(reply, "index.html"));
@@ -73,6 +100,11 @@ async function sendCatalog(reply: FastifyReply, filename: string) {
   } catch {
     return reply.code(404).send({ error: `${filename} not found` });
   }
+}
+
+async function sendCatalogOrFallback(reply: FastifyReply, filename: string, fallback: unknown) {
+  const catalogPath = path.join(config.airrace3dRoot, "StreamingAssets/AirRace", filename);
+  return sendNoStoreJson(reply, await readJsonOrFallback(catalogPath, fallback));
 }
 
 async function sendAirRaceFile(reply: FastifyReply, requestPath: string) {
@@ -103,4 +135,39 @@ async function readJsonOrFallback(filePath: string, fallback: unknown): Promise<
   } catch {
     return fallback;
   }
+}
+
+function aircraftPrefab(aircraftId: string, bundleName: string, prefabName: string) {
+  return {
+    aircraftId,
+    bundlePath: `AirRace/Bundles/${bundleName}`,
+    prefabName,
+    localX: 0,
+    localY: 0,
+    localZ: 0,
+    rotX: 0,
+    rotY: 0,
+    rotZ: 0,
+    scaleX: 1,
+    scaleY: 1,
+    scaleZ: 1,
+  };
+}
+
+function roundWorld(round: number, worldId: string, bundleName: string, prefabName: string) {
+  return {
+    round,
+    worldId,
+    bundlePath: `AirRace/Bundles/${bundleName}`,
+    prefabName,
+    x: 0,
+    y: 0,
+    z: 0,
+    rotX: 0,
+    rotY: 0,
+    rotZ: 0,
+    scaleX: 1,
+    scaleY: 1,
+    scaleZ: 1,
+  };
 }
