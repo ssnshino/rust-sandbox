@@ -1,9 +1,8 @@
 {
-    "version": "airrace3d-round-world-20260504141043",
+    "version": "airrace3d-round-world-20260505130026",
     "worlds": [
         {
             "round": 1,
-            "worldId": "round-01-round1worldprefab",
             "bundlePath": "AirRace/Bundles/airrace_round_world_01_round1worldprefab",
             "prefabName": "Round1WorldPrefab",
             "x": 0.0,
@@ -18,7 +17,6 @@
         },
         {
             "round": 2,
-            "worldId": "round-02-round2spacecolonyworldprefab",
             "bundlePath": "AirRace/Bundles/airrace_round_world_02_round2spacecolonyworldprefab",
             "prefabName": "Round2SpaceColonyWorldPrefab",
             "x": 0.0,
