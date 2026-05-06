@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.4.3f1
-CRC: 4155885854
+CRC: 2833281446
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 35ad1df749bc3c55ed1a1c00a3a90198
+    Hash: 9b020edcfa03e05396130d3b4bafcc39
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 56095989eb237b345e74241a0265d140
+    Hash: 30c550de2bdb5e9776ac5ae8bb36a5d8
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 054c056c43abda40cdd8277a80be1983
+    Hash: 459d4a3e3655ddde2885ae92fcfffa3c
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -35,8 +35,6 @@ ClassTypes:
   Script: {fileID: 11500000, guid: 49bc21a810e454938896ad4ff695084e, type: 3}
 - Class: 115
   Script: {instanceID: 0}
-- Class: 120
-  Script: {instanceID: 0}
 - Class: 154
   Script: {instanceID: 0}
 - Class: 156
@@ -47,5 +45,5 @@ ClassTypes:
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
-- Assets/AirRace/Factory/RoundWorldPrefabs/Round1WorldPrefab.prefab
+- Assets/AirRace/Factory/RoundWorldPrefabs/Round8MegacityRingWorldPrefab.prefab
 Dependencies: []

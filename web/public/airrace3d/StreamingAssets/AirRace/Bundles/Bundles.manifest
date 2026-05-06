@@ -1,6 +1,6 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.4.3f1
-CRC: 772660982
+CRC: 3911831048
 HashAppended: 0
 AssetBundleManifest:
   AssetBundleInfos:
@@ -24,4 +24,28 @@ AssetBundleManifest:
       Dependencies: {}
     Info_6:
       Name: airrace_round_world_02_round2spacecolonyworldprefab
+      Dependencies: {}
+    Info_7:
+      Name: airrace_round_world_03_round3desertmesaworldprefab
+      Dependencies: {}
+    Info_8:
+      Name: airrace_round_world_04_round4rivercircuitworldprefab
+      Dependencies: {}
+    Info_9:
+      Name: airrace_round_world_05_round5coastalsprintworldprefab
+      Dependencies: {}
+    Info_10:
+      Name: airrace_round_world_06_round6harborwindworldprefab
+      Dependencies: {}
+    Info_11:
+      Name: airrace_round_world_07_round7rhineindustrialworldprefab
+      Dependencies: {}
+    Info_12:
+      Name: airrace_round_world_08_round8megacityringworldprefab
+      Dependencies: {}
+    Info_13:
+      Name: airrace_round_world_09_round9skydunerushworldprefab
+      Dependencies: {}
+    Info_14:
+      Name: airrace_round_world_10_round10grandfinalworldprefab
       Dependencies: {}
