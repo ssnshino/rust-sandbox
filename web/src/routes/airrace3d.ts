@@ -94,7 +94,12 @@ async function sendAirRaceFile(reply: FastifyReply, requestPath: string) {
 }
 
 async function loadRounds(): Promise<Record<string, unknown>> {
-  return (await readJsonFile(path.join(config.airraceDataRoot, "airrace_rounds.json"))) as Record<string, unknown>;
+  const publicRoundsPath = path.join(config.airrace3dRoot, "StreamingAssets/AirRace/airrace_rounds.json");
+  try {
+    return (await readJsonFile(publicRoundsPath)) as Record<string, unknown>;
+  } catch {
+    return (await readJsonFile(path.join(config.airraceDataRoot, "airrace_rounds.json"))) as Record<string, unknown>;
+  }
 }
 
 async function readJsonOrFallback(filePath: string, fallback: unknown): Promise<unknown> {
