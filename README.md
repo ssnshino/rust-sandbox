@@ -11,6 +11,9 @@ Unity WebGL ゲーム配信と、将来の Rust realtime/game-engine 実験を�
 - 現行 Rust app: `app/`
 - Node Web コンテナ計画: [docs/airrace3d_node_web_container_plan.md](docs/airrace3d_node_web_container_plan.md)
 - WebGL / AssetBundle 反映手順: [docs/airrace3d_webgl_assetbundle_release.md](docs/airrace3d_webgl_assetbundle_release.md)
+- 正規ポータルURL: `https://unity-games.wos.ktsys.jp/`
+- AirRace3D URL: `https://unity-games.wos.ktsys.jp/airrace3d/`
+- 旧確認用alias: `https://airrace-web.wos.ktsys.jp/airrace3d/`
 
 ## 開発環境
 
@@ -37,6 +40,7 @@ npm run dev
 確認 URL:
 
 - `http://localhost:18093/healthz`
+- `http://localhost:18093/`
 - `http://localhost:18093/airrace3d/`
 - `http://localhost:18093/api/airrace3d/round-index`
 

@@ -144,20 +144,28 @@ ssh base 'cd /home/shino/source/repos/upstream/unity-rust-games && git fetch ori
 公開確認:
 
 ```bash
-curl -fsS https://airrace-web.wos.ktsys.jp/healthz
-curl -fsS https://airrace-web.wos.ktsys.jp/api/airrace3d/aircraft-prefab-catalog
-curl -fsSI https://airrace-web.wos.ktsys.jp/airrace3d/
+curl -fsS https://unity-games.wos.ktsys.jp/healthz
+curl -fsSI https://unity-games.wos.ktsys.jp/
+curl -fsS https://unity-games.wos.ktsys.jp/api/airrace3d/aircraft-prefab-catalog
+curl -fsSI https://unity-games.wos.ktsys.jp/airrace3d/
 ```
 
 ブラウザ確認時は cache を避けるため、catalog version などを query に付ける。
 
 ```text
-https://airrace-web.wos.ktsys.jp/airrace3d/?v=YYYYMMDDHHMMSS
+https://unity-games.wos.ktsys.jp/airrace3d/?v=YYYYMMDDHHMMSS
 ```
 
 ## URL の注意
 
-新しい Node Web コンテナ:
+正規のUnityゲームポータル:
+
+```text
+https://unity-games.wos.ktsys.jp/
+https://unity-games.wos.ktsys.jp/airrace3d/
+```
+
+旧確認用alias:
 
 ```text
 https://airrace-web.wos.ktsys.jp/airrace3d/
@@ -169,7 +177,7 @@ https://airrace-web.wos.ktsys.jp/airrace3d/
 https://unity-rust-games.wos.ktsys.jp/airrace3d/
 ```
 
-`unity-rust-games.wos.ktsys.jp` は旧 WebGL や旧 catalog を返す可能性がある。AirRace3D の最新確認は `airrace-web.wos.ktsys.jp` を使う。
+`unity-rust-games.wos.ktsys.jp` は旧 WebGL や旧 catalog を返す可能性がある。AirRace3D の最新確認は `unity-games.wos.ktsys.jp` を使う。
 
 ## よくある症状
 
