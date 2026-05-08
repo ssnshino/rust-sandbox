@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ゲームセンターしのみ屋</title>
+  <link rel="icon" href="/favicon.ico">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DotGothic16', sans-serif;
+      background: #060612;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow-x: hidden;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.08) 2px, rgba(0,0,0,.08) 4px);
+      pointer-events: none;
+      z-index: 100;
+    }
+    .container { max-width: 640px; width: 100%; padding: 40px 24px; }
+    .header { text-align: center; margin-bottom: 40px; position: relative; }
+    .neon-title {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      color: #fff;
+      text-shadow: 0 0 6px #fff, 0 0 14px #f0abfc, 0 0 32px #a855f7, 0 0 60px #7c3aed;
+      margin-bottom: 6px;
+      animation: flicker 8s infinite;
+    }
+    @keyframes flicker {
+      0%,95%,100% { opacity: 1; }
+      96% { opacity: .7; }
+      97% { opacity: 1; }
+      98% { opacity: .5; }
+      99% { opacity: 1; }
+    }
+    .subtitle { color: #7c6f9a; font-size: 0.82rem; letter-spacing: .06em; }
+    .insert-coin {
+      margin-top: 10px;
+      font-size: 0.78rem;
+      color: #f59e0b;
+      text-shadow: 0 0 8px #f59e0b;
+      animation: blink 1.2s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    #btn-lang {
+      position: fixed;
+      top: 12px;
+      right: 16px;
+      z-index: 200;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.15);
+      color: #9ca3af;
+      font-size: 0.7rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: 'DotGothic16', sans-serif;
+      transition: background .15s, color .15s;
+    }
+    #btn-lang:hover { background: rgba(255,255,255,.13); color: #e5e7eb; }
+    h2 {
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      color: #4ade80;
+      text-shadow: 0 0 8px #4ade80;
+      margin-bottom: 14px;
+    }
+    .cards { display: grid; gap: 10px; }
+    .card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 18px 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+    }
+    .card:hover {
+      background: rgba(168,85,247,0.08);
+      border-color: rgba(168,85,247,0.35);
+      box-shadow: 0 0 16px rgba(168,85,247,0.2);
+      transform: translateY(-2px);
+    }
+    .card-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+    .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 4px; letter-spacing: .03em; }
+    .card-desc { font-size: 0.78rem; color: #7c6f9a; line-height: 1.5; }
+    .badge {
+      margin-left: auto;
+      font-size: 0.68rem;
+      padding: 3px 8px;
+      border-radius: 99px;
+      background: rgba(124,58,237,0.28);
+      color: #c4b5fd;
+      border: 1px solid rgba(124,58,237,0.5);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    footer { margin-top: 36px; text-align: center; font-size: 0.72rem; color: #3d3554; letter-spacing: .05em; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="neon-title" data-i18n="site_title">🕹️ ゲームセンターしのみ屋２号店 🕹️</div>
+      <div class="subtitle" data-i18n="subtitle">UNITY3Dオンラインゲームセンター</div>
+      <div class="insert-coin" data-i18n="insert_coin">▶ INSERT COIN ◀</div>
+    </div>
+
+    <h2 data-i18n="game_select">── UNITY GAME SELECT ──</h2>
+    <div class="cards">
+      <a class="card" href="/airrace3d/">
+        <span class="card-icon">✈️</span>
+        <div>
+          <div class="card-title" data-i18n="airrace3d_title">AIRRACE 3D</div>
+          <div class="card-desc" data-i18n="airrace3d_desc">Unity WebGL版。機体選択とラウンド配信対応</div>
+        </div>
+        <span class="badge">UNITY</span>
+      </a>
+    </div>
+
+    <footer data-i18n="footer">ゲームセンターしのみ屋２号店 ©2026 | Powered by Node + Unity WebGL</footer>
+  </div>
+  <button id="btn-lang">JP / EN</button>
+  <script>
+const I18N = {
+  ja: {
+    site_title: '🕹️ ゲームセンターしのみ屋２号店 🕹️',
+    subtitle: 'UNITY3Dオンラインゲームセンター',
+    insert_coin: '▶ INSERT COIN ◀',
+    game_select: '── UNITY GAME SELECT ──',
+    airrace3d_title: 'AIRRACE 3D',
+    airrace3d_desc: 'Unity WebGL版。機体選択とラウンド配信対応',
+    footer: 'ゲームセンターしのみ屋２号店 ©2026 | Powered by Node + Unity WebGL',
+  },
+  en: {
+    site_title: '🕹️ Game Center Shinomiya Branch 2 🕹️',
+    subtitle: 'Unity 3D Online Game Center',
+    insert_coin: '▶ INSERT COIN ◀',
+    game_select: '── UNITY GAME SELECT ──',
+    airrace3d_title: 'AIRRACE 3D',
+    airrace3d_desc: 'Unity WebGL edition with aircraft selection and round streaming',
+    footer: 'Game Center Shinomiya Branch 2 ©2026 | Powered by Node + Unity WebGL',
+  }
+};
+
+let lang = localStorage.getItem('gc_lang') || 'ja';
+
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.textContent = I18N[lang][el.dataset.i18n] || el.dataset.i18n;
+  });
+  document.title = I18N[lang].site_title;
+  document.documentElement.lang = lang;
+  document.getElementById('btn-lang').textContent = lang === 'ja' ? 'JP / EN' : 'EN / JP';
+}
+
+document.getElementById('btn-lang').addEventListener('click', () => {
+  lang = lang === 'ja' ? 'en' : 'ja';
+  localStorage.setItem('gc_lang', lang);
+  applyLang();
+});
+
+applyLang();
+  </script>
+</body>
+</html>

@@ -13,7 +13,7 @@ services:
       - ./app/src/airrace:/workspace/app/src/airrace:ro
       - /workspace/web/node_modules
     environment:
-      - VIRTUAL_HOST=airrace-web.wos.ktsys.jp
+      - VIRTUAL_HOST=airrace-web.wos.ktsys.jp,unity-games.wos.ktsys.jp
       - VIRTUAL_PORT=3000
       - AIRRACE_DATA_ROOT=/workspace/app/src/airrace
       - AIRRACE3D_ROOT=/workspace/web/public/airrace3d

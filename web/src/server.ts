@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { config } from "./lib/paths.js";
 import { registerAirRace3dRoutes } from "./routes/airrace3d.js";
+import { registerHomeRoutes } from "./routes/home.js";
 
 const app = Fastify({ logger: true });
 
@@ -12,6 +13,7 @@ app.get("/healthz", async () => ({
 }));
 
 await registerAirRace3dRoutes(app);
+await registerHomeRoutes(app);
 
 try {
   await app.listen({ host: config.host, port: config.port });
