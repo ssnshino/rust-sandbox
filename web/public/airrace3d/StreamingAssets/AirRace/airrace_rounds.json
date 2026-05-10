@@ -30,11 +30,14 @@
     "title": "ALTITUDE SHIFT",
     "round": 2,
     "gateRadius": 120,
-    "startRunwayCenter": { "x": 0, "y": 2.2, "z": 4200, "unity": true },
-    "playerStartOffset": { "x": 0, "y": 18, "z": -190, "unity": true },
+    "startRunwayCenter": { "x": 0, "y": 3200, "z": 2500, "unity": true },
+    "playerStartOffset": { "x": 0, "y": 0.28, "z": -201.6, "unity": true },
+    "goalRunwayCenter": { "x": 0, "y": 3200, "z": 19000, "unity": true },
+    "goalRunwayHeading": 0,
     "entryPath": [
-      { "x": 0, "y": 80, "z": 4450, "unity": true },
-      { "x": 0, "y": 160, "z": 4900, "unity": true }
+      { "x": 0, "y": 3200, "z": 3100, "unity": true },
+      { "x": 0, "y": 2300, "z": 4200, "unity": true },
+      { "x": 0, "y": 980, "z": 5000, "unity": true }
     ],
     "gates": [
       { "x": 0, "y": 220, "z": 5400, "unity": true, "tip": "底面セクターから最初のゲートへ" },
@@ -46,11 +49,11 @@
       { "x": 0, "y": 1300, "z": 13200, "unity": true, "tip": "中央寄りから底面へ戻る" },
       { "x": 2035, "y": 4375, "z": 14600, "unity": true, "tip": "右上セクターへもう一度上昇" },
       { "x": -2009, "y": 4360, "z": 15800, "unity": true, "tip": "左上セクターへ大きく横断" },
-      { "x": -2321, "y": 4540, "z": 14300, "unity": true, "tip": "戻りのラインへ乗せる" },
-      { "x": 2148, "y": 4440, "z": 12500, "unity": true, "tip": "右上セクターから下へ" },
-      { "x": 0, "y": 560, "z": 9800, "unity": true, "tip": "底面セクターへ降りる" },
-      { "x": 0, "y": 380, "z": 7200, "unity": true, "tip": "滑走路方向へ減速準備" },
-      { "x": 0, "y": 220, "z": 5400, "unity": true, "tip": "最後のゲートから滑走路へ" }
+      { "x": -2321, "y": 4540, "z": 17100, "unity": true, "tip": "反対側ドックへ向けて高度を保つ" },
+      { "x": 2148, "y": 4440, "z": 18000, "unity": true, "tip": "右上セクターから中央へ戻る" },
+      { "x": 0, "y": 780, "z": 17600, "unity": true, "tip": "底面セクターへ降りる" },
+      { "x": 0, "y": 1800, "z": 18400, "unity": true, "tip": "中央ドックへ上昇する" },
+      { "x": 0, "y": 2850, "z": 18800, "unity": true, "tip": "最後のゲートから入港ドックへ" }
     ]
   },
   "3": {
