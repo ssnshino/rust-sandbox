@@ -17,6 +17,7 @@ services:
       - VIRTUAL_PORT=3000
       - AIRRACE_DATA_ROOT=/workspace/app/src/airrace
       - AIRRACE3D_ROOT=/workspace/web/public/airrace3d
+      - COLONY_RACER_ROOT=/workspace/web/public/colony-racer
     networks:
       - default
       - wos-proxy-network

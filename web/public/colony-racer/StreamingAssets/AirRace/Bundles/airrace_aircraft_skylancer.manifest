@@ -1,0 +1,35 @@
+ManifestFileVersion: 0
+UnityVersion: 6000.4.3f1
+CRC: 1181642226
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: ef7a5f846a6daf9a15df75264a0a4d19
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: da5787a9e4c66b7c2114bf4a29a0e9dd
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 8be2681358ad77bd5b6b00a61650d904
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 108
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: 29527501a0b54aa5bf2a7bc51b05852b, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/AirRace/Factory/AircraftPrefabs/SkyLancerPrefab.prefab
+Dependencies: []

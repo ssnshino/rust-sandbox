@@ -10,6 +10,7 @@ export const config = {
   host: process.env.HOST ?? "0.0.0.0",
   publicRoot: path.resolve(process.env.PUBLIC_ROOT ?? path.join(webRoot, "public")),
   airrace3dRoot: path.resolve(process.env.AIRRACE3D_ROOT ?? path.join(webRoot, "public/airrace3d")),
+  colonyRacerRoot: path.resolve(process.env.COLONY_RACER_ROOT ?? path.join(webRoot, "public/colony-racer")),
   airraceDataRoot: path.resolve(process.env.AIRRACE_DATA_ROOT ?? path.join(repoRoot, "app/src/airrace")),
 };
 
