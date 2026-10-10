@@ -86,3 +86,7 @@ Unity 側は `Colony Racer/WebGL/Build Server Package`、または batchmode の
 - WebGL ビルド、AssetBundle、JSON カタログ、軽 API は Node.js/Fastify 側へ移す。
 - Rust は将来の `/ws/airrace3d`、room/match/state sync などに集中させる。
 - 古い clone 元ドキュメントは整理済み。コードを正として扱う。
+
+## dev 配布の再開手順
+
+Node とビルド済み WebGL の検証、自動配布の設定・停止条件は [dev 配布手順](docs/head/DEV_DELIVERY.md) を参照する。配布は初期 OFF。BASE の配置・接続先・ホスト鍵と利用権限を確認し、設定の承認後に有効化する。Unity Editor のビルドは別工程。
