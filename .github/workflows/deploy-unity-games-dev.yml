@@ -50,7 +50,7 @@ jobs:
           DEV_DEPLOY_PORT: ${{ secrets.DEPLOY_DEV_PORT }}
           DEV_DEPLOY_REPO_PATH: ${{ vars.DEV_DEPLOY_REPO_PATH }}
           DEV_DEPLOY_KNOWN_HOSTS: ${{ vars.DEV_DEPLOY_KNOWN_HOSTS }}
-          DEV_DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEV_DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_DEV_SSH_KEY }}
       - name: Public artifact and API verification (not browser QA)
         run: node scripts/smoke-game-delivery.mjs delivery-manifest.json https://unity-games.wos.ktsys.jp .
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
