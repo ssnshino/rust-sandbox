@@ -1,0 +1,1 @@
+rust-sandboxの資料統合を再開してください。README、AGENTS、snapshotのCURRENT_SNAPSHOT/LAST_RUN/SNAPSHOT_MANIFEST、docs/head/CURRENT_SPECを読んでください。dev記録SHAは4b7dcc079c311a05f2e6f6429fe00402992aa7e8です。ライブ状態を確認し差分があれば先に報告してください。資料整理とコード変更を混同せず、historyの旧計画を自動再実行しないでください。

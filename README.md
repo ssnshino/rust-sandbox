@@ -1,3 +1,22 @@
+# rust-sandbox
+
+## 再開入口
+
+1. `AGENTS.md`
+2. `snapshot/CURRENT_SNAPSHOT.md` — 現在地と確認済みcommit
+3. `snapshot/LAST_RUN.md` — 直近確認と未実施
+4. `snapshot/NEXT_CHAT_PROMPT.txt` — 次セッションへの指示
+5. `snapshot/SNAPSHOT_MANIFEST.md` — 今読む資料
+6. `docs/head/CURRENT_SPEC.md` — 現行仕様と資料差異
+
+受領原文は `docs/history/`、旧計画は `plan/history/`、旧snapshotは `snapshot/history/` に保持する。通常再開時はhistory全体を読み直さない。
+
+確認済み再開基準: `dev` / `4b7dcc079c311a05f2e6f6429fe00402992aa7e8`（2026-10-10 read-only確認）。開始時にlive branch/HEAD/dirty state/open PRを確認し、この記録だけでlive状態を上書きしない。
+
+重資料・受領保管: [Google Drive](https://drive.google.com/drive/folders/12WX_XviuLWFAsVneXv5WWjoV91RffFKd)。原本保全とGitHub資料統合、実行検証、公開反映は別の完了条件。
+
+## 既存README（本文を維持）
+
 # unity-rust-games
 
 Unity WebGL ゲーム配信と、将来の Rust realtime/game-engine 実験をまとめるリポジトリ。
