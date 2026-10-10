@@ -45,9 +45,9 @@ jobs:
           SOURCE_SHA: ${{ github.sha }}
           DEV_DEPLOY_ENABLED: ${{ vars.DEV_DEPLOY_ENABLED }}
           DEV_DEPLOY_TARGET_CONFIRMED: 'unity-games.wos.ktsys.jp'
-          DEV_DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEV_DEPLOY_HOST: ${{ secrets.DEPLOY_DEV_HOST }}
           DEV_DEPLOY_USER: 'shino'
-          DEV_DEPLOY_PORT: '22'
+          DEV_DEPLOY_PORT: ${{ secrets.DEPLOY_DEV_PORT }}
           DEV_DEPLOY_REPO_PATH: ${{ vars.DEV_DEPLOY_REPO_PATH }}
           DEV_DEPLOY_KNOWN_HOSTS: ${{ vars.DEV_DEPLOY_KNOWN_HOSTS }}
           DEV_DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
