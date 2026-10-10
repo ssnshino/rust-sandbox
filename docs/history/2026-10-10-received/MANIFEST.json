@@ -1,0 +1,224 @@
+[
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/README.md",
+    "destination": "docs/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/README.md",
+    "sha256": "1a06ac35d2a653d395e8cd4b9f14124918658b3c837b2191f6bc0edda196db08",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/plan/2026-04-16_01_あやかダンジョン拡張計画.md",
+    "destination": "plan/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/plan/2026-04-16_01_あやかダンジョン拡張計画.md",
+    "sha256": "9f61a7727a6798627cec7617851f8c7c46069185126375a2301c6c74ca39d66b",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/plan/2026-04-17_01_あやかファイティング計画.md",
+    "destination": "plan/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/plan/2026-04-17_01_あやかファイティング計画.md",
+    "sha256": "757eb4c91321ee43f86729dd40bd821f4fb62df487209635e15a08be584ddd0d",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/plan/2026-04-17_02_宇宙トラック野郎計画.md",
+    "destination": "plan/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/plan/2026-04-17_02_宇宙トラック野郎計画.md",
+    "sha256": "76400da63d1ae60d1395ae946a43359bcb45ce0c56cf51460131aef0a997a885",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/plan/2026-04-18_01_宇宙トラック野郎仕様書.md",
+    "destination": "plan/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/plan/2026-04-18_01_宇宙トラック野郎仕様書.md",
+    "sha256": "3b452e7a5d1a7dd016085b64aeeefb14b01f494844352c21f5c531550e395ef2",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/plan/2026-04-22_airrace_course_plan.md",
+    "destination": "plan/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/plan/2026-04-22_airrace_course_plan.md",
+    "sha256": "71fd54390bef3636f77a9cdad2ab9474259ba856fcd0aee58c572a73b7c10720",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/plan/2026-04-24_01_airrace再構成計画.md",
+    "destination": "plan/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/plan/2026-04-24_01_airrace再構成計画.md",
+    "sha256": "063a5a92b5205fa296d607e577170be8f58f8060f66857732d5896167b0d7066",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/plan/2026-04-26_01_airrace_unity移植計画.md",
+    "destination": "plan/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/plan/2026-04-26_01_airrace_unity移植計画.md",
+    "sha256": "9b042ce811dfba2e9736944cc961c1598437096067131f86af42406b6b4c7ab0",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/refs/airrace3d_release_pipeline.md",
+    "destination": "docs/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/refs/airrace3d_release_pipeline.md",
+    "sha256": "7d2992afb75a80c1898b306932814d6ee73a79ea237a934c0f9beb08513ea51b",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/refs/base_deploy_runbook.md",
+    "destination": "docs/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/refs/base_deploy_runbook.md",
+    "sha256": "4bfe49325267fa64c0e24d81be5caf22df5a6bfd5a210fd6efd90fc5421032d4",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/snapshots/current.md",
+    "destination": "snapshot/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/snapshots/current.md",
+    "sha256": "e29c042b6ae6633ca85bee29c0b108854f9ec26e449efbeebf2643ad3ae726e9",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260414.md",
+    "destination": "docs/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260414.md",
+    "sha256": "175d38758460e46f72d153899ff743808e44978021ba647354511882813c614c",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260415.md",
+    "destination": "docs/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260415.md",
+    "sha256": "3a1150977d10d9b8964906b4132a6a4b2a25d117fc0cbac151ff3d3b6bd7c6b2",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260416.md",
+    "destination": "docs/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260416.md",
+    "sha256": "7f158c36ccfbe706055d50a6a274a4eed4815a31a1975a44e485198f4d067979",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260417.md",
+    "destination": "docs/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260417.md",
+    "sha256": "639fad679ab5b147207ca1a9353a4addb2e39685e6cc5e81e01ca400ccdd3a1e",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260421.md",
+    "destination": "docs/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260421.md",
+    "sha256": "cef1b0875b4b58877ab47c78feaed4d2ce70f71c892d0c1c2f6b22ffd0c520cf",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260422.md",
+    "destination": "docs/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260422.md",
+    "sha256": "6ac15b343bb6e1af4edcabc7871acd509c2c5ccf92d6c8edd66a8ececaa2e2d2",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260424.md",
+    "destination": "docs/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260424.md",
+    "sha256": "0ce5c93407f6e42abad4c609c4d5c129840b578c7fb0ef6684e41da3749619fb",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260425.md",
+    "destination": "docs/history/2026-10-10-received/Nextcloud/work/projects/rust-sandbox/working-logs/worklog_20260425.md",
+    "sha256": "c2880da62cac1d6ceb66104da10e1ab2509e9d3a089f381bc11f3fb4d449b20b",
+    "transformations": []
+  },
+  {
+    "source": "Nextcloud/work/projects/unity-app/README.md",
+    "destination": "docs/history/2026-10-10-received/Nextcloud/work/projects/unity-app/README.md",
+    "sha256": "5993951cbbea9d938b9110c3d62fb6db7ce80f6236c615cc4b35b53258e720a2",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/rust-sandbox/README.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/rust-sandbox/README.md",
+    "sha256": "9130b4c66594a760daa232ec18f5756d90226f40ff4e3c833580d8eb7c62d8ab",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/rust-sandbox/docs/airrace.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/rust-sandbox/docs/airrace.md",
+    "sha256": "dc93cd802cfb78cd8a7abbea51b72cf93343cd6298256c51e7b5a38d9a6fa6fd",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/rust-sandbox/docs/airrace_unity.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/rust-sandbox/docs/airrace_unity.md",
+    "sha256": "dd0d3fdaa7c6fc767977e2ed3ad05c83725aacf470a92864def6c7405e31901b",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/rust-sandbox/docs/airrace_unity_worklog.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/rust-sandbox/docs/airrace_unity_worklog.md",
+    "sha256": "175081f63306ec212a5c97627e534d5d4f2a7b7d40783fa747b8f0dfd8a55c56",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/rust-sandbox/docs/breakout.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/rust-sandbox/docs/breakout.md",
+    "sha256": "7102b6fd5d6981a4c0cee0ea5cf6dacd6952e094220fb5c205a048ff03786a74",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/rust-sandbox/docs/dev-workflow.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/rust-sandbox/docs/dev-workflow.md",
+    "sha256": "d52177f6214fd5512bedcb4b1882da23a67bc48d5a85190e44c254f8ba0740db",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/rust-sandbox/docs/dungeon.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/rust-sandbox/docs/dungeon.md",
+    "sha256": "9d7e09aceb5f7386dcb5020ebf1d992d43410ce209c154566ea7956060da49e0",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/rust-sandbox/docs/index.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/rust-sandbox/docs/index.md",
+    "sha256": "917f732d1a1f02eed5ad9bc031730590fc1d743c3486968b5fc7c9571352e08a",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/rust-sandbox/docs/pong.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/rust-sandbox/docs/pong.md",
+    "sha256": "55cd49faccae42cffe1a0a07b1595293d5ba6e755a8b03f11f7e5467f97aabf6",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/rust-sandbox/docs/snapshots/airrace3d_snapshot_20260426_235137.md",
+    "destination": "snapshot/history/2026-10-10-received/source/repos/upstream/rust-sandbox/docs/snapshots/airrace3d_snapshot_20260426_235137.md",
+    "sha256": "1ac41afc0bf20efa349ec624de7b602d42c659564f1233fb454f9cc88c0f1cf9",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/rust-sandbox/docs/truckers.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/rust-sandbox/docs/truckers.md",
+    "sha256": "9dc0612bc909285b59cd4cb7df537cf14cc2b3385426c506680015e66b3b7cb6",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/rust-sandbox/docs/truckers_v2.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/rust-sandbox/docs/truckers_v2.md",
+    "sha256": "8fa6c0ba761153cafb584e4e0b54c28da9b253333300d8c84a8d938aba866a89",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/unity-rust-games/README.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/unity-rust-games/README.md",
+    "sha256": "b2484da6fded3e367bbeed092f68c4f290838b9d2404e093ee1cf2c569468a96",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/unity-rust-games/docs/airrace3d_node_web_container_plan.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/unity-rust-games/docs/airrace3d_node_web_container_plan.md",
+    "sha256": "4567062add5e2e68dbae9440a426da254a9954828db1d9c162853830f8b7965e",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/unity-rust-games/docs/airrace3d_webgl_assetbundle_release.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/unity-rust-games/docs/airrace3d_webgl_assetbundle_release.md",
+    "sha256": "40cb7a9e2e8e34c8ae7a5c54cf18583ada634cd42b95e7879a4dc4c7ba6bd21f",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/unity-rust-games/docs/index.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/unity-rust-games/docs/index.md",
+    "sha256": "0d5901cc540b587ebe826e53aa807e4f931ca082366dfea4476bde330edf2afe",
+    "transformations": []
+  },
+  {
+    "source": "source/repos/upstream/unity-rust-games2/README.md",
+    "destination": "docs/history/2026-10-10-received/source/repos/upstream/unity-rust-games2/README.md",
+    "sha256": "c0f6447cebfbecdce511385c8cec29d6ef9ff6bb91b68a30f67ac07a04af6d8f",
+    "transformations": []
+  }
+]
